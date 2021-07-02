@@ -1,0 +1,38 @@
+{
+  "stack": "dotnet",
+  "memory": 256,
+  "runtimeArgs": [
+  ],
+  "routes": {
+    "paymentMethods": {
+      "path": "/cybersource/payment-provider/payment-methods",
+      "public": true
+    },
+    "createPayment": {
+      "path": "/cybersource/payment-provider/payments",
+      "public": true
+    },
+    "cancelPayment": {
+      "path": "/cybersource/payment-provider/payments/:paymentId/cancellations",
+      "public": true
+    },
+    "capturePayment": {
+      "path": "/cybersource/payment-provider/payments/:paymentId/settlements",
+      "public": true
+    },
+    "refundPayment": {
+      "path": "/cybersource/payment-provider/payments/:paymentId/refunds",
+      "public": true
+    },
+    "getPaymentRequest": {
+      "path": "/cybersource/payment-provider/payments/:paymentIdentifier/request",
+      "public": true
+    }
+  },
+  "events": {
+    "onAppsLinked": {
+      "sender": "apps",
+      "keys": ["linked"]
+    }
+  }
+}

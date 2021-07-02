@@ -1,0 +1,80 @@
+{
+  "name": "cybersource",
+  "vendor": "vtex",
+  "version": "0.0.1",
+  "title": "Cybersource",
+  "description": "Cybersource payment",
+  "categories": [],
+  "settingsSchema": {
+    "title": "Cybersource",
+    "type": "object",
+    "properties": {
+      "isLive": {
+        "title": "Production",
+        "description": "Use production credentials",
+        "type": "boolean"
+      },
+      "merchantId": {
+        "title": "Merchant Id",
+        "description": "Merchant Id",
+        "type": "string"
+      },
+      "merchantKey": {
+        "title": "Merchant Key",
+        "description": "Merchant Key",
+        "type": "string"
+      },
+      "sharedSecretKey": {
+        "title": "Shared Secret",
+        "description": "Shared Secret Key",
+        "type": "string"
+      }
+    }
+  },
+  "registries": [
+    "smartcheckout"
+  ],
+  "builders": {
+    "dotnet": "2.x",
+    "paymentProvider": "1.x"
+  },
+  "mustUpdateAt": "2018-09-05",
+  "scripts": {
+    "postreleasy": "vtex publish --verbose"
+  },
+  "policies": [
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "bnb.data.bl.uk"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "nuget.org"
+      }
+    },
+    {
+      "name": "ADMIN_DS"
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "apitest.cybersource.com",
+        "path": "/pts/v2/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "api.cybersource.com",
+        "path": "/pts/v2/*"
+      }
+    },
+    {
+      "name": "vbase-read-write"
+    }
+  ],
+  "$schema": "https://raw.githubusercontent.com/vtex/node-vtex-api/master/gen/manifest.schema"
+}

@@ -1,0 +1,16 @@
+﻿using Newtonsoft.Json;
+
+namespace Cybersource.Models
+{
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public class Payments
+    {
+        public ClientReferenceInformation clientReferenceInformation { get; set; }
+        public ProcessingInformation processingInformation { get; set; }
+        public AggregatorInformation aggregatorInformation { get; set; }
+        public OrderInformation orderInformation { get; set; }
+        public PaymentInformation paymentInformation { get; set; }
+        public ReversalInformation reversalInformation { get; set; }
+        public DeviceInformation deviceInformation { get; set; }
+    }
+}
