@@ -28,7 +28,8 @@ namespace Cybersource.Data
         public const string HTTP_FORWARDED_HEADER = "HTTP_X_FORWARDED_FOR";
         public const string API_VERSION_HEADER = "'x-api-version";
         public const string TAXJAR_API_VERSION = "2020-08-07";
-        public const string BUCKET = "Cybersource";
+        public const string BUCKET_PAYMENT = "payemnts";
+        public const string BUCKET_ANTIFRAUD = "antifraud";
 
         public const string PAYMENTS = "/pts/v2/";
         public const string RISK = "/risk/v1/";
@@ -38,6 +39,20 @@ namespace Cybersource.Data
             public const string Approved = "approved";
             public const string Denied = "denied";
             public const string Undefined = "undefined";
+        }
+
+        public class VtexAntifraudStatus
+        {
+            public const string Received = "received";
+            public const string Approved = "approved";
+            public const string Denied = "denied";
+            public const string Undefined = "undefined";
+        }
+
+        public class VtexAntifraudType
+        {
+            public const string Automatic = "automatic";
+            public const string Manual = "manual ";
         }
 
         public class VtexOrderStatus

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -84,9 +85,24 @@ namespace Cybersource.Services
                         country = createPaymentRequest.MiniCart.BillingAddress.Country.Substring(0,2),
                         email = createPaymentRequest.MiniCart.Buyer.Email,
                         phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone
-                    }
+                    },
+                    lineItems = new System.Collections.Generic.List<LineItem>()
                 }
             };
+
+            foreach(VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
+            {
+                LineItem lineItem = new LineItem
+                {
+                    productSku = vtexItem.Id,
+                    productName = vtexItem.Name,
+                    unitPrice = vtexItem.Price.ToString(),
+                    quantity = vtexItem.Quantity.ToString(),
+                    discountAmount = vtexItem.Discount.ToString()
+                };
+
+                payment.orderInformation.lineItems.Add(lineItem);
+            }
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment);
             if(paymentsResponse != null)
@@ -94,17 +110,31 @@ namespace Cybersource.Services
                 createPaymentResponse = new CreatePaymentResponse();
                 createPaymentResponse.AuthorizationId = paymentsResponse.Id;
                 createPaymentResponse.Tid = paymentsResponse.Id;
-                createPaymentResponse.Message = paymentsResponse.Message;
+                createPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
+                createPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Reason : paymentsResponse.Status;
                 string paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
+                // AUTHORIZED
+                // PARTIAL_AUTHORIZED
+                // AUTHORIZED_PENDING_REVIEW
+                // AUTHORIZED_RISK_DECLINED
+                // PENDING_AUTHENTICATION
+                // PENDING_REVIEW
+                // DECLINED
+                // INVALID_REQUEST
                 switch(paymentsResponse.Status)
                 {
                     case "AUTHORIZED":
+                    case "PARTIAL_AUTHORIZED":
                         paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
                         break;
                     case "AUTHORIZED_PENDING_REVIEW":
-                        paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
+                    case "PENDING_AUTHENTICATION":
+                    case "PENDING_REVIEW":
+                    case "INVALID_REQUEST":
+                        paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                         break;
                     case "DECLINED":
+                    case "AUTHORIZED_RISK_DECLINED":
                         paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
                         break;
                 }
@@ -113,7 +143,6 @@ namespace Cybersource.Services
                 if(paymentsResponse.ProcessorInformation != null)
                 {
                     createPaymentResponse.Nsu = paymentsResponse.ProcessorInformation.TransactionId;
-                    createPaymentResponse.Code = paymentsResponse.ProcessorInformation.ResponseCode;
                 }
             
                 createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
@@ -200,7 +229,7 @@ namespace Cybersource.Services
                 capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
                 capturePaymentResponse.RequestId = capturePaymentRequest.RequestId;
                 capturePaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
-                capturePaymentResponse.Message = paymentsResponse.Message;
+                capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
                 capturePaymentResponse.SettleId = paymentsResponse.Id;
                 capturePaymentResponse.Value = paymentsResponse.ErrorInformation != null ? 0m : decimal.Parse(paymentsResponse.OrderInformation.amountDetails.totalAmount);
                 capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
@@ -234,7 +263,7 @@ namespace Cybersource.Services
                 {
                     amountDetails = new AmountDetails
                     {
-                        totalAmount = (refundPaymentRequest.Value / 100).ToString()
+                        totalAmount = refundPaymentRequest.Value.ToString()
                     }
                 }
             };
@@ -245,12 +274,9 @@ namespace Cybersource.Services
                 refundPaymentResponse = new RefundPaymentResponse();
                 refundPaymentResponse.PaymentId = refundPaymentRequest.PaymentId;
                 refundPaymentResponse.RequestId = refundPaymentRequest.RequestId;
-                refundPaymentResponse.Message = paymentsResponse.Message;
+                refundPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
                 refundPaymentResponse.RefundId = paymentsResponse.Id;
-                if(paymentsResponse.ProcessorInformation != null)
-                {
-                    refundPaymentResponse.Code = paymentsResponse.ProcessorInformation.ResponseCode;
-                }
+                refundPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
 
                 if(paymentsResponse.RefundAmountDetails != null && paymentsResponse.RefundAmountDetails.RefundAmount != null)
                 {
@@ -259,6 +285,109 @@ namespace Cybersource.Services
             }
 
             return refundPaymentResponse;
+        }
+
+        public async Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest)
+        {
+            SendAntifraudDataResponse sendAntifraudDataResponse = null;
+            
+            Payments payment = new Payments
+            {
+                clientReferenceInformation = new ClientReferenceInformation
+                {
+                    code = sendAntifraudDataRequest.Id,
+                    comments = sendAntifraudDataRequest.Reference
+                },
+                orderInformation = new OrderInformation
+                {
+                    amountDetails = new AmountDetails
+                    {
+                        totalAmount = sendAntifraudDataRequest.Value.ToString()
+                    },
+                    billTo = new BillTo
+                    {
+                        firstName = sendAntifraudDataRequest.MiniCart.Buyer.FirstName,
+                        lastName = sendAntifraudDataRequest.MiniCart.Buyer.LastName,
+                        address1 = $"{sendAntifraudDataRequest.MiniCart.Buyer.Address.Number} {sendAntifraudDataRequest.MiniCart.Buyer.Address.Street}",
+                        address2 = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
+                        locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
+                        administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
+                        postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
+                        country = sendAntifraudDataRequest.MiniCart.Buyer.Address.Country.Substring(0,2),
+                        email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
+                        phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
+                    },
+                    lineItems = new System.Collections.Generic.List<LineItem>()
+                }
+            };
+
+            foreach(AntifraudItem vtexItem in sendAntifraudDataRequest.MiniCart.Items)
+            {
+                LineItem lineItem = new LineItem
+                {
+                    productSku = vtexItem.Id,
+                    productName = vtexItem.Name,
+                    unitPrice = vtexItem.Price.ToString(),
+                    quantity = vtexItem.Quantity.ToString(),
+                    discountAmount = vtexItem.Discount.ToString()
+                };
+
+                payment.orderInformation.lineItems.Add(lineItem);
+            };
+
+            PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
+
+            sendAntifraudDataResponse = new SendAntifraudDataResponse
+            {
+                Id = sendAntifraudDataRequest.Id,
+                Tid = paymentsResponse.Id,
+                Status = CybersourceConstants.VtexAntifraudStatus.Undefined,
+                Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
+                AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
+                Responses = new Dictionary<string, string>(),
+                Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
+                Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
+            };
+
+            switch(paymentsResponse.Status)
+            {
+                case "ACCEPTED":
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
+                    break;
+                case "PENDING_REVIEW":
+                case "PENDING_AUTHENTICATION":
+                case "INVALID_REQUEST":
+                case "CHALLENGE":
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAuthStatus.Undefined;
+                    break;
+                case "REJECTED":
+                case "DECLINED":
+                case "AUTHENTICATION_FAILED":
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
+                    break;
+            };
+
+            string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
+            Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);
+            Func<Dictionary<string, object>, IEnumerable<KeyValuePair<string, object>>> flatten = null;
+            flatten = dict => dict.SelectMany(kv => 
+                        kv.Value is Dictionary<string,object> 
+                            ? flatten((Dictionary<string,object>)kv.Value)
+                            : new List<KeyValuePair<string,object>>(){ kv}
+                       );
+
+            sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
+
+            await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
+
+            sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Received;
+
+            return sendAntifraudDataResponse;
+        }
+
+        public async Task<SendAntifraudDataResponse> GetAntifraudStatus(string id)
+        {
+            return await _cybersourceRepository.GetAntifraudData(id);
         }
     }
 }

@@ -1,6 +1,9 @@
 {
   "stack": "dotnet",
-  "memory": 256,
+  "memory": 512,
+  "timeout": 60,
+  "minReplicas": 10,
+  "maxReplicas": 100,
   "runtimeArgs": [
   ],
   "routes": {
@@ -26,6 +29,14 @@
     },
     "getPaymentRequest": {
       "path": "/cybersource/payment-provider/payments/:paymentIdentifier/request",
+      "public": true
+    },
+    "sendAntifraudData": {
+      "path": "/cybersource/payment-provider/transactions",
+      "public": true
+    },
+    "getAntifraudStatus": {
+      "path": "/cybersource/payment-provider/transactions/:transactionId",
       "public": true
     }
   },

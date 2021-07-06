@@ -208,7 +208,7 @@ namespace Cybersource.Services
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.PAYMENTS}decisions";
+            string endpoint = $"{CybersourceConstants.RISK}decisions";
             SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
             if(response != null)
             {

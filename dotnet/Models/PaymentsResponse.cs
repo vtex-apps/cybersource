@@ -52,6 +52,9 @@ namespace Cybersource.Models
 
         [JsonProperty("refundAmountDetails")]
         public RefundAmountDetails RefundAmountDetails { get; set; }
+
+        [JsonProperty("riskInformation")]
+        public RiskInformation RiskInformation { get; set; }
     }
 
     public class Links
@@ -132,12 +135,51 @@ namespace Cybersource.Models
         public string Message { get; set; }
     }
 
-    public partial class RefundAmountDetails
+    public class RefundAmountDetails
     {
         [JsonProperty("currency")]
         public string Currency { get; set; }
 
         [JsonProperty("refundAmount")]
         public string RefundAmount { get; set; }
+    }
+
+    public class RiskInformation
+    {
+        [JsonProperty("localTime")]
+        public DateTimeOffset LocalTime { get; set; }
+
+        [JsonProperty("score")]
+        public Score Score { get; set; }
+
+        [JsonProperty("infoCodes")]
+        public InfoCodes InfoCodes { get; set; }
+    }
+
+    public class InfoCodes
+    {
+        [JsonProperty("address")]
+        public string[] Address { get; set; }
+
+        [JsonProperty("phone")]
+        public string[] Phone { get; set; }
+
+        [JsonProperty("globalVelocity")]
+        public string[] GlobalVelocity { get; set; }
+
+        [JsonProperty("identityChange")]
+        public string[] IdentityChange { get; set; }
+    }
+
+    public class Score
+    {
+        [JsonProperty("result")]
+        public string Result { get; set; }
+
+        [JsonProperty("factorCodes")]
+        public string[] FactorCodes { get; set; }
+
+        [JsonProperty("modelUsed")]
+        public string ModelUsed { get; set; }
     }
 }

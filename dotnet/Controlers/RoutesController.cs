@@ -89,5 +89,33 @@
 
             return Json(methods);
         }
+
+        /// <summary>
+        /// http://{{providerApiEndpoint}}/transactions
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IActionResult> SendAntifraudData()
+        {
+            SendAntifraudDataResponse sendAntifraudDataResponse = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
+                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+            }
+
+            return Json(sendAntifraudDataResponse);
+        }
+
+        /// <summary>
+        /// http://{{providerApiEndpoint}}/transactions/transactions.id
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IActionResult> GetAntifraudStatus(string transactionId)
+        {
+            var getAntifraudStatusResponse = await this._cybersourcePaymentService.GetAntifraudStatus(transactionId);
+
+            return Json(getAntifraudStatusResponse);
+        }
     }
 }
