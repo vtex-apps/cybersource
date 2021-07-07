@@ -24,11 +24,15 @@
         /// </summary>
         /// <param name="createPaymentRequest"></param>
         /// <returns></returns>
-        public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest createPaymentRequest)
+        public async Task<IActionResult> CreatePayment()
         {
-            Console.WriteLine("    - CreatePayment -     ");
-            //Console.WriteLine($"    - CreatePaymentRequest: {JsonConvert.SerializeObject(createPaymentRequest)} -     ");
-            var paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+            CreatePaymentResponse paymentResponse = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
+                paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+            }
 
             Response.Headers.Add("Cache-Control", "private");
 
@@ -41,9 +45,15 @@
         /// <param name="paymentId">VTEX payment ID from this payment</param>
         /// <param name="cancelPaymentRequest"></param>
         /// <returns></returns>
-        public async Task<IActionResult> CancelPayment(string paymentId, [FromBody] CancelPaymentRequest cancelPaymentRequest)
+        public async Task<IActionResult> CancelPayment(string paymentId)
         {
-            var cancelResponse = await this._cybersourcePaymentService.CancelPayment(cancelPaymentRequest);
+            CancelPaymentResponse cancelResponse = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                CancelPaymentRequest cancelPaymentRequest = JsonConvert.DeserializeObject<CancelPaymentRequest>(bodyAsText);
+                cancelResponse = await this._cybersourcePaymentService.CancelPayment(cancelPaymentRequest);
+            }
 
             return Json(cancelResponse);
         }
@@ -54,10 +64,15 @@
         /// <param name="paymentId">VTEX payment ID from this payment</param>
         /// <param name="capturePaymentRequest"></param>
         /// <returns></returns>
-        public async Task<IActionResult> CapturePayment(string paymentId, [FromBody] CapturePaymentRequest capturePaymentRequest)
+        public async Task<IActionResult> CapturePayment(string paymentId)
         {
-            Console.WriteLine($"    - CapturePayment -   {paymentId}  ");
-            var captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
+            CapturePaymentResponse captureResponse = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
+                captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
+            }
 
             return Json(captureResponse);
         }
@@ -68,9 +83,15 @@
         /// <param name="paymentId">VTEX payment ID from this payment</param>
         /// <param name="refundPaymentRequest"></param>
         /// <returns></returns>
-        public async Task<IActionResult> RefundPayment(string paymentId, [FromBody] RefundPaymentRequest refundPaymentRequest)
+        public async Task<IActionResult> RefundPayment(string paymentId)
         {
-            var refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
+            RefundPaymentResponse refundResponse = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
+                refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
+            }
 
             return Json(refundResponse);
         }
