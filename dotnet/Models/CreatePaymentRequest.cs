@@ -55,10 +55,28 @@ namespace Cybersource.Models
         public int Installments { get; set; }
 
         /// <summary>
+        /// The interest rate
+        /// </summary>
+        [JsonProperty("installmentsInterestRate")]
+        public int InstallmentsInterestRate { get; set; }
+
+        /// <summary>
+        /// The value of each installment
+        /// </summary>
+        [JsonProperty("installmentsValue")]
+        public int InstallmentsValue { get; set; }
+
+        /// <summary>
         /// A hash that represents the device used to initiate the payment
         /// </summary>
         [JsonProperty("deviceFingerprint")]
         public string DeviceFingerprint { get; set; }
+
+        /// <summary>
+        /// The IP Address of the buyer
+        /// </summary>
+        [JsonProperty("ipAddress")]
+        public string IpAddress { get; set; }
 
         /// <summary>
         /// Card

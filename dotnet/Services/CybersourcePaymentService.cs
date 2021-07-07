@@ -54,7 +54,10 @@ namespace Cybersource.Services
                 clientReferenceInformation = new ClientReferenceInformation
                 {
                     code = createPaymentRequest.PaymentId,
-                    //transactionId = createPaymentRequest.TransactionId
+                    //transactionId = createPaymentRequest.TransactionId,
+                    applicationName = _context.Vtex.App.Name,
+                    applicationVersion = _context.Vtex.App.Version,
+                    applicationUser = _context.Vtex.App.Vendor
                 },
                 paymentInformation = new PaymentInformation
                 {
@@ -63,7 +66,8 @@ namespace Cybersource.Services
                         number = createPaymentRequest.Card.Number,
                         securityCode = createPaymentRequest.Card.Csc,
                         expirationMonth = createPaymentRequest.Card.Expiration.Month,
-                        expirationYear = createPaymentRequest.Card.Expiration.Year
+                        expirationYear = createPaymentRequest.Card.Expiration.Year,
+                        type = GetCardType(createPaymentRequest.PaymentMethod)
                     }
                 },
                 orderInformation = new OrderInformation
@@ -71,7 +75,9 @@ namespace Cybersource.Services
                     amountDetails = new AmountDetails
                     {
                         totalAmount = createPaymentRequest.Value.ToString(),
-                        currency = createPaymentRequest.Currency
+                        currency = createPaymentRequest.Currency,
+                        taxAmount = createPaymentRequest.MiniCart.TaxValue.ToString(),
+                        freightAmount = createPaymentRequest.MiniCart.ShippingValue.ToString()
                     },
                     billTo = new BillTo
                     {
@@ -86,7 +92,35 @@ namespace Cybersource.Services
                         email = createPaymentRequest.MiniCart.Buyer.Email,
                         phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone
                     },
+                    shipTo = new ShipTo
+                    {
+                        address1 = $"{createPaymentRequest.MiniCart.ShippingAddress.Number} {createPaymentRequest.MiniCart.ShippingAddress.Street}",
+                        address2 = createPaymentRequest.MiniCart.ShippingAddress.Complement,
+                        administrativeArea = createPaymentRequest.MiniCart.ShippingAddress.State,
+                        country = createPaymentRequest.MiniCart.ShippingAddress.Country.Substring(0,2),
+                        postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode
+                    },
                     lineItems = new System.Collections.Generic.List<LineItem>()
+                },
+                deviceInformation = new DeviceInformation
+                {
+                    ipAddress = createPaymentRequest.IpAddress
+                },
+                installmentInformation = new InstallmentInformation
+                {
+                    amount = createPaymentRequest.InstallmentsValue.ToString(),
+                    totalCount = createPaymentRequest.Installments.ToString()
+                },
+                buyerInformation = new BuyerInformation
+                {
+                    personalIdentification = new List<PersonalIdentification>
+                    {
+                        new PersonalIdentification
+                        {
+                            id = createPaymentRequest.MiniCart.Buyer.Document,
+                            type = createPaymentRequest.MiniCart.Buyer.DocumentType
+                        }
+                    }
                 }
             };
 
@@ -110,7 +144,7 @@ namespace Cybersource.Services
                 createPaymentResponse = new CreatePaymentResponse();
                 createPaymentResponse.AuthorizationId = paymentsResponse.Id;
                 createPaymentResponse.Tid = paymentsResponse.Id;
-                createPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
+                createPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message != null ? paymentsResponse.Message : paymentsResponse.Status;
                 createPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Reason : paymentsResponse.Status;
                 string paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                 // AUTHORIZED
@@ -177,7 +211,10 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = cancelPaymentRequest.PaymentId
+                    code = cancelPaymentRequest.PaymentId,
+                    applicationName = _context.Vtex.App.Name,
+                    applicationVersion = _context.Vtex.App.Version,
+                    applicationUser = _context.Vtex.App.Vendor
                 },
                 reversalInformation = new ReversalInformation
                 {
@@ -211,7 +248,10 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = capturePaymentRequest.PaymentId
+                    code = capturePaymentRequest.PaymentId,
+                    applicationName = _context.Vtex.App.Name,
+                    applicationVersion = _context.Vtex.App.Version,
+                    applicationUser = _context.Vtex.App.Vendor
                 },
                 orderInformation = new OrderInformation
                 {
@@ -257,7 +297,10 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = refundPaymentRequest.PaymentId
+                    code = refundPaymentRequest.PaymentId,
+                    applicationName = _context.Vtex.App.Name,
+                    applicationVersion = _context.Vtex.App.Version,
+                    applicationUser = _context.Vtex.App.Vendor
                 },
                 orderInformation = new OrderInformation
                 {
@@ -296,7 +339,10 @@ namespace Cybersource.Services
                 clientReferenceInformation = new ClientReferenceInformation
                 {
                     code = sendAntifraudDataRequest.Id,
-                    comments = sendAntifraudDataRequest.Reference
+                    comments = sendAntifraudDataRequest.Reference,
+                    applicationName = _context.Vtex.App.Name,
+                    applicationVersion = _context.Vtex.App.Version,
+                    applicationUser = _context.Vtex.App.Vendor
                 },
                 orderInformation = new OrderInformation
                 {
@@ -317,7 +363,19 @@ namespace Cybersource.Services
                         email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
                         phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
                     },
+                    shipTo = new ShipTo
+                    {
+                        address1 = $"{sendAntifraudDataRequest.MiniCart.Shipping.Address.Number} {sendAntifraudDataRequest.MiniCart.Shipping.Address.Street}",
+                        address2 = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
+                        administrativeArea = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
+                        country = sendAntifraudDataRequest.MiniCart.Shipping.Address.Country.Substring(0,2),
+                        postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
+                    },
                     lineItems = new System.Collections.Generic.List<LineItem>()
+                },
+                deviceInformation = new DeviceInformation
+                {
+                    ipAddress = sendAntifraudDataRequest.Ip
                 }
             };
 
@@ -352,18 +410,21 @@ namespace Cybersource.Services
             switch(paymentsResponse.Status)
             {
                 case "ACCEPTED":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
                     break;
                 case "PENDING_REVIEW":
                 case "PENDING_AUTHENTICATION":
                 case "INVALID_REQUEST":
                 case "CHALLENGE":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAuthStatus.Undefined;
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
                     break;
                 case "REJECTED":
                 case "DECLINED":
                 case "AUTHENTICATION_FAILED":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
+                    break;
+                default:
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
                     break;
             };
 
@@ -380,14 +441,90 @@ namespace Cybersource.Services
 
             await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
 
-            sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Received;
-
             return sendAntifraudDataResponse;
         }
 
         public async Task<SendAntifraudDataResponse> GetAntifraudStatus(string id)
         {
             return await _cybersourceRepository.GetAntifraudData(id);
+        }
+
+        private string GetCardType(string cardTypeText)
+        {
+            string cardType = null;
+            switch(cardTypeText.ToLower())
+            {
+                case "visa":
+                    cardType = "001";
+                    break;
+                case "mastercard":
+                case "eurocard":
+                    cardType = "002";
+                    break;
+                case "american express":
+                case "amex":
+                    cardType = "003";
+                    break;
+                case "discover":
+                    cardType = "004";
+                    break;
+                case "diners club":
+                    cardType = "005";
+                    break;
+                case "carte blanche":
+                    cardType = "006";
+                    break;
+                case "jcb":
+                    cardType = "007";
+                    break;
+                case "enroute":
+                    cardType = "014";
+                    break;
+                case "jal":
+                    cardType = "021";
+                    break;
+                case "maestro uk":
+                    cardType = "024";
+                    break;
+                case "delta":
+                    cardType = "031";
+                    break;
+                case "visa electron":
+                    cardType = "033";
+                    break;
+                case "dankort":
+                    cardType = "034";
+                    break;
+                case "cartes bancaires":
+                    cardType = "036";
+                    break;
+                case "carta si":
+                    cardType = "037";
+                    break;
+                case "encoded account number":
+                    cardType = "039";
+                    break;
+                case "uatp":
+                    cardType = "040";
+                    break;
+                case "maestro international":
+                    cardType = "042";
+                    break;
+                case "hipercard":
+                    cardType = "050";
+                    break;
+                case "aura":
+                    cardType = "051";
+                    break;
+                case "elo":
+                    cardType = "054";
+                    break;
+                case "china unionpay":
+                    cardType = "062";
+                    break;
+            }
+
+            return cardType;
         }
     }
 }

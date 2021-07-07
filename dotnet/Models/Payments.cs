@@ -12,5 +12,7 @@ namespace Cybersource.Models
         public PaymentInformation paymentInformation { get; set; }
         public ReversalInformation reversalInformation { get; set; }
         public DeviceInformation deviceInformation { get; set; }
+        public InstallmentInformation installmentInformation { get; set; }
+        public BuyerInformation buyerInformation { get; set; }
     }
 }

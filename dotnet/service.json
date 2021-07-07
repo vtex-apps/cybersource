@@ -31,6 +31,10 @@
       "path": "/cybersource/payment-provider/payments/:paymentIdentifier/request",
       "public": true
     },
+    "sendAntifraudPreAnalysisData": {
+      "path": "/cybersource/payment-provider/pre-analysis",
+      "public": true
+    },
     "sendAntifraudData": {
       "path": "/cybersource/payment-provider/transactions",
       "public": true

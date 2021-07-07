@@ -7,6 +7,7 @@ namespace Cybersource.Models
     public class OrderInformation
     {
         public BillTo billTo { get; set; }
+        public ShipTo shipTo { get; set; }
         public AmountDetails amountDetails { get; set; }
         public List<LineItem> lineItems { get; set; }
     }

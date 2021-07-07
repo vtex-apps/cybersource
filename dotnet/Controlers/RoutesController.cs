@@ -7,6 +7,7 @@
     using Microsoft.AspNetCore.Mvc;
     using Cybersource.Models;
     using Newtonsoft.Json;
+    using Cybersource.Data;
 
     public class RoutesController : Controller
     {
@@ -95,6 +96,24 @@
         /// </summary>
         /// <returns></returns>
         public async Task<IActionResult> SendAntifraudData()
+        {
+            SendAntifraudDataResponse sendAntifraudDataResponse = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
+                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Received;
+            }
+
+            return Json(sendAntifraudDataResponse);
+        }
+
+        /// <summary>
+        /// http://{{providerApiEndpoint}}/pre-analysis
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IActionResult> SendAntifraudPreAnalysisData()
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
