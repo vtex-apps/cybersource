@@ -42,6 +42,10 @@
     "getAntifraudStatus": {
       "path": "/cybersource/payment-provider/transactions/:transactionId",
       "public": true
+    },
+    "authorize": {
+      "path": "/cybersource/oauth/authorize",
+      "public": true
     }
   },
   "events": {

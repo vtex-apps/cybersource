@@ -157,5 +157,19 @@
 
             return Json(getAntifraudStatusResponse);
         }
+
+        public async Task<IActionResult> Authorize()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            string url = await _cybersourcePaymentService.GetAuthUrl();
+            if (string.IsNullOrEmpty(url))
+            {
+                return Json("Error");
+            }
+            else
+            {
+                return Redirect(url);
+            }
+        }
     }
 }

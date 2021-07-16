@@ -12,6 +12,12 @@ namespace Cybersource.Models
         [JsonProperty("reference")]
         public string Reference { get; set; }
 
+        [JsonProperty("orderId")]
+        public string OrderId { get; set; }
+
+        [JsonProperty("shopperInteraction")]
+        public string ShopperInteraction { get; set; }
+
         /// <summary>
         /// VTEX transaction ID related to this payment
         /// </summary>
@@ -58,13 +64,13 @@ namespace Cybersource.Models
         /// The interest rate
         /// </summary>
         [JsonProperty("installmentsInterestRate")]
-        public int InstallmentsInterestRate { get; set; }
+        public decimal InstallmentsInterestRate { get; set; }
 
         /// <summary>
         /// The value of each installment
         /// </summary>
         [JsonProperty("installmentsValue")]
-        public int InstallmentsValue { get; set; }
+        public decimal InstallmentsValue { get; set; }
 
         /// <summary>
         /// A hash that represents the device used to initiate the payment
@@ -107,6 +113,9 @@ namespace Cybersource.Models
         /// </summary>
         [JsonProperty("returnUrl")]
         public string ReturnUrl { get; set; }
+
+        [JsonProperty("secureProxyUrl")]
+        public string SecureProxyUrl { get; set; }
     }
 
     public class VtexCardExpiration
@@ -149,6 +158,24 @@ namespace Cybersource.Models
         /// </summary>
         [JsonProperty("expiration")]
         public VtexCardExpiration Expiration { get; set; }
+
+        [JsonProperty("holderToken")]
+        public string HolderToken { get; set; }
+
+        [JsonProperty("bin")]
+        public string Bin { get; set; }
+
+        [JsonProperty("numberToken")]
+        public string NumberToken { get; set; }
+
+        [JsonProperty("numberLength")]
+        public int NumberLength { get; set; }
+
+        [JsonProperty("cscToken")]
+        public string CscToken { get; set; }
+
+        [JsonProperty("cscLength")]
+        public int CscLength { get; set; }
     }
 
     public class Buyer
@@ -194,6 +221,18 @@ namespace Cybersource.Models
         /// </summary>
         [JsonProperty("phone")]
         public string Phone { get; set; }
+
+        [JsonProperty("corporateName")]
+        public object CorporateName { get; set; }
+
+        [JsonProperty("tradeName")]
+        public object TradeName { get; set; }
+
+        [JsonProperty("corporateDocument")]
+        public object CorporateDocument { get; set; }
+
+        [JsonProperty("isCorporate")]
+        public bool IsCorporate { get; set; }
     }
 
     public class VtexShippingAddress
@@ -344,6 +383,9 @@ namespace Cybersource.Models
         /// </summary>
         [JsonProperty("taxValue")]
         public decimal TaxValue { get; set; }
+
+        [JsonProperty("taxRate")]
+        public decimal TaxRate { get; set; }
 
         /// <summary>
         /// Buyer infromation

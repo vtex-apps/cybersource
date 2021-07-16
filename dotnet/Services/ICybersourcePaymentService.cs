@@ -12,5 +12,7 @@ namespace Cybersource.Services
 
         Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest);
         Task<SendAntifraudDataResponse> GetAntifraudStatus(string id);
+
+        Task<string> GetAuthUrl();
     }
 }

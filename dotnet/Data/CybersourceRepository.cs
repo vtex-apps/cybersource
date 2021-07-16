@@ -172,5 +172,64 @@
 
             response.EnsureSuccessStatusCode();
         }
+
+        public async Task<CybersourceToken> LoadToken(bool isProduction)
+        {
+            string filename = isProduction ? CybersourceConstants.TOKEN_LIVE : CybersourceConstants.TOKEN_TEST;
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri($"http://infra.io.vtex.com/vbase/v2/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._environmentVariableProvider.Workspace}/buckets/{this._applicationName}/{CybersourceConstants.BUCKET_TOKEN}/files/{filename}")
+            };
+
+            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+            if (authToken != null)
+            {
+                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+            }
+
+            request.Headers.Add("Cache-Control", "no-cache");
+
+            var client = _clientFactory.CreateClient();
+            var response = await client.SendAsync(request);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                _context.Vtex.Logger.Info("LoadToken", null, "Token not found!");
+                return null;
+            }
+
+            string responseContent = await response.Content.ReadAsStringAsync();
+            _context.Vtex.Logger.Info("LoadToken", null, responseContent);
+            CybersourceToken token = JsonConvert.DeserializeObject<CybersourceToken>(responseContent);
+
+            return token;
+        }
+
+        public async Task<bool> SaveToken(CybersourceToken token, bool isProduction)
+        {
+            string filename = isProduction ? CybersourceConstants.TOKEN_LIVE : CybersourceConstants.TOKEN_TEST;
+            var jsonSerializedToken = JsonConvert.SerializeObject(token);
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Put,
+                RequestUri = new Uri($"http://infra.io.vtex.com/vbase/v2/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._environmentVariableProvider.Workspace}/buckets/{this._applicationName}/{CybersourceConstants.BUCKET_TOKEN}/files/{filename}"),
+                Content = new StringContent(jsonSerializedToken, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
+            };
+
+            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+            if (authToken != null)
+            {
+                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+            }
+
+            var client = _clientFactory.CreateClient();
+            var response = await client.SendAsync(request);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            _context.Vtex.Logger.Info("SaveToken", null, $"[{response.StatusCode}] '{responseContent}' {jsonSerializedToken}");
+            return response.IsSuccessStatusCode;
+        }
     }
 }

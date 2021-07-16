@@ -14,5 +14,8 @@ namespace Cybersource.Data
 
         Task<SendAntifraudDataResponse> GetAntifraudData(string id);
         Task SaveAntifraudData(string id, SendAntifraudDataResponse antifraudDataResponse);
+
+        Task<CybersourceToken> LoadToken(bool isProduction);
+        Task<bool> SaveToken(CybersourceToken token, bool isProduction);
     }
 }

@@ -5,7 +5,7 @@ namespace Cybersource.Services
 {
     public interface ICybersourceApi
     {
-        Task<PaymentsResponse> ProcessPayment(Payments payments);
+        Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl);
         Task<PaymentsResponse> ProcessReversal(Payments payments, string paymentId);
         Task<PaymentsResponse> ProcessCapture(Payments payments, string paymentId);
         Task<PaymentsResponse> RefundPayment(Payments payments, string paymentId);

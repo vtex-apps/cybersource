@@ -63,8 +63,8 @@ namespace Cybersource.Services
                 {
                     card = new Card
                     {
-                        number = createPaymentRequest.Card.Number,
-                        securityCode = createPaymentRequest.Card.Csc,
+                        number = createPaymentRequest.Card.NumberToken ?? createPaymentRequest.Card.Number,
+                        securityCode = createPaymentRequest.Card.CscToken ?? createPaymentRequest.Card.Csc,
                         expirationMonth = createPaymentRequest.Card.Expiration.Month,
                         expirationYear = createPaymentRequest.Card.Expiration.Year,
                         type = GetCardType(createPaymentRequest.PaymentMethod)
@@ -138,7 +138,7 @@ namespace Cybersource.Services
                 payment.orderInformation.lineItems.Add(lineItem);
             }
 
-            PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment);
+            PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl);
             if(paymentsResponse != null)
             {
                 createPaymentResponse = new CreatePaymentResponse();
@@ -447,6 +447,50 @@ namespace Cybersource.Services
         public async Task<SendAntifraudDataResponse> GetAntifraudStatus(string id)
         {
             return await _cybersourceRepository.GetAntifraudData(id);
+        }
+
+        public async Task<string> GetAuthUrl()
+        {
+            string authUrl = string.Empty;
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"http://brian--{CybersourceConstants.AUTH_SITE_BASE}/{CybersourceConstants.AUTH_APP_PATH}/{CybersourceConstants.AUTH_PATH}/{merchantSettings.IsLive}")
+                };
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    authUrl = responseContent;
+                    string siteUrl = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.FORWARDED_HOST];
+                    authUrl = authUrl.Replace("state=", $"state={siteUrl}");
+                }
+                else
+                {
+                    _context.Vtex.Logger.Warn("GetAuthUrl", null, $"Failed to get auth url [{response.StatusCode}]");
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetAuthUrl", null, $"Error getting auth url", ex);
+            }
+
+            return authUrl;
         }
 
         private string GetCardType(string cardTypeText)

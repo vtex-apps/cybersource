@@ -1,6 +1,7 @@
 {
   "name": "Cybersource",
   "serviceUrl": "/cybersource/payment-provider",
+  "usesAntifraud": true,
   "paymentMethods": [
     {
       "name": "Visa",

@@ -11,6 +11,7 @@ namespace Cybersource.Data
         public const string FORWARDED_HEADER = "X-Forwarded-For";
         public const string FORWARDED_HOST = "X-Forwarded-Host";
         public const string APPLICATION_JSON = "application/json";
+        public const string APPLICATION_FORM = "application/x-www-form-urlencoded";
         public const string HEADER_VTEX_CREDENTIAL = "X-Vtex-Credential";
         public const string AUTHORIZATION_HEADER_NAME = "Authorization";
         public const string PROXY_AUTHORIZATION_HEADER_NAME = "Proxy-Authorization";
@@ -28,8 +29,11 @@ namespace Cybersource.Data
         public const string HTTP_FORWARDED_HEADER = "HTTP_X_FORWARDED_FOR";
         public const string API_VERSION_HEADER = "'x-api-version";
         public const string TAXJAR_API_VERSION = "2020-08-07";
-        public const string BUCKET_PAYMENT = "payemnts";
+        public const string BUCKET_PAYMENT = "payments";
         public const string BUCKET_ANTIFRAUD = "antifraud";
+        public const string BUCKET_TOKEN = "cybersource-token";
+        public const string TOKEN_TEST = "oauth-token-test";
+        public const string TOKEN_LIVE = "oauth-token-live";
 
         public const string PAYMENTS = "/pts/v2/";
         public const string RISK = "/risk/v1/";
@@ -95,5 +99,14 @@ namespace Cybersource.Data
         public const string SandboxApiEndpoint = "apitest.cybersource.com";
         public const string ProductionApiEndpoint = "api.cybersource.com";
         public const string SignatureAlgorithm = "HmacSHA256";
+
+        public const string AUTH_SITE_BASE = "googleauth.myvtex.com";
+        public const string REDIRECT_PATH = "return";
+        public const string AUTH_APP_PATH = "cybersource";
+        public const string AUTH_PATH = "auth";
+        public const string REFRESH_PATH = "refresh-token";
+
+        public const string PROXY_HEADER_PREFIX = "X-PROVIDER-Forward-";
+        public const string PROXY_FORWARD_TO = "X-PROVIDER-Forward-To";
     }
 }

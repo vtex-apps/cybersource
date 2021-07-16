@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj": {}
+    "C:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj": {}
   },
   "projects": {
-    "c:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj": {
+    "C:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj",
+        "projectUniqueName": "C:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj",
         "projectName": "cybersource",
-        "projectPath": "c:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj",
+        "projectPath": "C:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\cybersource.csproj",
         "packagesPath": "C:\\Users\\brian\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\obj\\",
+        "outputPath": "C:\\Users\\brian\\source\\repos\\cybersource\\dotnet\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\brian\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -67,7 +67,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.104\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.302\\RuntimeIdentifierGraph.json"
         }
       }
     }
