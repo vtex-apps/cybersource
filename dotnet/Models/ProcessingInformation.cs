@@ -6,5 +6,6 @@ namespace Cybersource.Models
     public class ProcessingInformation
     {
         public string commerceIndicator { get; set; }
+        public string capture { get; set; }
     }
 }

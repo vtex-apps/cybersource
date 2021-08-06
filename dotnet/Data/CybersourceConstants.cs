@@ -108,5 +108,21 @@ namespace Cybersource.Data
 
         public const string PROXY_HEADER_PREFIX = "X-PROVIDER-Forward-";
         public const string PROXY_FORWARD_TO = "X-PROVIDER-Forward-To";
+
+        public const string INSTALLMENT = "install";
+        public const string INSTALLMENT_INTERNET = "install_internet";
+
+        public class Processors
+        {
+            public const string Braspag = "Braspag";
+            public const string VPC = "VPC";
+            public const string Izipay = "Izipay";
+            public const string eGlobal = "eGlobal";
+            public const string BBVA = "BBVA";
+            public const string Banorte = "Banorte";
+            public const string Prosa = "Prosa";
+            public const string Santander = "Santander";
+            public const string AmexDirect = "Amex Direct";
+        }
     }
 }

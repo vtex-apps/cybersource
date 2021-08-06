@@ -48,6 +48,7 @@ namespace Cybersource.Services
         public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
         {
             //_context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             CreatePaymentResponse createPaymentResponse = null;
             Payments payment = new Payments
             {
@@ -106,11 +107,11 @@ namespace Cybersource.Services
                 {
                     ipAddress = createPaymentRequest.IpAddress
                 },
-                installmentInformation = new InstallmentInformation
-                {
-                    amount = createPaymentRequest.InstallmentsValue.ToString(),
-                    totalCount = createPaymentRequest.Installments.ToString()
-                },
+                //installmentInformation = new InstallmentInformation
+                //{
+                //    amount = createPaymentRequest.InstallmentsValue.ToString(),
+                //    totalCount = createPaymentRequest.Installments.ToString()
+                //},
                 buyerInformation = new BuyerInformation
                 {
                     personalIdentification = new List<PersonalIdentification>
@@ -123,6 +124,53 @@ namespace Cybersource.Services
                     }
                 }
             };
+
+            string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
+            string plan = string.Empty;
+            payment.installmentInformation = new InstallmentInformation();
+            //if(merchantSettings.Processor)
+            switch (merchantSettings.Processor)
+            {
+                case CybersourceConstants.Processors.Braspag:
+                case CybersourceConstants.Processors.VPC:
+                    payment.processingInformation = new ProcessingInformation
+                    {
+                        commerceIndicator = CybersourceConstants.INSTALLMENT
+                    };
+
+                    payment.installmentInformation.totalCount = numberOfInstallments;
+                    break;
+                case CybersourceConstants.Processors.Izipay:
+                    plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
+                    payment.issuerInformation = new IssuerInformation
+                    {
+                        //POS 1 - 6:014001
+                        //POS 7 - 8: # of installments
+                        //POS 9 - 16:00000000
+                        //POS 17: plan(0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días)
+                        discretionaryData = $"14001{numberOfInstallments}00000000{plan}"
+                    };
+
+                    break;
+                case CybersourceConstants.Processors.eGlobal:
+                case CybersourceConstants.Processors.BBVA:
+                    plan = "03";  // 03 no interest 05 with interest
+                    payment.processingInformation = new ProcessingInformation
+                    {
+                        capture = "true",
+                        commerceIndicator = CybersourceConstants.INSTALLMENT_INTERNET
+                    };
+
+                    //POS 1 - 2: # of months of deferred payment
+                    //POS 3 - 4: # installments
+                    //POS 5 - 6: plan(03 no interest, 05 with interest)"
+                    string monthsDeferred = "00";
+                    payment.installmentInformation.totalAmount = $"{monthsDeferred}{numberOfInstallments}{plan}";
+                    break;
+                default:
+                    payment.installmentInformation.totalAmount = createPaymentRequest.InstallmentsValue.ToString();
+                    break;
+            }
 
             foreach(VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {

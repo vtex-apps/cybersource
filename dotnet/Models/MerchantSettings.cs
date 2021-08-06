@@ -10,5 +10,6 @@ namespace Cybersource.Models
         public string MerchantId { get; set; }
         public string MerchantKey { get; set; }
         public string SharedSecretKey { get; set; }
+        public string Processor { get; set; }
     }
 }
