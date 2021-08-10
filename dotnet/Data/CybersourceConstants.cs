@@ -34,6 +34,7 @@ namespace Cybersource.Data
         public const string BUCKET_TOKEN = "cybersource-token";
         public const string TOKEN_TEST = "oauth-token-test";
         public const string TOKEN_LIVE = "oauth-token-live";
+        public const string CACHE_BUCKET = "tax-cache";
 
         public const string PAYMENTS = "/pts/v2/";
         public const string RISK = "/risk/v1/";
@@ -111,6 +112,15 @@ namespace Cybersource.Data
 
         public const string INSTALLMENT = "install";
         public const string INSTALLMENT_INTERNET = "install_internet";
+        public const string INTERNET = "internet";
+
+        public class Regions
+        {
+            public const string Colombia = "CO";
+            public const string Peru = "PE";
+            public const string Mexico = "MX";
+            public const string Brasil = "BR";
+        }
 
         public class Processors
         {

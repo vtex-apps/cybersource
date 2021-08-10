@@ -120,7 +120,7 @@ namespace Cybersource.Services
         {
             SendResponse sendResponse = null;
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            CybersourceToken token = await this.GetOAuthToken();
+            CybersourceToken token = await this.GetOAuthToken(merchantSettings.IsLive);
             string urlBase = CybersourceConstants.ProductionApiEndpoint;
             string requestUri = $"https://{urlBase}{endpoint}";
             if (!merchantSettings.IsLive)

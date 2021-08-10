@@ -19,7 +19,9 @@ namespace Vtex
             services.AddTransient<ICybersourceRepository, CybersourceRepository>();
             services.AddTransient<ICybersourceApi, CybersourceApi>();
             services.AddTransient<ICybersourcePaymentService, CybersourcePaymentService>();
+            services.AddTransient<IVtexApiService, VtexApiService>();
             services.AddSingleton<IVtexEnvironmentVariableProvider, VtexEnvironmentVariableProvider>();
+            services.AddSingleton<ICachedKeys, CachedKeys>();
             services.AddHttpContextAccessor();
             services.AddHttpClient();
         }

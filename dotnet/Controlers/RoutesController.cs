@@ -8,14 +8,18 @@
     using Cybersource.Models;
     using Newtonsoft.Json;
     using Cybersource.Data;
+    using Vtex.Api.Context;
+    using System.Diagnostics;
 
     public class RoutesController : Controller
     {
         private readonly ICybersourcePaymentService _cybersourcePaymentService;
+        private readonly IIOServiceContext _context;
 
-        public RoutesController(ICybersourcePaymentService cybersourcePaymentService)
+        public RoutesController(ICybersourcePaymentService cybersourcePaymentService, IIOServiceContext context)
         {
             this._cybersourcePaymentService = cybersourcePaymentService ?? throw new ArgumentNullException(nameof(cybersourcePaymentService));
+            this._context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         /// <summary>
@@ -156,6 +160,38 @@
             var getAntifraudStatusResponse = await this._cybersourcePaymentService.GetAntifraudStatus(transactionId);
 
             return Json(getAntifraudStatusResponse);
+        }
+
+        public async Task<IActionResult> TaxHandler()
+        {
+            VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
+            {
+                ItemTaxResponse = new ItemTaxResponse[0]
+            };
+
+            bool useFallbackRates = false;
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+
+            Response.Headers.Add("Cache-Control", "private");
+            Response.Headers.Add(CybersourceConstants.CONTENT_TYPE, CybersourceConstants.MINICART);
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                if (!string.IsNullOrEmpty(bodyAsText))
+                {
+                    VtexTaxRequest taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
+                    if (taxRequest != null)
+                    {
+                        
+                    }
+                }
+            }
+
+            timer.Stop();
+            //_context.Vtex.Logger.Debug("TaxHandler", null, $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
+
+            return Json(vtexTaxResponse);
         }
 
         public async Task<IActionResult> Authorize()

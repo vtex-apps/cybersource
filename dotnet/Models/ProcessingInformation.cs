@@ -7,5 +7,6 @@ namespace Cybersource.Models
     {
         public string commerceIndicator { get; set; }
         public string capture { get; set; }
+        public string reconciliationId { get; set; }
     }
 }
