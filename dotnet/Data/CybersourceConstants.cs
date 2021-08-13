@@ -101,7 +101,7 @@ namespace Cybersource.Data
         public const string ProductionApiEndpoint = "api.cybersource.com";
         public const string SignatureAlgorithm = "HmacSHA256";
 
-        public const string AUTH_SITE_BASE = "googleauth.myvtex.com";
+        public const string AUTH_SITE_BASE = "brian--googleauth.myvtex.com"; //"googleauth.myvtex.com"; "brian--sandboxusdev.myvtex.com";
         public const string REDIRECT_PATH = "return";
         public const string AUTH_APP_PATH = "cybersource";
         public const string AUTH_PATH = "auth";

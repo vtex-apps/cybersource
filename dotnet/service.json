@@ -50,6 +50,10 @@
     "authorize": {
       "path": "/cybersource/oauth/authorize",
       "public": true
+    },
+    "saveToken": {
+      "path": "/cybersource/set-token:isLive",
+      "public": true
     }
   },
   "events": {

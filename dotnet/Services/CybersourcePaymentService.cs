@@ -164,7 +164,10 @@ namespace Cybersource.Services
                     }
                     else
                     {
-                        payment.installmentInformation.totalAmount = createPaymentRequest.InstallmentsValue.ToString();
+                        payment.installmentInformation = new InstallmentInformation
+                        {
+                            totalAmount = createPaymentRequest.InstallmentsValue.ToString()
+                        };
                     }
 
                     break;
@@ -252,7 +255,11 @@ namespace Cybersource.Services
 
                     break;
                 default:
-                    payment.installmentInformation.totalAmount = createPaymentRequest.InstallmentsValue.ToString();
+                    payment.installmentInformation = new InstallmentInformation
+                    {
+                        totalAmount = createPaymentRequest.InstallmentsValue.ToString()
+                    };
+
                     break;
             }
 
@@ -829,7 +836,7 @@ namespace Cybersource.Services
                 var request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Get,
-                    RequestUri = new Uri($"http://brian--{CybersourceConstants.AUTH_SITE_BASE}/{CybersourceConstants.AUTH_APP_PATH}/{CybersourceConstants.AUTH_PATH}/{merchantSettings.IsLive}")
+                    RequestUri = new Uri($"http://{CybersourceConstants.AUTH_SITE_BASE}/{CybersourceConstants.AUTH_APP_PATH}/{CybersourceConstants.AUTH_PATH}/{merchantSettings.IsLive}")
                 };
 
                 request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");

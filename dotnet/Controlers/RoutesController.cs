@@ -14,11 +14,13 @@
     public class RoutesController : Controller
     {
         private readonly ICybersourcePaymentService _cybersourcePaymentService;
+        private readonly ICybersourceRepository _cybersourceRepository;
         private readonly IIOServiceContext _context;
 
-        public RoutesController(ICybersourcePaymentService cybersourcePaymentService, IIOServiceContext context)
+        public RoutesController(ICybersourcePaymentService cybersourcePaymentService, ICybersourceRepository cybersourceRepository, IIOServiceContext context)
         {
             this._cybersourcePaymentService = cybersourcePaymentService ?? throw new ArgumentNullException(nameof(cybersourcePaymentService));
+            this._cybersourceRepository = cybersourceRepository ?? throw new ArgumentNullException(nameof(cybersourceRepository));
             this._context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
@@ -206,6 +208,20 @@
             {
                 return Redirect(url);
             }
+        }
+
+        public async Task<bool> SaveToken(bool isLive)
+        {
+            bool success = false;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                CybersourceToken token = JsonConvert.DeserializeObject<CybersourceToken>(bodyAsText);
+
+                success = await _cybersourceRepository.SaveToken(token, isLive);
+            }
+
+            return success;
         }
     }
 }
