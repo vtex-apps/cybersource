@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -166,6 +167,7 @@ namespace Cybersource.Services
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"ListPickupPoints [{response.StatusCode}] {responseContent}");
             if (response.IsSuccessStatusCode)
             {
                 pickupPoints = JsonConvert.DeserializeObject<PickupPoints>(responseContent);
@@ -220,28 +222,28 @@ namespace Cybersource.Services
         public async Task<string> InitConfiguration()
         {
             string retval = string.Empty;
-            //MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            //string jsonSerializedOrderConfig = await this._cybersourceRepository.GetOrderConfiguration();
-            //if (string.IsNullOrEmpty(jsonSerializedOrderConfig))
-            //{
-            //    retval = "Could not load Order Configuration.";
-            //}
-            //else
-            //{
-            //    dynamic orderConfig = JsonConvert.DeserializeObject(jsonSerializedOrderConfig);
-            //    VtexOrderformTaxConfiguration taxConfiguration = new VtexOrderformTaxConfiguration
-            //    {
-            //        AllowExecutionAfterErrors = false,
-            //        IntegratedAuthentication = true,
-            //        Url = $"https://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}--{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.myvtex.com/taxjar/checkout/order-tax"
-            //    };
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            string jsonSerializedOrderConfig = await this._cybersourceRepository.GetOrderConfiguration();
+            if (string.IsNullOrEmpty(jsonSerializedOrderConfig))
+            {
+                retval = "Could not load Order Configuration.";
+            }
+            else
+            {
+                dynamic orderConfig = JsonConvert.DeserializeObject(jsonSerializedOrderConfig);
+                VtexOrderformTaxConfiguration taxConfiguration = new VtexOrderformTaxConfiguration
+                {
+                    AllowExecutionAfterErrors = false,
+                    IntegratedAuthentication = true,
+                    Url = $"https://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}--{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.myvtex.com/cybersource/checkout/order-tax"
+                };
 
-            //    orderConfig["taxConfiguration"] = JToken.FromObject(taxConfiguration);
+                orderConfig["taxConfiguration"] = JToken.FromObject(taxConfiguration);
 
-            //    jsonSerializedOrderConfig = JsonConvert.SerializeObject(orderConfig);
-            //    bool success = await this._cybersourceRepository.SetOrderConfiguration(jsonSerializedOrderConfig);
-            //    retval = success.ToString();
-            //}
+                jsonSerializedOrderConfig = JsonConvert.SerializeObject(orderConfig);
+                bool success = await this._cybersourceRepository.SetOrderConfiguration(jsonSerializedOrderConfig);
+                retval = success.ToString();
+            }
 
             return retval;
         }
@@ -250,25 +252,25 @@ namespace Cybersource.Services
         {
             string retval = string.Empty;
             //MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            //string jsonSerializedOrderConfig = await this._cybersourceRepository.GetOrderConfiguration();
-            //if (string.IsNullOrEmpty(jsonSerializedOrderConfig))
-            //{
-            //    retval = "Could not load Order Configuration.";
-            //}
-            //else
-            //{
-            //    dynamic orderConfig = JsonConvert.DeserializeObject(jsonSerializedOrderConfig);
-            //    VtexOrderformTaxConfiguration taxConfiguration = new VtexOrderformTaxConfiguration
-            //    {
+            string jsonSerializedOrderConfig = await this._cybersourceRepository.GetOrderConfiguration();
+            if (string.IsNullOrEmpty(jsonSerializedOrderConfig))
+            {
+                retval = "Could not load Order Configuration.";
+            }
+            else
+            {
+                dynamic orderConfig = JsonConvert.DeserializeObject(jsonSerializedOrderConfig);
+                VtexOrderformTaxConfiguration taxConfiguration = new VtexOrderformTaxConfiguration
+                {
 
-            //    };
+                };
 
-            //    orderConfig["taxConfiguration"] = JToken.FromObject(taxConfiguration);
+                orderConfig["taxConfiguration"] = JToken.FromObject(taxConfiguration);
 
-            //    jsonSerializedOrderConfig = JsonConvert.SerializeObject(orderConfig);
-            //    bool success = await this._cybersourceRepository.SetOrderConfiguration(jsonSerializedOrderConfig);
-            //    retval = success.ToString();
-            //}
+                jsonSerializedOrderConfig = JsonConvert.SerializeObject(orderConfig);
+                bool success = await this._cybersourceRepository.SetOrderConfiguration(jsonSerializedOrderConfig);
+                retval = success.ToString();
+            }
 
             return retval;
         }
@@ -282,7 +284,7 @@ namespace Cybersource.Services
             try
             {
                 if (country.Length > 2)
-                    country = country.Substring(0, 2);
+                    country = this.GetCountryCode(country);
 
                 var request = new HttpRequestMessage
                 {
@@ -388,6 +390,106 @@ namespace Cybersource.Services
             //}
 
             return success;
+        }
+
+        public string GetCountryCode(string country)
+        {
+            return CybersourceConstants.CountryCodesMapping[country];
+        }
+
+        public async Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse)
+        {
+            if (taxResponse == null)
+            {
+                return null;
+            }
+
+            if (taxResponse.OrderInformation == null)
+            {
+                return null;
+            }
+
+            VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
+            {
+                Hooks = new Hook[]
+                {
+                    new Hook
+                    {
+                        //Major = 1,
+                        //Url = new Uri($"https://{this._httpContextAccessor.HttpContext.Request.Headers[TaxjarConstants.HEADER_VTEX_WORKSPACE]}--{this._httpContextAccessor.HttpContext.Request.Headers[TaxjarConstants.VTEX_ACCOUNT_HEADER_NAME]}.myvtex.com/taxjar/oms/invoice")
+                    }
+                },
+                ItemTaxResponse = new List<ItemTaxResponse>()
+            };
+
+            double totalItemTax = double.Parse(taxResponse.OrderInformation.taxAmount);
+
+            // The last item is shipping
+            LineItem shippingTaxes = taxResponse.OrderInformation.lineItems.Last();
+
+            for (int i = 0; i < taxResponse.OrderInformation.lineItems.Count-1; i++)
+            {
+                LineItem lineItem = taxResponse.OrderInformation.lineItems[i];
+                double itemTaxPercentOfWhole = double.Parse(lineItem.taxAmount) / totalItemTax;
+                ItemTaxResponse itemTaxResponse = new ItemTaxResponse
+                {
+                    Id = i.ToString()
+                };
+
+                List<VtexTax> vtexTaxes = new List<VtexTax>();
+                // Name = $"STATE TAX: {taxResponse.Tax.Jurisdictions.State}", // NY COUNTY TAX: MONROE
+                foreach(Jurisdiction jurisdiction in lineItem.jurisdiction)
+                {
+                    vtexTaxes.Add(
+                        new VtexTax
+                        {
+                            Description = "",
+                            Name = jurisdiction.taxName,
+                            Value = decimal.Parse(jurisdiction.taxAmount)
+                        }
+                     );
+
+                    double shippingAmountThisJurisdiction = 0;
+                    string shippingThisJurisdiction = shippingTaxes.taxDetails.Where(t => t.type.Equals(jurisdiction.type, StringComparison.OrdinalIgnoreCase)).Select(t => t.amount).FirstOrDefault();
+                    if (shippingThisJurisdiction != null)
+                    {
+                        if (double.TryParse(shippingThisJurisdiction, out shippingAmountThisJurisdiction))
+                        {
+                            if(shippingAmountThisJurisdiction > 0)
+                            {
+                                decimal itemShippingTax = (decimal)Math.Round(shippingAmountThisJurisdiction * itemTaxPercentOfWhole, 2, MidpointRounding.ToEven);
+                                vtexTaxes.Add(
+                                    new VtexTax
+                                    {
+                                        Description = "",
+                                        Name = $"{jurisdiction.taxName} (SHIPPING)",
+                                        Value = itemShippingTax
+                                    }
+                                 );
+                            }
+                        }
+                    }
+
+                }
+
+                itemTaxResponse.Taxes = vtexTaxes.ToArray();
+                vtexTaxResponse.ItemTaxResponse.Add(itemTaxResponse);
+            };
+
+            decimal totalOrderTax = decimal.Parse(taxResponse.OrderInformation.taxAmount);
+            decimal totalResponseTax = vtexTaxResponse.ItemTaxResponse.SelectMany(t => t.Taxes).Sum(i => i.Value);
+            if (!totalOrderTax.Equals(totalResponseTax))
+            {
+                decimal adjustmentAmount = Math.Round((totalOrderTax - totalResponseTax), 2, MidpointRounding.ToEven);
+                int lastItemIndex = vtexTaxResponse.ItemTaxResponse.Count - 1;
+                int lastTaxIndex = vtexTaxResponse.ItemTaxResponse[lastItemIndex].Taxes.Length - 1;
+                vtexTaxResponse.ItemTaxResponse[lastItemIndex].Taxes[lastTaxIndex].Value += adjustmentAmount;
+                _context.Vtex.Logger.Info("CybersourceResponseToVtexResponse", null, $"Applying adjustment: {totalOrderTax} - {totalResponseTax} = {adjustmentAmount}");
+            }
+
+            _context.Vtex.Logger.Info("CybersourceResponseToVtexResponse", null, $"Request: {JsonConvert.SerializeObject(taxResponse)}\nResponse: {JsonConvert.SerializeObject(vtexTaxResponse)}");
+
+            return vtexTaxResponse;
         }
     }
 }

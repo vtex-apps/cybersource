@@ -10,17 +10,20 @@
     using Cybersource.Data;
     using Vtex.Api.Context;
     using System.Diagnostics;
+    using System.Collections.Generic;
 
     public class RoutesController : Controller
     {
         private readonly ICybersourcePaymentService _cybersourcePaymentService;
         private readonly ICybersourceRepository _cybersourceRepository;
+        private readonly IVtexApiService _vtexApiService;
         private readonly IIOServiceContext _context;
 
-        public RoutesController(ICybersourcePaymentService cybersourcePaymentService, ICybersourceRepository cybersourceRepository, IIOServiceContext context)
+        public RoutesController(ICybersourcePaymentService cybersourcePaymentService, ICybersourceRepository cybersourceRepository, IVtexApiService vtexApiService, IIOServiceContext context)
         {
             this._cybersourcePaymentService = cybersourcePaymentService ?? throw new ArgumentNullException(nameof(cybersourcePaymentService));
             this._cybersourceRepository = cybersourceRepository ?? throw new ArgumentNullException(nameof(cybersourceRepository));
+            this._vtexApiService = vtexApiService ?? throw new ArgumentNullException(nameof(vtexApiService));
             this._context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
@@ -166,12 +169,14 @@
 
         public async Task<IActionResult> TaxHandler()
         {
+            string orderFormId = string.Empty;
+            string totalItems = string.Empty;
+            bool fromCache = false;
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
-                ItemTaxResponse = new ItemTaxResponse[0]
+                ItemTaxResponse = new List<ItemTaxResponse>()
             };
 
-            bool useFallbackRates = false;
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
@@ -183,15 +188,17 @@
                 if (!string.IsNullOrEmpty(bodyAsText))
                 {
                     VtexTaxRequest taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
+                    orderFormId = taxRequest.OrderFormId;
+                    totalItems = taxRequest.Items.Length.ToString();
                     if (taxRequest != null)
                     {
-                        
+                        vtexTaxResponse = await _cybersourcePaymentService.GetTaxes(taxRequest);
                     }
                 }
             }
 
             timer.Stop();
-            //_context.Vtex.Logger.Debug("TaxHandler", null, $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
+            _context.Vtex.Logger.Debug("TaxHandler", null, $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
 
             return Json(vtexTaxResponse);
         }
@@ -222,6 +229,34 @@
             }
 
             return success;
+        }
+
+        public async Task<IActionResult> ToggleTax(bool useCyberTax)
+        {
+            string result = string.Empty;
+            if(useCyberTax)
+            {
+                result = await _vtexApiService.InitConfiguration();
+            }
+            else
+            {
+                result = await _vtexApiService.RemoveConfiguration();
+            }
+
+            return Json(result);
+        }
+
+        public async Task<IActionResult> CybersourceResponseToVtexResponse()
+        {
+            VtexTaxResponse vtexTaxResponse = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                PaymentsResponse taxResponse = JsonConvert.DeserializeObject<PaymentsResponse>(bodyAsText);
+                vtexTaxResponse = await this._vtexApiService.CybersourceResponseToVtexResponse(taxResponse);
+            }
+
+            return Json(vtexTaxResponse);
         }
     }
 }

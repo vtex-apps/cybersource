@@ -13,6 +13,8 @@ namespace Cybersource.Services
         Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest);
         Task<SendAntifraudDataResponse> GetAntifraudStatus(string id);
 
+        Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest);
+
         Task<string> GetAuthUrl();
     }
 }

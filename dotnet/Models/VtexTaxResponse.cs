@@ -8,7 +8,7 @@ namespace Cybersource.Models
     public class VtexTaxResponse
     {
         [JsonProperty("itemTaxResponse")]
-        public ItemTaxResponse[] ItemTaxResponse { get; set; }
+        public List<ItemTaxResponse> ItemTaxResponse { get; set; }
 
         [JsonProperty("hooks")]
         public Hook[] Hooks { get; set; }

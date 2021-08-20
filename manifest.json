@@ -47,6 +47,9 @@
       "name": "ADMIN_DS"
     },
     {
+      "name": "LogisticsViewer"
+    },
+    {
       "name": "outbound-access",
       "attrs": {
         "host": "apitest.cybersource.com",
@@ -58,6 +61,13 @@
       "attrs": {
         "host": "api.cybersource.com",
         "path": "/pts/v2/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "vtexus.myvtex.com",
+        "path": "/_v/tax-fallback/*"
       }
     },
     {

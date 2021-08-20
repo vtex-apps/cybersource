@@ -20,5 +20,8 @@ namespace Cybersource.Data
 
         Task<CybersourceToken> LoadToken(bool isProduction);
         Task<bool> SaveToken(CybersourceToken token, bool isProduction);
+
+        Task<string> GetOrderConfiguration();
+        Task<bool> SetOrderConfiguration(string jsonSerializedOrderConfig);
     }
 }

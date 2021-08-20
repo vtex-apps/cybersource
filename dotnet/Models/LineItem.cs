@@ -7,7 +7,7 @@ namespace Cybersource.Models
     {
         public string productCode { get; set; }
         public string productName { get; set; }
-        public string productSku { get; set; }
+        public string productSKU { get; set; }
         public string quantity { get; set; }
         public string unitPrice { get; set; }
         public string unitOfMeasure { get; set; }
@@ -36,5 +36,12 @@ namespace Cybersource.Models
         public string shippingDestinationTypes { get; set; }
         public string gift { get; set; }
         //public Passenger passenger { get; set; }
+        public string shipFromCountry { get; set; }
+        public string shipFromAdministrativeArea { get; set; }
+        public string shipFromLocality { get; set; }
+        public string shipFromPostalCode { get; set; }
+        public string taxableAmount { get; set; }
+        public Jurisdiction[] jurisdiction { get; set; }
+        public string exemptAmount { get; set; }
     }
 }

@@ -7,5 +7,6 @@ namespace Cybersource.Models
     public class TaxInformation
     {
         public string showTaxPerLineItem { get; set; }
+        //public IList<string> nexus { get; set; }
     }
 }

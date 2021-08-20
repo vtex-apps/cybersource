@@ -276,6 +276,22 @@ namespace Cybersource.Services
         }
         #endregion
 
+        #region Tax
+        public async Task<PaymentsResponse> CalculateTaxes(Payments payments)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            string endpoint = $"{CybersourceConstants.TAX}tax";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+            }
+
+            return paymentsResponse;
+        }
+        #endregion
+
         #region Authorization Header functions
         private async Task<string> GenerateDigest(string jsonPayload)
         {

@@ -93,7 +93,7 @@ namespace Cybersource.Services
                         locality = createPaymentRequest.MiniCart.BillingAddress.City,
                         administrativeArea = createPaymentRequest.MiniCart.BillingAddress.State,
                         postalCode = createPaymentRequest.MiniCart.BillingAddress.PostalCode,
-                        country = createPaymentRequest.MiniCart.BillingAddress.Country.Substring(0,2),
+                        country = this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country),
                         email = createPaymentRequest.MiniCart.Buyer.Email,
                         phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone
                     },
@@ -102,7 +102,7 @@ namespace Cybersource.Services
                         address1 = $"{createPaymentRequest.MiniCart.ShippingAddress.Number} {createPaymentRequest.MiniCart.ShippingAddress.Street}",
                         address2 = createPaymentRequest.MiniCart.ShippingAddress.Complement,
                         administrativeArea = createPaymentRequest.MiniCart.ShippingAddress.State,
-                        country = createPaymentRequest.MiniCart.ShippingAddress.Country.Substring(0,2),
+                        country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode
                     },
                     lineItems = new System.Collections.Generic.List<LineItem>()
@@ -267,7 +267,7 @@ namespace Cybersource.Services
             {
                 LineItem lineItem = new LineItem
                 {
-                    productSku = vtexItem.Id,
+                    productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
                     unitPrice = vtexItem.Price.ToString(),
                     quantity = vtexItem.Quantity.ToString(),
@@ -498,7 +498,7 @@ namespace Cybersource.Services
                         locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
                         administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
                         postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
-                        country = sendAntifraudDataRequest.MiniCart.Buyer.Address.Country.Substring(0,2),
+                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Buyer.Address.Country),
                         email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
                         phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
                     },
@@ -507,7 +507,7 @@ namespace Cybersource.Services
                         address1 = $"{sendAntifraudDataRequest.MiniCart.Shipping.Address.Number} {sendAntifraudDataRequest.MiniCart.Shipping.Address.Street}",
                         address2 = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
                         administrativeArea = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
-                        country = sendAntifraudDataRequest.MiniCart.Shipping.Address.Country.Substring(0,2),
+                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Shipping.Address.Country),
                         postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
                     },
                     lineItems = new System.Collections.Generic.List<LineItem>()
@@ -523,7 +523,7 @@ namespace Cybersource.Services
             {
                 LineItem lineItem = new LineItem
                 {
-                    productSku = vtexItem.Id,
+                    productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
                     unitPrice = vtexItem.Price.ToString(),
                     quantity = vtexItem.Quantity.ToString(),
@@ -591,9 +591,11 @@ namespace Cybersource.Services
 
         public async Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest)
         {
+            _context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
+
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
-                ItemTaxResponse = new ItemTaxResponse[0]
+                ItemTaxResponse = new List<ItemTaxResponse>()
             };
 
             bool fromCache = false;
@@ -616,102 +618,107 @@ namespace Cybersource.Services
                 bool inNexus = await this.InNexus(taxRequest.ShippingDestination.State, taxRequest.ShippingDestination.Country);
                 if (inNexus)
                 {
-                    List<string> dockIds = taxRequest.Items.Select(i => i.DockId).Distinct().ToList();
-                    if (dockIds.Count > 1)
+                    Payments cyberTaxRequest = new Payments
                     {
-                        List<VtexTaxResponse> taxResponses = new List<VtexTaxResponse>();
-                        decimal itemsTotal = taxRequest.Totals.Where(t => t.Id.Equals("Items")).Select(t => t.Value).FirstOrDefault();
-                        decimal shippingTotal = taxRequest.Totals.Where(t => t.Id.Equals("Items")).Select(t => t.Value).FirstOrDefault();
-                        long itemQuantity = taxRequest.Items.Sum(i => i.Quantity);
-                        foreach (string dockId in dockIds)
+                        clientReferenceInformation = new ClientReferenceInformation
                         {
-                            List<Item> items = taxRequest.Items.Where(i => i.DockId.Equals(dockId)).ToList();
-                            long itemQuantityThisDock = items.Sum(i => i.Quantity);
-                            decimal percentOfWhole = itemQuantityThisDock / itemQuantity;
-                            VtexTaxRequest taxRequestThisDock = taxRequest;
-                            taxRequestThisDock.Items = items.ToArray();
-                            decimal itemsTotalThisDock = 0M;
-                            foreach (Item item in items)
-                            {
-                                itemsTotalThisDock += item.ItemPrice * item.Quantity;
-                            }
-
-                            taxRequestThisDock.Totals = new Total[]
-                            {
-                                            new Total
-                                            {
-                                                Id = "Items",
-                                                Name = "Items Total",
-                                                Value = itemsTotalThisDock
-                                            },
-                                            new Total
-                                            {
-                                                Id = "Discounts",
-                                                Name = "Discounts Total",
-                                                Value = taxRequest.Totals.Where(t => t.Id.Equals("Discounts")).Select(t => t.Value).FirstOrDefault() * percentOfWhole
-                                            },
-                                            new Total
-                                            {
-                                                Id = "Shipping",
-                                                Name = "Shipping Total",
-                                                Value = taxRequest.Totals.Where(t => t.Id.Equals("Shipping")).Select(t => t.Value).FirstOrDefault() * percentOfWhole
-                                            }
-                            };
-
-                            //TaxForOrder taxForOrder = await _vtexApiService.VtexRequestToTaxjarRequest(taxRequestThisDock);
-                            //if (taxForOrder != null)
+                            code = taxRequest.OrderFormId
+                        },
+                        taxInformation = new TaxInformation
+                        {
+                            //nexus = new List<string>(),
+                            showTaxPerLineItem = "yes"
+                        },
+                        orderInformation = new OrderInformation
+                        {
+                            //amountDetails = new AmountDetails
                             //{
-                            //    TaxResponse taxResponse = await _taxjarService.TaxForOrder(taxForOrder);
-                            //    if (taxResponse != null)
-                            //    {
-                            //        VtexTaxResponse vtexTaxResponseThisDock = await _vtexApiService.TaxjarResponseToVtexResponse(taxResponse);
-                            //        taxResponses.Add(vtexTaxResponseThisDock);
-                            //    }
-                            //    else
-                            //    {
-                            //        useFallbackRates = true;
-                            //    }
-                            //}
+                            //    currency = 
+                            //},
+                            billTo = new BillTo
+                            {
+                                address1 = taxRequest.ShippingDestination.Street,
+                                administrativeArea = taxRequest.ShippingDestination.State,
+                                country = this.GetCountryCode(taxRequest.ShippingDestination.Country),
+                                postalCode = taxRequest.ShippingDestination.PostalCode,
+                                locality = taxRequest.ShippingDestination.City
+                            },
+                            shipTo = new ShipTo
+                            {
+                                address1 = taxRequest.ShippingDestination.Street,
+                                administrativeArea = taxRequest.ShippingDestination.State,
+                                country = this.GetCountryCode(taxRequest.ShippingDestination.Country),
+                                postalCode = taxRequest.ShippingDestination.PostalCode,
+                                locality = taxRequest.ShippingDestination.City
+                            },
+                            lineItems = new List<LineItem>()
+                        },
+                    };
+
+                    VtexDockResponse[] vtexDocks = await _vtexApiService.ListVtexDocks();
+
+                    foreach (Item item in taxRequest.Items)
+                    {
+                        //_context.Vtex.Logger.Debug("GetTaxes", null, $"Sku:{item.Sku} #{item.Quantity} x{item.UnitMultiplier}\n{item.ItemPrice} -{item.DiscountPrice} ={item.TargetPrice}");
+                        string dockId = item.DockId;
+                        VtexDockResponse vtexDock = vtexDocks.Where(d => d.Id.Equals(dockId)).FirstOrDefault();
+
+                        string taxCode = "default";
+                        string productName = string.Empty;
+                        GetSkuContextResponse skuContextResponse = await _vtexApiService.GetSku(item.Sku);
+                        if (skuContextResponse != null)
+                        {
+                            taxCode = skuContextResponse.TaxCode;
+                            productName = skuContextResponse.SkuName;
                         }
 
-                        if (taxResponses != null && taxResponses.Count > 0)
+                        LineItem lineItem = new LineItem
                         {
-                            vtexTaxResponse.Hooks = taxResponses.FirstOrDefault().Hooks;
-                            List<ItemTaxResponse> itemTaxResponses = new List<ItemTaxResponse>();
-                            foreach (VtexTaxResponse taxResponse in taxResponses)
-                            {
-                                foreach (ItemTaxResponse itemTaxResponse in taxResponse.ItemTaxResponse)
-                                {
-                                    itemTaxResponses.Add(itemTaxResponse);
-                                }
-                            }
+                            productSKU = item.Sku,
+                            productCode = taxCode, //"default",
+                            quantity = item.Quantity.ToString(),
+                            productName = productName,
+                            unitPrice = item.TargetPrice.ToString("0.00"),
+                            //commodityCode = taxCode,
+                            shipFromCountry = this.GetCountryCode(vtexDock.PickupStoreInfo.Address.Country.Acronym),
+                            shipFromAdministrativeArea = vtexDock.PickupStoreInfo.Address.State,
+                            shipFromLocality = vtexDock.PickupStoreInfo.Address.City,
+                            shipFromPostalCode = vtexDock.PickupStoreInfo.Address.PostalCode
+                        };
 
-                            vtexTaxResponse.ItemTaxResponse = itemTaxResponses.ToArray();
-                            if (vtexTaxResponse != null)
-                            {
-                                await _cybersourceRepository.SetCache(cacheKey, vtexTaxResponse);
-                            }
+                        cyberTaxRequest.orderInformation.lineItems.Add(lineItem);
+                    }
+
+                    // Add shipping as an item
+                    decimal shippingAmount = taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
+                    LineItem lineItemShipping = new LineItem
+                    {
+                        productName = "Shipping",
+                        productCode = "shipping",
+                        productSKU = "Shipping",
+                        unitPrice = shippingAmount.ToString("0.00"),
+                        quantity = "1"
+                    };
+
+                    cyberTaxRequest.orderInformation.lineItems.Add(lineItemShipping);
+
+                    PaymentsResponse taxResponse = await _cybersourceApi.CalculateTaxes(cyberTaxRequest);
+                    if (taxResponse != null)
+                    {
+                        if (taxResponse.Status.Equals("COMPLETED"))
+                        {
+                            vtexTaxResponse = await _vtexApiService.CybersourceResponseToVtexResponse(taxResponse);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"TAX RESPONSE {taxResponse.Status} {taxResponse.Reason} {taxResponse.Message}");
+                            useFallbackRates = true;
                         }
                     }
                     else
                     {
-                        //TaxForOrder taxForOrder = await _vtexApiService.VtexRequestToTaxjarRequest(taxRequest);
-                        //if (taxForOrder != null)
-                        //{
-                        //    TaxResponse taxResponse = await _taxjarService.TaxForOrder(taxForOrder);
-                        //    if (taxResponse != null)
-                        //    {
-                        //        vtexTaxResponse = await _vtexApiService.TaxjarResponseToVtexResponse(taxResponse);
-                        //        if (vtexTaxResponse != null)
-                        //        {
-                        //            await _cybersourceRepository.SetCache(cacheKey, vtexTaxResponse);
-                        //        }
-                        //    }
-                        //    else
-                        //    {
-                        //        useFallbackRates = true;
-                        //    }
-                        //}
+                        Console.WriteLine("TAX RESPONSE IS NULL!");
+                        useFallbackRates = true;
                     }
 
                     if (useFallbackRates)
@@ -722,7 +729,7 @@ namespace Cybersource.Services
                             vtexTaxResponse = new VtexTaxResponse
                             {
                                 Hooks = new Hook[] { },
-                                ItemTaxResponse = new ItemTaxResponse[taxRequest.Items.Length]
+                                ItemTaxResponse = new List<ItemTaxResponse>()
                             };
 
                             long totalQuantity = taxRequest.Items.Sum(i => i.Quantity);
@@ -805,20 +812,23 @@ namespace Cybersource.Services
             bool inNexus = false;
             if (country.Length > 2)
             {
-                country = country.Substring(0, 2);
+                country = this.GetCountryCode(country);
             }
 
 
             PickupPoints pickupPoints = await _vtexApiService.ListPickupPoints();
-            List<string> nexusStates = new List<string>();
-            foreach (PickupPointItem pickupPoint in pickupPoints.Items)
+            if (pickupPoints != null)
             {
-                if (pickupPoint != null && pickupPoint.Address != null && pickupPoint.Address.State != null && pickupPoint.Address.Country != null)
+                List<string> nexusStates = new List<string>();
+                foreach (PickupPointItem pickupPoint in pickupPoints.Items)
                 {
-                    if (pickupPoint.Address.State.Equals(state) && pickupPoint.Address.Country.Acronym.Substring(0, 2).Equals(country))
+                    if (pickupPoint != null && pickupPoint.Address != null && pickupPoint.Address.State != null && pickupPoint.Address.Country != null)
                     {
-                        inNexus = true;
-                        break;
+                        if (pickupPoint.Address.State.Equals(state) && this.GetCountryCode(pickupPoint.Address.Country.Acronym).Equals(country))
+                        {
+                            inNexus = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -868,6 +878,11 @@ namespace Cybersource.Services
             }
 
             return authUrl;
+        }
+
+        public string GetCountryCode(string country)
+        {
+            return CybersourceConstants.CountryCodesMapping[country];
         }
 
         private string GetCardType(string cardTypeText)

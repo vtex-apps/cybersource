@@ -47,6 +47,14 @@
       "path": "/cybersource/checkout/order-tax",
       "public": true
     },
+    "toggleTax": {
+      "path": "/cybersource/tax/toggle-tax/:useCyberTax",
+      "public": true
+    },
+    "cybersourceResponseToVtexResponse": {
+      "path": "/cybersource/tax/test-tax",
+      "public": true
+    },
     "authorize": {
       "path": "/cybersource/oauth/authorize",
       "public": true

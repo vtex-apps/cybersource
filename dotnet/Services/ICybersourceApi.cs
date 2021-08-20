@@ -13,5 +13,7 @@ namespace Cybersource.Services
         Task<PaymentsResponse> ProcessCredit(Payments payments);
 
         Task<PaymentsResponse> CreateDecisionManager(Payments payments);
+
+        Task<PaymentsResponse> CalculateTaxes(Payments payments);
     }
 }

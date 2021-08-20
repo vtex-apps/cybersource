@@ -330,5 +330,64 @@
             _context.Vtex.Logger.Info("SaveToken", null, $"[{response.StatusCode}] '{responseContent}' {jsonSerializedToken}");
             return response.IsSuccessStatusCode;
         }
+
+        public async Task<string> GetOrderConfiguration()
+        {
+            // https://{{accountName}}.vtexcommercestable.com.br/api/checkout/pvt/configuration/orderForm
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/configuration/orderForm"),
+            };
+
+            request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+            //string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+            string authToken = _context.Vtex.AdminUserAuthToken;
+            if (authToken != null)
+            {
+                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+            }
+
+            var client = _clientFactory.CreateClient();
+            var response = await client.SendAsync(request);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            // A helper method is in order for this as it does not return the stack trace etc.
+            response.EnsureSuccessStatusCode();
+
+            return responseContent;
+        }
+
+        public async Task<bool> SetOrderConfiguration(string jsonSerializedOrderConfig)
+        {
+            // https://{{accountName}}.vtexcommercestable.com.br/api/checkout/pvt/configuration/orderForm
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/configuration/orderForm"),
+                Content = new StringContent(jsonSerializedOrderConfig, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
+            };
+
+            request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+            //string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+            string authToken = _context.Vtex.AdminUserAuthToken;
+            if (authToken != null)
+            {
+                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+            }
+
+            var client = _clientFactory.CreateClient();
+            var response = await client.SendAsync(request);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            _context.Vtex.Logger.Info("SetOrderConfiguration", null, $"Request:\r{jsonSerializedOrderConfig}\rResponse: [{response.StatusCode}]\r{responseContent}");
+
+            return response.IsSuccessStatusCode;
+        }
     }
 }
