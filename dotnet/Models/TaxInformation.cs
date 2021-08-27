@@ -8,5 +8,6 @@ namespace Cybersource.Models
     {
         public string showTaxPerLineItem { get; set; }
         //public IList<string> nexus { get; set; }
+        public bool commitIndicator { get; set; }
     }
 }

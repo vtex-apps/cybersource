@@ -50,6 +50,19 @@
       "name": "LogisticsViewer"
     },
     {
+      "name": "OMSViewer"
+    },
+    {
+      "name": "SaveOrderFormConfiguration"
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "{{account}}.vtexcommercestable.com.br",
+        "path": "/api/checkout/pvt/configuration/orderForm"
+      }
+    },
+    {
       "name": "outbound-access",
       "attrs": {
         "host": "apitest.cybersource.com",

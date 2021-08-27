@@ -341,8 +341,8 @@
             };
 
             request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-            //string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            string authToken = _context.Vtex.AdminUserAuthToken;
+            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+            //string authToken = _context.Vtex.AdminUserAuthToken;
             if (authToken != null)
             {
                 request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
@@ -352,6 +352,7 @@
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"GetOrderConfiguration [{response.StatusCode}] ");
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return null;
@@ -369,13 +370,14 @@
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Post,
-                RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/configuration/orderForm"),
+                RequestUri = new Uri($"https://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/configuration/orderForm"),
                 Content = new StringContent(jsonSerializedOrderConfig, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
             };
 
             request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-            //string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            string authToken = _context.Vtex.AdminUserAuthToken;
+            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+            //string authToken = _context.Vtex.AdminUserAuthToken;
+            Console.WriteLine($"    authToken   = '{authToken}'    ");
             if (authToken != null)
             {
                 request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
@@ -385,6 +387,7 @@
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"SetOrderConfiguration [{response.StatusCode}] ");
             _context.Vtex.Logger.Info("SetOrderConfiguration", null, $"Request:\r{jsonSerializedOrderConfig}\rResponse: [{response.StatusCode}]\r{responseContent}");
 
             return response.IsSuccessStatusCode;

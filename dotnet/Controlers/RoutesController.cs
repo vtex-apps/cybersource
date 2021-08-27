@@ -192,7 +192,7 @@
                     totalItems = taxRequest.Items.Length.ToString();
                     if (taxRequest != null)
                     {
-                        vtexTaxResponse = await _cybersourcePaymentService.GetTaxes(taxRequest);
+                        vtexTaxResponse = await _vtexApiService.GetTaxes(taxRequest);
                     }
                 }
             }
@@ -233,6 +233,7 @@
 
         public async Task<IActionResult> ToggleTax(bool useCyberTax)
         {
+            Response.Headers.Add("Cache-Control", "no-cache");
             string result = string.Empty;
             if(useCyberTax)
             {

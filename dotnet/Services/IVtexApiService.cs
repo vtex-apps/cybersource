@@ -12,5 +12,7 @@ namespace Cybersource.Services
         Task<string> RemoveConfiguration();
         Task<string> InitConfiguration();
         Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse);
+        Task<bool> ProcessNotification(AllStatesNotification allStatesNotification);
+        Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest);
     }
 }
