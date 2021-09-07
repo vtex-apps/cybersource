@@ -1,3 +1,7 @@
+type Query {
+	none: String
+}
+
 type Mutation {
   initConfiguration: String
   removeConfiguration: String
