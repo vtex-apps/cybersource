@@ -40,6 +40,10 @@
         "netcoreapp3.0": {
           "targetAlias": "netcoreapp3.0",
           "dependencies": {
+            "GraphQL": {
+              "target": "Package",
+              "version": "[4.6.0, )"
+            },
             "Newtonsoft.Json": {
               "target": "Package",
               "version": "[12.0.3, )"

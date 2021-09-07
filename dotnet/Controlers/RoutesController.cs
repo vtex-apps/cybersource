@@ -134,8 +134,13 @@
             {
                 string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
-                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
-                sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Received;
+                this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+
+                sendAntifraudDataResponse = new SendAntifraudDataResponse
+                {
+                    Id = sendAntifraudDataRequest.Id,
+                    Status = CybersourceConstants.VtexAntifraudStatus.Received
+                };
             }
 
             return Json(sendAntifraudDataResponse);
