@@ -11,6 +11,7 @@
     using Vtex.Api.Context;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Linq;
 
     public class RoutesController : Controller
     {
@@ -39,6 +40,7 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                //_context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                 paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
             }
@@ -108,7 +110,7 @@
         public JsonResult PaymentMethods()
         {
             PaymentMethodsList methods = new PaymentMethodsList();
-            methods.PaymentMethods = new System.Collections.Generic.List<string>();
+            methods.PaymentMethods = new List<string>();
             methods.PaymentMethods.Add("Visa");
             methods.PaymentMethods.Add("Mastercard");
             methods.PaymentMethods.Add("American Express");
@@ -162,7 +164,17 @@
         /// <returns></returns>
         public async Task<IActionResult> GetAntifraudStatus(string transactionId)
         {
-            var getAntifraudStatusResponse = await this._cybersourcePaymentService.GetAntifraudStatus(transactionId);
+            SendAntifraudDataResponse getAntifraudStatusResponse = null;
+
+            getAntifraudStatusResponse = await this._cybersourcePaymentService.GetAntifraudStatus(transactionId);
+            if (getAntifraudStatusResponse == null)
+            {
+                getAntifraudStatusResponse = new SendAntifraudDataResponse
+                {
+                    Id = transactionId,
+                    Status = CybersourceConstants.VtexAntifraudStatus.Undefined
+                };
+            }
 
             return Json(getAntifraudStatusResponse);
         }
@@ -190,9 +202,23 @@
                     VtexTaxRequest taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
                     orderFormId = taxRequest.OrderFormId;
                     totalItems = taxRequest.Items.Length.ToString();
+                    decimal total = taxRequest.Totals.Sum(t => t.Value);
                     if (taxRequest != null)
                     {
-                        vtexTaxResponse = await _vtexApiService.GetTaxes(taxRequest);
+                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{total}".GetHashCode();
+                        if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
+                        {
+                            fromCache = true;
+                            _context.Vtex.Logger.Info("TaxjarOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
+                        }
+                        else
+                        {
+                            vtexTaxResponse = await _vtexApiService.GetTaxes(taxRequest);
+                            if (vtexTaxResponse != null)
+                            {
+                                await _cybersourceRepository.SetCache(cacheKey, vtexTaxResponse);
+                            }
+                        }
                     }
                 }
             }

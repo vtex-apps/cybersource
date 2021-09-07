@@ -49,9 +49,10 @@ namespace Cybersource.Services
                 $"{this._environmentVariableProvider.ApplicationVendor}.{this._environmentVariableProvider.ApplicationName}";
         }
 
+        #region Payments
         public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
         {
-            //_context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
+            _context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             CreatePaymentResponse createPaymentResponse = null;
             Payments payment = new Payments
@@ -132,7 +133,8 @@ namespace Cybersource.Services
 
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
-            //if(merchantSettings.Processor)
+            decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
+            Console.WriteLine($"    ------------------ Processor: {merchantSettings.Processor} ------------------    ");
             switch (merchantSettings.Processor)
             {
                 case CybersourceConstants.Processors.Braspag:
@@ -197,7 +199,7 @@ namespace Cybersource.Services
                     break;
                 case CybersourceConstants.Processors.eGlobal:
                 case CybersourceConstants.Processors.BBVA:
-                    plan = "03";  // 03 no interest 05 with interest
+                    plan = installmentsInterestRate > 0 ? "05" : "03";  // 03 no interest 05 with interest
                     payment.processingInformation = new ProcessingInformation
                     {
                         capture = "true",
@@ -238,7 +240,7 @@ namespace Cybersource.Services
                     //-planType: 00: Not a promotion; 03: No interest, 05: with interest, 07: buy now and pay all later
                     //-totalCount: # installments
                     //-gracePeriodDuration: if planType = 07 and totalCount = 00, this must be greater than 00
-                    plan = "00";
+                    plan = installmentsInterestRate > 0 ? "05" : "03";
                     payment.processingInformation = new ProcessingInformation
                     {
                         capture = "true",
@@ -257,7 +259,8 @@ namespace Cybersource.Services
                 default:
                     payment.installmentInformation = new InstallmentInformation
                     {
-                        totalAmount = createPaymentRequest.InstallmentsValue.ToString()
+                        totalAmount = createPaymentRequest.InstallmentsValue.ToString(),
+                        totalCount = numberOfInstallments
                     };
 
                     break;
@@ -277,7 +280,7 @@ namespace Cybersource.Services
                 payment.orderInformation.lineItems.Add(lineItem);
             }
 
-            PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl);
+            PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
             if(paymentsResponse != null)
             {
                 createPaymentResponse = new CreatePaymentResponse();
@@ -468,7 +471,9 @@ namespace Cybersource.Services
 
             return refundPaymentResponse;
         }
+        #endregion Payments
 
+        #region Antifraud
         public async Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest)
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
@@ -510,7 +515,7 @@ namespace Cybersource.Services
                         country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Shipping.Address.Country),
                         postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
                     },
-                    lineItems = new System.Collections.Generic.List<LineItem>()
+                    lineItems = new List<LineItem>()
                 },
                 deviceInformation = new DeviceInformation
                 {
@@ -588,7 +593,9 @@ namespace Cybersource.Services
         {
             return await _cybersourceRepository.GetAntifraudData(id);
         }
+        #endregion Antifraud
 
+        #region OAuth
         public async Task<string> GetAuthUrl()
         {
             string authUrl = string.Empty;
@@ -632,6 +639,7 @@ namespace Cybersource.Services
 
             return authUrl;
         }
+        #endregion OAuth
 
         public string GetCountryCode(string country)
         {

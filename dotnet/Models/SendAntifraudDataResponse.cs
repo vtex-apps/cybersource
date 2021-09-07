@@ -21,7 +21,7 @@ namespace Cybersource.Models
         public string Status { get; set; }
 
         [JsonProperty("score")]
-        public double Score { get; set; }
+        public double? Score { get; set; }
 
         [JsonProperty("analysisType")]
         public string AnalysisType { get; set; }

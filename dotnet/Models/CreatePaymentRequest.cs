@@ -114,8 +114,17 @@ namespace Cybersource.Models
         [JsonProperty("returnUrl")]
         public string ReturnUrl { get; set; }
 
+        [JsonProperty("inboundRequestsUrl")]
+        public string InboundRequestsUrl { get; set; }
+
         [JsonProperty("secureProxyUrl")]
         public string SecureProxyUrl { get; set; }
+
+        [JsonProperty("secureProxyTokensUrl")]
+        public string SecureProxyTokensUrl { get; set; }
+
+        [JsonProperty("totalCartValue")]
+        public double TotalCartValue { get; set; }
     }
 
     public class VtexCardExpiration
