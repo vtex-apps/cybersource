@@ -290,5 +290,10 @@
 
             return Json(vtexTaxResponse);
         }
+
+        public async Task<IActionResult> HealthCheck()
+        {
+            return null;
+        }
     }
 }

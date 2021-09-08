@@ -641,6 +641,38 @@ namespace Cybersource.Services
         }
         #endregion OAuth
 
+        public async Task<bool> HealthCheck()
+        {
+            bool success = true;
+            success &= await TestPayment();
+            success &= await TestAntifraud();
+            return success;
+        }
+
+        private async Task<bool> TestPayment()
+        {
+            CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest
+            {
+
+            };
+
+            CreatePaymentResponse createPaymentResponse = await CreatePayment(createPaymentRequest);
+
+            return createPaymentResponse != null;
+        }
+
+        private async Task<bool> TestAntifraud()
+        {
+            SendAntifraudDataRequest sendAntifraudDataRequest = new SendAntifraudDataRequest
+            {
+
+            };
+
+            SendAntifraudDataResponse sendAntifraudDataResponse = await SendAntifraudData(sendAntifraudDataRequest);
+
+            return sendAntifraudDataResponse != null;
+        }
+
         public string GetCountryCode(string country)
         {
             return CybersourceConstants.CountryCodesMapping[country];
