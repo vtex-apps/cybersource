@@ -19,9 +19,10 @@ namespace Cybersource.Services
         private readonly IHttpClientFactory _clientFactory;
         private readonly ICybersourceApi _cybersourceApi;
         private readonly ICybersourceRepository _cybersourceRepository;
+        private readonly IVtexApiService _vtexApiService;
         private readonly string _applicationName;
 
-        public CybersourcePaymentService(IIOServiceContext context, IVtexEnvironmentVariableProvider environmentVariableProvider, IHttpContextAccessor httpContextAccessor, IHttpClientFactory clientFactory, ICybersourceApi cybersourceApi, ICybersourceRepository cybersourceRepository)
+        public CybersourcePaymentService(IIOServiceContext context, IVtexEnvironmentVariableProvider environmentVariableProvider, IHttpContextAccessor httpContextAccessor, IHttpClientFactory clientFactory, ICybersourceApi cybersourceApi, ICybersourceRepository cybersourceRepository, IVtexApiService vtexApiService)
         {
             this._context = context ??
                             throw new ArgumentNullException(nameof(context));
@@ -41,13 +42,18 @@ namespace Cybersource.Services
             this._cybersourceRepository = cybersourceRepository ??
                                throw new ArgumentNullException(nameof(cybersourceRepository));
 
+            this._vtexApiService = vtexApiService ??
+                               throw new ArgumentNullException(nameof(vtexApiService));
+
             this._applicationName =
                 $"{this._environmentVariableProvider.ApplicationVendor}.{this._environmentVariableProvider.ApplicationName}";
         }
 
+        #region Payments
         public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
         {
-            //_context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
+            _context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             CreatePaymentResponse createPaymentResponse = null;
             Payments payment = new Payments
             {
@@ -63,8 +69,8 @@ namespace Cybersource.Services
                 {
                     card = new Card
                     {
-                        number = createPaymentRequest.Card.Number,
-                        securityCode = createPaymentRequest.Card.Csc,
+                        number = createPaymentRequest.Card.NumberToken ?? createPaymentRequest.Card.Number,
+                        securityCode = createPaymentRequest.Card.CscToken ?? createPaymentRequest.Card.Csc,
                         expirationMonth = createPaymentRequest.Card.Expiration.Month,
                         expirationYear = createPaymentRequest.Card.Expiration.Year,
                         type = GetCardType(createPaymentRequest.PaymentMethod)
@@ -88,7 +94,7 @@ namespace Cybersource.Services
                         locality = createPaymentRequest.MiniCart.BillingAddress.City,
                         administrativeArea = createPaymentRequest.MiniCart.BillingAddress.State,
                         postalCode = createPaymentRequest.MiniCart.BillingAddress.PostalCode,
-                        country = createPaymentRequest.MiniCart.BillingAddress.Country.Substring(0,2),
+                        country = this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country),
                         email = createPaymentRequest.MiniCart.Buyer.Email,
                         phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone
                     },
@@ -97,20 +103,21 @@ namespace Cybersource.Services
                         address1 = $"{createPaymentRequest.MiniCart.ShippingAddress.Number} {createPaymentRequest.MiniCart.ShippingAddress.Street}",
                         address2 = createPaymentRequest.MiniCart.ShippingAddress.Complement,
                         administrativeArea = createPaymentRequest.MiniCart.ShippingAddress.State,
-                        country = createPaymentRequest.MiniCart.ShippingAddress.Country.Substring(0,2),
+                        country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode
                     },
                     lineItems = new System.Collections.Generic.List<LineItem>()
                 },
                 deviceInformation = new DeviceInformation
                 {
-                    ipAddress = createPaymentRequest.IpAddress
+                    ipAddress = createPaymentRequest.IpAddress,
+                    fingerprintSessionId = createPaymentRequest.DeviceFingerprint
                 },
-                installmentInformation = new InstallmentInformation
-                {
-                    amount = createPaymentRequest.InstallmentsValue.ToString(),
-                    totalCount = createPaymentRequest.Installments.ToString()
-                },
+                //installmentInformation = new InstallmentInformation
+                //{
+                //    amount = createPaymentRequest.InstallmentsValue.ToString(),
+                //    totalCount = createPaymentRequest.Installments.ToString()
+                //},
                 buyerInformation = new BuyerInformation
                 {
                     personalIdentification = new List<PersonalIdentification>
@@ -124,11 +131,146 @@ namespace Cybersource.Services
                 }
             };
 
+            string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
+            string plan = string.Empty;
+            decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
+            Console.WriteLine($"    ------------------ Processor: {merchantSettings.Processor} ------------------    ");
+            switch (merchantSettings.Processor)
+            {
+                case CybersourceConstants.Processors.Braspag:
+                    if(merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
+                    {
+                        payment.processingInformation = new ProcessingInformation
+                        {
+                            commerceIndicator = CybersourceConstants.INSTALLMENT
+                        };
+
+                        payment.installmentInformation = new InstallmentInformation
+                        {
+                            totalCount = numberOfInstallments
+                        };
+                    }
+                    else if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Mexico))
+                    {
+                        payment.processingInformation = new ProcessingInformation
+                        {
+                            capture = "true",
+                            commerceIndicator = CybersourceConstants.INSTALLMENT,
+                            reconciliationId = ""
+                        };
+
+                        payment.installmentInformation = new InstallmentInformation
+                        {
+                            totalCount = numberOfInstallments
+                        };
+                    }
+                    else
+                    {
+                        payment.installmentInformation = new InstallmentInformation
+                        {
+                            totalAmount = createPaymentRequest.InstallmentsValue.ToString()
+                        };
+                    }
+
+                    break;
+                case CybersourceConstants.Processors.VPC:
+                    payment.processingInformation = new ProcessingInformation
+                    {
+                        commerceIndicator = CybersourceConstants.INSTALLMENT
+                    };
+
+                    payment.installmentInformation = new InstallmentInformation
+                    {
+                        totalCount = numberOfInstallments
+                    };
+
+                    break;
+                case CybersourceConstants.Processors.Izipay:
+                    plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
+                    payment.issuerInformation = new IssuerInformation
+                    {
+                        //POS 1 - 6:014001
+                        //POS 7 - 8: # of installments
+                        //POS 9 - 16:00000000
+                        //POS 17: plan(0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días)
+                        discretionaryData = $"14001{numberOfInstallments}00000000{plan}"
+                    };
+
+                    break;
+                case CybersourceConstants.Processors.eGlobal:
+                case CybersourceConstants.Processors.BBVA:
+                    plan = installmentsInterestRate > 0 ? "05" : "03";  // 03 no interest 05 with interest
+                    payment.processingInformation = new ProcessingInformation
+                    {
+                        capture = "true",
+                        commerceIndicator = CybersourceConstants.INSTALLMENT_INTERNET
+                    };
+
+                    //POS 1 - 2: # of months of deferred payment
+                    //POS 3 - 4: # installments
+                    //POS 5 - 6: plan(03 no interest, 05 with interest)"
+                    string monthsDeferred = "00";
+                    payment.installmentInformation = new InstallmentInformation
+                    {
+                        amount = $"{monthsDeferred}{numberOfInstallments}{plan}",
+                        totalCount = numberOfInstallments
+                    };
+
+                    break;
+                case CybersourceConstants.Processors.Banorte:
+                case CybersourceConstants.Processors.AmexDirect:
+                    payment.processingInformation = new ProcessingInformation
+                    {
+                        capture = "true",
+                        commerceIndicator = CybersourceConstants.INSTALLMENT,
+                        reconciliationId = ""
+                    };
+
+                    payment.installmentInformation = new InstallmentInformation
+                    {
+                        totalCount = numberOfInstallments
+                    };
+
+                    break;
+                case CybersourceConstants.Processors.Prosa:
+                case CybersourceConstants.Processors.Santander:
+                    //Where
+                    //commerceIndicator = ""internet"" in case there is no installments and no installment information shall be sent.
+                    //If there are installments, then:
+                    //-planType: 00: Not a promotion; 03: No interest, 05: with interest, 07: buy now and pay all later
+                    //-totalCount: # installments
+                    //-gracePeriodDuration: if planType = 07 and totalCount = 00, this must be greater than 00
+                    plan = installmentsInterestRate > 0 ? "05" : "03";
+                    payment.processingInformation = new ProcessingInformation
+                    {
+                        capture = "true",
+                        commerceIndicator = createPaymentRequest.Installments > 1 ? CybersourceConstants.INSTALLMENT : CybersourceConstants.INTERNET,
+                        reconciliationId = ""
+                    };
+
+                    payment.installmentInformation = new InstallmentInformation
+                    {
+                        totalCount = numberOfInstallments,
+                        planType = plan,
+                        gracePeriodDuration = "12"
+                    };
+
+                    break;
+                default:
+                    payment.installmentInformation = new InstallmentInformation
+                    {
+                        totalAmount = createPaymentRequest.InstallmentsValue.ToString(),
+                        totalCount = numberOfInstallments
+                    };
+
+                    break;
+            }
+
             foreach(VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
                 LineItem lineItem = new LineItem
                 {
-                    productSku = vtexItem.Id,
+                    productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
                     unitPrice = vtexItem.Price.ToString(),
                     quantity = vtexItem.Quantity.ToString(),
@@ -138,7 +280,7 @@ namespace Cybersource.Services
                 payment.orderInformation.lineItems.Add(lineItem);
             }
 
-            PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment);
+            PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
             if(paymentsResponse != null)
             {
                 createPaymentResponse = new CreatePaymentResponse();
@@ -329,7 +471,9 @@ namespace Cybersource.Services
 
             return refundPaymentResponse;
         }
+        #endregion Payments
 
+        #region Antifraud
         public async Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest)
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
@@ -359,7 +503,7 @@ namespace Cybersource.Services
                         locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
                         administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
                         postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
-                        country = sendAntifraudDataRequest.MiniCart.Buyer.Address.Country.Substring(0,2),
+                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Buyer.Address.Country),
                         email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
                         phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
                     },
@@ -368,14 +512,15 @@ namespace Cybersource.Services
                         address1 = $"{sendAntifraudDataRequest.MiniCart.Shipping.Address.Number} {sendAntifraudDataRequest.MiniCart.Shipping.Address.Street}",
                         address2 = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
                         administrativeArea = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
-                        country = sendAntifraudDataRequest.MiniCart.Shipping.Address.Country.Substring(0,2),
+                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Shipping.Address.Country),
                         postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
                     },
-                    lineItems = new System.Collections.Generic.List<LineItem>()
+                    lineItems = new List<LineItem>()
                 },
                 deviceInformation = new DeviceInformation
                 {
-                    ipAddress = sendAntifraudDataRequest.Ip
+                    ipAddress = sendAntifraudDataRequest.Ip,
+                    fingerprintSessionId = sendAntifraudDataRequest.DeviceFingerprint
                 }
             };
 
@@ -383,7 +528,7 @@ namespace Cybersource.Services
             {
                 LineItem lineItem = new LineItem
                 {
-                    productSku = vtexItem.Id,
+                    productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
                     unitPrice = vtexItem.Price.ToString(),
                     quantity = vtexItem.Quantity.ToString(),
@@ -447,6 +592,90 @@ namespace Cybersource.Services
         public async Task<SendAntifraudDataResponse> GetAntifraudStatus(string id)
         {
             return await _cybersourceRepository.GetAntifraudData(id);
+        }
+        #endregion Antifraud
+
+        #region OAuth
+        public async Task<string> GetAuthUrl()
+        {
+            string authUrl = string.Empty;
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"http://{CybersourceConstants.AUTH_SITE_BASE}/{CybersourceConstants.AUTH_APP_PATH}/{CybersourceConstants.AUTH_PATH}/{merchantSettings.IsLive}")
+                };
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    authUrl = responseContent;
+                    string siteUrl = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.FORWARDED_HOST];
+                    authUrl = authUrl.Replace("state=", $"state={siteUrl}");
+                }
+                else
+                {
+                    _context.Vtex.Logger.Warn("GetAuthUrl", null, $"Failed to get auth url [{response.StatusCode}]");
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetAuthUrl", null, $"Error getting auth url", ex);
+            }
+
+            return authUrl;
+        }
+        #endregion OAuth
+
+        public async Task<bool> HealthCheck()
+        {
+            bool success = true;
+            success &= await TestPayment();
+            success &= await TestAntifraud();
+            return success;
+        }
+
+        private async Task<bool> TestPayment()
+        {
+            CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest
+            {
+
+            };
+
+            CreatePaymentResponse createPaymentResponse = await CreatePayment(createPaymentRequest);
+
+            return createPaymentResponse != null;
+        }
+
+        private async Task<bool> TestAntifraud()
+        {
+            SendAntifraudDataRequest sendAntifraudDataRequest = new SendAntifraudDataRequest
+            {
+
+            };
+
+            SendAntifraudDataResponse sendAntifraudDataResponse = await SendAntifraudData(sendAntifraudDataRequest);
+
+            return sendAntifraudDataResponse != null;
+        }
+
+        public string GetCountryCode(string country)
+        {
+            return CybersourceConstants.CountryCodesMapping[country];
         }
 
         private string GetCardType(string cardTypeText)

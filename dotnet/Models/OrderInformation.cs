@@ -10,5 +10,6 @@ namespace Cybersource.Models
         public ShipTo shipTo { get; set; }
         public AmountDetails amountDetails { get; set; }
         public List<LineItem> lineItems { get; set; }
+        public string taxAmount { get; set; }
     }
 }

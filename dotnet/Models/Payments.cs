@@ -14,5 +14,7 @@ namespace Cybersource.Models
         public DeviceInformation deviceInformation { get; set; }
         public InstallmentInformation installmentInformation { get; set; }
         public BuyerInformation buyerInformation { get; set; }
+        public IssuerInformation issuerInformation { get; set; }
+        public TaxInformation taxInformation { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Cybersource.Data;
 using Cybersource.Models;
 using Microsoft.AspNetCore.Http;
@@ -115,16 +116,167 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
+        public async Task<SendResponse> SendProxyRequest(HttpMethod method, string endpoint, string jsonSerializedData, string proxyUrl, string proxyTokenUrl)
+        {
+            SendResponse sendResponse = null;
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            //CybersourceToken token = await this.GetOAuthToken(merchantSettings.IsLive);
+            string urlBase = CybersourceConstants.ProductionApiEndpoint;
+            string requestUri = $"https://{urlBase}{endpoint}";
+            if (!merchantSettings.IsLive)
+            {
+                urlBase = CybersourceConstants.SandboxApiEndpoint;
+            }
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = method,
+                    RequestUri = new Uri(proxyUrl)
+                };
+
+                if (!string.IsNullOrEmpty(jsonSerializedData))
+                {
+                    request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
+                }
+
+                string digest = string.Empty;
+                string signatureString = string.Empty;
+                string signature = string.Empty;
+                string gmtDateTime = DateTime.UtcNow.ToString("r");
+                request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}v-c-merchant-id", merchantSettings.MerchantId);
+                request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Date", gmtDateTime);
+                request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Host", urlBase);
+                if (!method.Equals(HttpMethod.Get) && !method.Equals(HttpMethod.Delete))
+                {
+                    SendResponse proxyTokenSendResponse = await this.SendProxyTokenRequest(jsonSerializedData, proxyTokenUrl);
+                    if(proxyTokenSendResponse.Success)
+                    {
+                        ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
+                        digest = proxyToken.Tokens[0].Placeholder;
+                    }
+
+                    request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Digest", digest); // Do not pass this header field for GET requests. It is a hash of the JSON payload made using a SHA-256 hashing algorithm.
+                }
+
+                signatureString = await this.GenerateSignatureString(merchantSettings, urlBase, gmtDateTime, $"{method.ToString().ToLower()} {endpoint}", digest);
+                request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Signature", signatureString);  // A comma-separated list of parameters that are formatted as name-value pairs
+
+                request.Headers.Add(CybersourceConstants.PROXY_FORWARD_TO, requestUri);
+
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                sendResponse = new SendResponse
+                {
+                    StatusCode = response.StatusCode.ToString(),
+                    Success = response.IsSuccessStatusCode,
+                    Message = responseContent
+                };
+
+                Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
+
+                _context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex);
+            }
+
+            return sendResponse;
+        }
+
+        public async Task<SendResponse> SendProxyTokenRequest(string jsonSerializedData, string proxyTokenUrl)
+        {
+            SendResponse sendResponse = null;
+            ProxyTokenRequest proxyTokenRequest = null;
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri(proxyTokenUrl)
+                };
+
+                if (!string.IsNullOrEmpty(jsonSerializedData))
+                {
+                    proxyTokenRequest = new ProxyTokenRequest
+                    {
+                        Tokens = new RequestToken[]
+                        {
+                            new RequestToken
+                            {
+                                Alias = "digest",
+                                Value = new Value
+                                {
+                                    Sha256 = new Sha256
+                                    {
+                                        ReplaceTokens = new string[]
+                                        {
+                                            jsonSerializedData
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    request.Content = new StringContent(JsonConvert.SerializeObject(proxyTokenRequest), Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                sendResponse = new SendResponse
+                {
+                    StatusCode = response.StatusCode.ToString(),
+                    Success = response.IsSuccessStatusCode,
+                    Message = responseContent
+                };
+
+                Console.WriteLine($"- SendProxyTokenRequest: [{response.StatusCode}] - ");
+
+                _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{request.RequestUri}\n{JsonConvert.SerializeObject(proxyTokenRequest)}\n[{response.StatusCode}]\n{responseContent}");
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, $"Error ", ex);
+            }
+
+            return sendResponse;
+        }
+
         #region Payments
-        public async Task<PaymentsResponse> ProcessPayment(Payments payments)
+        public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
+            //Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
+            //payments.paymentInformation.card.number = "4111111111111111";
+            //payments.paymentInformation.card.securityCode = "123";
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if(response != null)
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            //SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                if (response.Success)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+                else
+                {
+                    Console.WriteLine($"    ProcessPayment: {response.Message}");
+                }
             }
 
             return paymentsResponse;
@@ -219,6 +371,22 @@ namespace Cybersource.Services
         }
         #endregion
 
+        #region Tax
+        public async Task<PaymentsResponse> CalculateTaxes(Payments payments)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            string endpoint = $"{CybersourceConstants.TAX}tax";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+            }
+
+            return paymentsResponse;
+        }
+        #endregion
+
         #region Authorization Header functions
         private async Task<string> GenerateDigest(string jsonPayload)
         {
@@ -301,5 +469,88 @@ namespace Cybersource.Services
             return signatureHeaderValue.ToString();
         }
         #endregion
+
+        public async Task<CybersourceToken> GetOAuthToken(bool isProduction)
+        {
+            CybersourceToken token = await _cybersourceRepository.LoadToken(isProduction);
+            if (token != null && !string.IsNullOrEmpty(token.RefreshToken))
+            {
+                string refreshToken = token.RefreshToken;
+                if (token != null) // && !string.IsNullOrEmpty(token.AccessToken))
+                {
+                    if (token.ExpiresAt <= DateTime.Now)
+                    {
+                        token = await this.RefreshToken(refreshToken, isProduction);
+                        if (token != null)
+                        {
+                            token.ExpiresAt = DateTime.Now.AddSeconds(token.ExpiresIn);
+                            if (string.IsNullOrEmpty(token.RefreshToken))
+                            {
+                                token.RefreshToken = refreshToken;
+                            }
+
+                            bool saved = await _cybersourceRepository.SaveToken(token, isProduction);
+                        }
+                        else
+                        {
+                            _context.Vtex.Logger.Warn("GetOAuthToken", null, $"Could not refresh token.");
+                        }
+                    }
+                }
+                else
+                {
+                    _context.Vtex.Logger.Warn("GetOAuthToken", null, $"Could not load token. Have Access token?{!string.IsNullOrEmpty(token.AccessToken)} Have Refresh token?{!string.IsNullOrEmpty(token.RefreshToken)}");
+                    token = null;
+                }
+            }
+            else
+            {
+                _context.Vtex.Logger.Warn("GetOAuthToken", null, $"Could not load token.  Refresh token was null. Have Access token?{token != null && !string.IsNullOrEmpty(token.AccessToken)}");
+            }
+
+            return token;
+        }
+
+        private async Task<CybersourceToken> RefreshToken(string refreshToken, bool isProduction)
+        {
+            CybersourceToken token = null;
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri($"http://{CybersourceConstants.AUTH_SITE_BASE}/{CybersourceConstants.AUTH_APP_PATH}/{CybersourceConstants.REFRESH_PATH}/{isProduction}/{HttpUtility.UrlEncode(refreshToken)}"),
+                    Content = new StringContent(string.Empty, Encoding.UTF8, CybersourceConstants.APPLICATION_FORM)
+                };
+
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                try
+                {
+                    var response = await client.SendAsync(request);
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        token = JsonConvert.DeserializeObject<CybersourceToken>(responseContent);
+                    }
+                    else
+                    {
+                        _context.Vtex.Logger.Info("RefreshToken", null, $"{response.StatusCode} {responseContent}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _context.Vtex.Logger.Error("RefreshToken", null, $"Refresh Token {refreshToken}", ex);
+                }
+            }
+
+            return token;
+        }
     }
 }
