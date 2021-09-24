@@ -1,11 +1,13 @@
 {
   "name": "cybersource",
   "vendor": "vtex",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "title": "Cybersource",
   "description": "Cybersource payment",
   "categories": [],
-  "registries": ["smartcheckout"],
+  "registries": [
+    "smartcheckout"
+  ],
   "builders": {
     "messages": "1.x",
     "admin": "0.x",
