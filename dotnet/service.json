@@ -51,6 +51,10 @@
       "path": "/cybersource/tax/toggle-tax/:useCyberTax",
       "public": true
     },
+    "conversionDetailReport": {
+      "path": "/cybersource/tax/reporting/conversion",
+      "public": true
+    },
     "cybersourceResponseToVtexResponse": {
       "path": "/cybersource/tax/test-tax",
       "public": true

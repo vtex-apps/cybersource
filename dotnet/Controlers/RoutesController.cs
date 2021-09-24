@@ -134,13 +134,13 @@
             {
                 string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
-                this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
 
-                sendAntifraudDataResponse = new SendAntifraudDataResponse
-                {
-                    Id = sendAntifraudDataRequest.Id,
-                    Status = CybersourceConstants.VtexAntifraudStatus.Received
-                };
+                //sendAntifraudDataResponse = new SendAntifraudDataResponse
+                //{
+                //    Id = sendAntifraudDataRequest.Id,
+                //    Status = CybersourceConstants.VtexAntifraudStatus.Received
+                //};
             }
 
             return Json(sendAntifraudDataResponse);
@@ -293,7 +293,14 @@
 
         public async Task<IActionResult> HealthCheck()
         {
-            return null;
+            return Json("--result goes here");
+        }
+
+        public async Task<IActionResult> ConversionDetailReport()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            await _cybersourcePaymentService.ConversionDetailReport(DateTime.Now.AddDays(-7), DateTime.Now);
+            return Json("--result goes here");
         }
     }
 }

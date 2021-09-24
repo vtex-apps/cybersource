@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -122,11 +123,12 @@ namespace Cybersource.Services
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             //CybersourceToken token = await this.GetOAuthToken(merchantSettings.IsLive);
             string urlBase = CybersourceConstants.ProductionApiEndpoint;
-            string requestUri = $"https://{urlBase}{endpoint}";
             if (!merchantSettings.IsLive)
             {
                 urlBase = CybersourceConstants.SandboxApiEndpoint;
             }
+
+            string requestUri = $"https://{urlBase}{endpoint}";
 
             try
             {
@@ -151,7 +153,7 @@ namespace Cybersource.Services
                 if (!method.Equals(HttpMethod.Get) && !method.Equals(HttpMethod.Delete))
                 {
                     SendResponse proxyTokenSendResponse = await this.SendProxyTokenRequest(jsonSerializedData, proxyTokenUrl);
-                    if(proxyTokenSendResponse.Success)
+                    if (proxyTokenSendResponse.Success)
                     {
                         ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
                         digest = proxyToken.Tokens[0].Placeholder;
@@ -184,8 +186,18 @@ namespace Cybersource.Services
                 };
 
                 Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
+                //StringBuilder sb = new StringBuilder();
+                //foreach (var header in request.Headers)
+                //{
+                //    string headerName = header.Key;
+                //    string headerContent = string.Join(",", header.Value.ToArray());
+                //    sb.AppendLine($"{headerName} : {headerContent}");
+                //    //Console.WriteLine($" |-| {headerName} : {headerContent}");
+                //}
 
-                _context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                //_context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                //_context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                _context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -216,7 +228,7 @@ namespace Cybersource.Services
                         {
                             new RequestToken
                             {
-                                Alias = "digest",
+                                Name = "digest",
                                 Value = new Value
                                 {
                                     Sha256 = new Sha256
@@ -260,13 +272,13 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
-            //Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
-            //payments.paymentInformation.card.number = "4111111111111111";
-            //payments.paymentInformation.card.securityCode = "123";
+            Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
+            payments.paymentInformation.card.number = "4111111111111111";
+            payments.paymentInformation.card.securityCode = "123";
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-            //SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            //SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
             if (response != null)
             {
                 if (response.Success)
@@ -387,6 +399,34 @@ namespace Cybersource.Services
         }
         #endregion
 
+        #region Reporting
+        /// <summary>
+        /// The Conversion Detail Report contains details of transactions for a merchant.
+        /// To request the report, your client application must send an HTTP GET message to the report server.
+        /// The default format for responses is JSON, but some reports can also return CSV or XML.
+        /// You can set the response to return CSV or XML in the request header by setting the Accept value to either application/xml or text/csv.
+        /// </summary>
+        /// <returns></returns>
+        public async Task ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            // https://<url_prefix>/reporting/v3/conversion-details&startTime={startTime}&endTime={endTime}&organizationId={organizationId}
+            // 2016-11-22T12:00:00.000Z
+            string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            string organizationId = merchantSettings.MerchantId;
+            string endpoint = $"{CybersourceConstants.REPORTING}conversion-details&startTime={startTime}&endTime={endTime}&organizationId={organizationId}";
+            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+            if (response != null)
+            {
+                //= JsonConvert.DeserializeObject<>(response.Message);
+                Console.WriteLine($"[{response.StatusCode}] {response.Message}");
+            }
+
+            
+        }
+        #endregion Reporting
+
         #region Authorization Header functions
         private async Task<string> GenerateDigest(string jsonPayload)
         {
@@ -470,6 +510,7 @@ namespace Cybersource.Services
         }
         #endregion
 
+        #region OAuth
         public async Task<CybersourceToken> GetOAuthToken(bool isProduction)
         {
             CybersourceToken token = await _cybersourceRepository.LoadToken(isProduction);
@@ -552,5 +593,6 @@ namespace Cybersource.Services
 
             return token;
         }
+        #endregion OAuth
     }
 }

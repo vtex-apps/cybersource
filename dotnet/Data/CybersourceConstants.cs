@@ -38,6 +38,7 @@ namespace Cybersource.Data
         public const string PAYMENTS = "/pts/v2/";
         public const string RISK = "/risk/v1/";
         public const string TAX = "/vas/v2/";
+        public const string REPORTING = "/reporting/v3/";
 
         public class VtexAuthStatus
         {

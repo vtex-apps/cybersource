@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Cybersource.Models;
 
@@ -12,6 +13,9 @@ namespace Cybersource.Services
 
         Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest);
         Task<SendAntifraudDataResponse> GetAntifraudStatus(string id);
+
+        Task ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime);
+        Task ConversionDetailReport(string atartTime, string endTime);
 
         Task<string> GetAuthUrl();
     }

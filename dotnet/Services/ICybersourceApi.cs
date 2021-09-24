@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Cybersource.Models;
 
@@ -15,5 +16,7 @@ namespace Cybersource.Services
         Task<PaymentsResponse> CreateDecisionManager(Payments payments);
 
         Task<PaymentsResponse> CalculateTaxes(Payments payments);
+
+        Task ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime);
     }
 }
