@@ -1,0 +1,6 @@
+{
+  "admin.app.cybersource": {
+    "component": "Admin",
+    "path": "/admin/app/cybersource"
+  }
+}
