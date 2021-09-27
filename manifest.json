@@ -1,47 +1,28 @@
 {
   "name": "cybersource",
   "vendor": "vtex",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "title": "Cybersource",
   "description": "Cybersource payment",
   "categories": [],
-  "settingsSchema": {
-    "title": "Cybersource",
-    "type": "object",
-    "properties": {
-      "isLive": {
-        "title": "Production",
-        "description": "Use production credentials",
-        "type": "boolean"
-      },
-      "merchantId": {
-        "title": "Merchant Id",
-        "description": "Merchant Id",
-        "type": "string"
-      },
-      "merchantKey": {
-        "title": "Merchant Key",
-        "description": "Merchant Key",
-        "type": "string"
-      },
-      "sharedSecretKey": {
-        "title": "Shared Secret",
-        "description": "Shared Secret Key",
-        "type": "string"
-      }
-    }
-  },
   "registries": [
     "smartcheckout"
   ],
   "builders": {
+    "messages": "1.x",
+    "admin": "0.x",
     "dotnet": "2.x",
     "graphql": "1.x",
-    "paymentProvider": "1.x"
+    "paymentProvider": "1.x",
+    "react": "3.x"
   },
   "mustUpdateAt": "2018-09-05",
   "scripts": {
     "postreleasy": "vtex publish --verbose"
+  },
+  "dependencies": {
+    "vtex.styleguide": "9.x",
+    "vtex.apps-graphql": "2.x"
   },
   "policies": [
     {
