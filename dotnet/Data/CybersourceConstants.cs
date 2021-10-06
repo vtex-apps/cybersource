@@ -40,6 +40,13 @@ namespace Cybersource.Data
         public const string TAX = "/vas/v2/";
         public const string REPORTING = "/reporting/v3/";
 
+        public class CybersourceDecision
+        {
+            public const string Review = "REVIEW";
+            public const string Reject = "REJECT";
+            public const string Accept = "ACCEPT";
+        }
+
         public class VtexAuthStatus
         {
             public const string Approved = "approved";

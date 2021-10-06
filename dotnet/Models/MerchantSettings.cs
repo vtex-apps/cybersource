@@ -13,6 +13,7 @@ namespace Cybersource.Models
         public string Processor { get; set; }
         public string Region { get; set; }
         // Taxes
+        public bool EnableTax { get; set; }
         public bool EnableTransactionPosting { get; set; }
         public string SalesChannelExclude { get; set; }
     }

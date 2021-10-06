@@ -14,9 +14,14 @@ namespace Cybersource.Services
         Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest);
         Task<SendAntifraudDataResponse> GetAntifraudStatus(string id);
 
-        Task ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime);
-        Task ConversionDetailReport(string atartTime, string endTime);
-
+        Task<ConversionReportResponse> ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime);
+        Task<ConversionReportResponse> ConversionDetailReport(string atartTime, string endTime);
+        Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime);
+        Task<string> RetrieveAvailableReports(string atartTime, string endTime);
+        Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime);
+        Task<string> GetPurchaseAndRefundDetails(string atartTime, string endTime);
         Task<string> GetAuthUrl();
+
+        Task<string> ProcessConversions();
     }
 }

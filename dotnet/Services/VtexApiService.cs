@@ -263,17 +263,42 @@ namespace Cybersource.Services
             }
             else
             {
+                VtexOrderformTaxConfiguration taxConfiguration = null;
                 dynamic orderConfig = JsonConvert.DeserializeObject(jsonSerializedOrderConfig);
-                VtexOrderformTaxConfiguration taxConfiguration = new VtexOrderformTaxConfiguration
+                try
                 {
+                    string existingTaxConfig = JsonConvert.SerializeObject(orderConfig["taxConfiguration"]);
+                    if (!string.IsNullOrEmpty(existingTaxConfig))
+                    {
+                        taxConfiguration = JsonConvert.DeserializeObject<VtexOrderformTaxConfiguration>(existingTaxConfig);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Empty tax configuration.");
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Error getting existing config: '{ex.Message}'\n[{orderConfig["taxConfiguration"]}]");
+                }
 
-                };
+                if (taxConfiguration != null && taxConfiguration.Url.Contains("cybersource"))
+                {
+                    taxConfiguration = new VtexOrderformTaxConfiguration
+                    {
 
-                orderConfig["taxConfiguration"] = JToken.FromObject(taxConfiguration);
+                    };
 
-                jsonSerializedOrderConfig = JsonConvert.SerializeObject(orderConfig);
-                bool success = await this._cybersourceRepository.SetOrderConfiguration(jsonSerializedOrderConfig);
-                retval = success.ToString();
+                    orderConfig["taxConfiguration"] = JToken.FromObject(taxConfiguration);
+
+                    jsonSerializedOrderConfig = JsonConvert.SerializeObject(orderConfig);
+                    bool success = await this._cybersourceRepository.SetOrderConfiguration(jsonSerializedOrderConfig);
+                    retval = success.ToString();
+                }
+                else
+                {
+                    retval = $"Not configured for Cybersouce";
+                }
             }
 
             return retval;
@@ -822,6 +847,49 @@ namespace Cybersource.Services
             _context.Vtex.Logger.Info("CybersourceResponseToVtexResponse", null, $"Request: {JsonConvert.SerializeObject(taxResponse)}\nResponse: {JsonConvert.SerializeObject(vtexTaxResponse)}");
 
             return vtexTaxResponse;
+        }
+
+        public async Task<SendResponse> PostCallbackResponse(string callbackUrl, CreatePaymentResponse createPaymentResponse)
+        {
+            SendResponse sendResponse = null;
+
+            if (!string.IsNullOrEmpty(callbackUrl) && createPaymentResponse != null)
+            {
+                try
+                {
+                    var jsonSerializedPaymentResponse = JsonConvert.SerializeObject(createPaymentResponse);
+                    var request = new HttpRequestMessage
+                    {
+                        Method = HttpMethod.Post,
+                        RequestUri = new Uri(callbackUrl),
+                        Content = new StringContent(jsonSerializedPaymentResponse, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
+                    };
+
+                    string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                    if (authToken != null)
+                    {
+                        request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    }
+
+                    var client = _clientFactory.CreateClient();
+                    var response = await client.SendAsync(request);
+                    string responseContent = await response.Content.ReadAsStringAsync();
+
+                    sendResponse = new SendResponse
+                    {
+                        Message = responseContent,
+                        StatusCode = response.StatusCode.ToString(),
+                        Success = response.IsSuccessStatusCode
+                    };
+
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"PostCallbackResponse {callbackUrl} Error: {ex.Message} InnerException: {ex.InnerException} StackTrace: {ex.StackTrace}");
+                }
+            }
+
+            return sendResponse;
         }
     }
 }

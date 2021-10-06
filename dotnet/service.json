@@ -43,16 +43,24 @@
       "path": "/cybersource/payment-provider/transactions/:transactionId",
       "public": true
     },
+    "conversionDetailReport": {
+      "path": "/cybersource/reporting/conversion-details",
+      "public": true
+    },
+    "retrieveAvailableReports": {
+      "path": "/cybersource/reporting/available-reports",
+      "public": true
+    },
+    "getPurchaseAndRefundDetails": {
+      "path": "/cybersource/reporting/purchase-refund-details",
+      "public": true
+    },
     "taxHandler": {
       "path": "/cybersource/checkout/order-tax",
       "public": true
     },
     "toggleTax": {
       "path": "/cybersource/tax/toggle-tax/:useCyberTax",
-      "public": true
-    },
-    "conversionDetailReport": {
-      "path": "/cybersource/tax/reporting/conversion",
       "public": true
     },
     "cybersourceResponseToVtexResponse": {
@@ -64,7 +72,11 @@
       "public": true
     },
     "saveToken": {
-      "path": "/cybersource/set-token:isLive",
+      "path": "/cybersource/set-token/:isLive",
+      "public": true
+    },
+    "processConversions": {
+      "path": "/cybersource/payment-provider/process-conversions",
       "public": true
     }
   },

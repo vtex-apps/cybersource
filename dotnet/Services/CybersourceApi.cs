@@ -66,15 +66,6 @@ namespace Cybersource.Services
                     request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
                 }
 
-                //request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                //string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                //if (authToken != null)
-                //{
-                    //request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                    //request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                    //request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-                //}
-
                 string digest = string.Empty;
                 string signatureString = string.Empty;
                 string signature = string.Empty;
@@ -104,14 +95,83 @@ namespace Cybersource.Services
                 };
 
                 Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
+
+                StringBuilder sb = new StringBuilder();
+                foreach (var header in request.Headers)
+                {
+                    string headerName = header.Key;
+                    string headerContent = string.Join(",", header.Value.ToArray());
+                    sb.AppendLine($"{headerName} : {headerContent}");
+                    //Console.WriteLine($" |-| {headerName} : {headerContent}");
+                }
+
+                _context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
                 //Console.WriteLine($"- SendRequest: [{response.StatusCode}] {responseContent}");
                 //Console.WriteLine($"v-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}");
 
-                _context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
+                //_context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex);
+            }
+
+            return sendResponse;
+        }
+
+        public async Task<SendResponse> SendReportRequest(HttpMethod method, string endpoint, string jsonSerializedData)
+        {
+            SendResponse sendResponse = null;
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            string urlBase = CybersourceConstants.ProductionApiEndpoint;
+            if (!merchantSettings.IsLive)
+            {
+                urlBase = CybersourceConstants.SandboxApiEndpoint;
+            }
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = method,
+                    RequestUri = new Uri($"https://{urlBase}{endpoint}")
+                };
+
+                if (!string.IsNullOrEmpty(jsonSerializedData))
+                {
+                    request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
+                }
+
+                string digest = string.Empty;
+                string signatureString = string.Empty;
+                string signature = string.Empty;
+                string gmtDateTime = DateTime.UtcNow.ToString("r");
+
+                request.Headers.Add("v-c-merchant-id", merchantSettings.MerchantId);
+                request.Headers.Add("v-c-date", gmtDateTime);
+                request.Headers.Add("host", urlBase);
+
+                signatureString = await this.GenerateReportSignatureString(merchantSettings, urlBase, gmtDateTime, $"{method.ToString().ToLower()} {endpoint}", digest);
+                request.Headers.Add("signature", signatureString);  // A comma-separated list of parameters that are formatted as name-value pairs
+                request.Headers.Add("accept", "application/hal+json");
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                sendResponse = new SendResponse
+                {
+                    StatusCode = response.StatusCode.ToString(),
+                    Success = response.IsSuccessStatusCode,
+                    Message = responseContent
+                };
+
+                Console.WriteLine($"- SendReportRequest: [{response.StatusCode}] {responseContent} -");
+
+                //_context.Vtex.Logger.Debug("SendReportRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendReportRequest", null, $"Error ", ex);
             }
 
             return sendResponse;
@@ -272,13 +332,17 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
-            Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
-            payments.paymentInformation.card.number = "4111111111111111";
-            payments.paymentInformation.card.securityCode = "123";
+            /// TESTING ------------------------------------------
+            //Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
+            //payments.paymentInformation.card.number = "4111111111111111";
+            //payments.paymentInformation.card.securityCode = "123";
+            //payments.orderInformation.amountDetails.totalAmount = "401";
+            //payments.orderInformation.billTo.postalCode = "28650";
+            /// TESTING ------------------------------------------
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-            //SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            //SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
             if (response != null)
             {
                 if (response.Success)
@@ -407,23 +471,127 @@ namespace Cybersource.Services
         /// You can set the response to return CSV or XML in the request header by setting the Accept value to either application/xml or text/csv.
         /// </summary>
         /// <returns></returns>
-        public async Task ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime)
+        public async Task<ConversionReportResponse> ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime)
         {
-            // https://<url_prefix>/reporting/v3/conversion-details&startTime={startTime}&endTime={endTime}&organizationId={organizationId}
+            // https://<url_prefix>/reporting/v3/conversion-details?startTime={startTime}&endTime={endTime}&organizationId={organizationId}
             // 2016-11-22T12:00:00.000Z
-            string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
-            string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            ConversionReportResponse retval = null;
+            string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            //string startTime = dtStartTime.ToString("yyyy-MM-ddT00:00:00.000Z");
+            //string endTime = dtEndTime.ToString("yyyy-MM-ddT23:00:00.000Z");
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string organizationId = merchantSettings.MerchantId;
-            string endpoint = $"{CybersourceConstants.REPORTING}conversion-details&startTime={startTime}&endTime={endTime}&organizationId={organizationId}";
+            string endpoint = $"{CybersourceConstants.REPORTING}conversion-details?startTime={startTime}&endTime={endTime}&organizationId={organizationId}&";
+            SendResponse response = await this.SendReportRequest(HttpMethod.Get, endpoint, null);
+            if (response != null)
+            {
+                if(response.Success)
+                {
+                    retval = JsonConvert.DeserializeObject<ConversionReportResponse>(response.Message);
+                }
+                else
+                {
+                    ReportErrorResponse reportErrorResponse = JsonConvert.DeserializeObject<ReportErrorResponse>(response.Message);
+                    Console.WriteLine(reportErrorResponse.Message);
+                }
+            }
+
+            return retval;
+        }
+
+        /// <summary>
+        /// Download the Notification of Change report.
+        /// This report shows eCheck-related fields updated as a result of a response to an eCheck settlement transaction.
+        /// </summary>
+        /// <param name="dtStartTime"></param>
+        /// <param name="dtEndTime"></param>
+        /// <returns></returns>
+        public async Task<string> NotificationOfChangesReport(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            string retval = string.Empty;
+            string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            string endpoint = $"{CybersourceConstants.REPORTING}notification-of-changes&startTime={startTime}&endTime={endTime}";
             SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
             if (response != null)
             {
                 //= JsonConvert.DeserializeObject<>(response.Message);
                 Console.WriteLine($"[{response.StatusCode}] {response.Message}");
+                retval = $"[{response.StatusCode}] {response.Message}";
             }
 
-            
+            return retval;
+        }
+
+        /// <summary>
+        /// Download a report using the unique report name and date.
+        /// </summary>
+        /// <param name="dtReportDate"></param>
+        /// <param name="reportName"></param>
+        /// <returns></returns>
+        public async Task<string> DownloadReport(DateTime dtReportDate, string reportName)
+        {
+            string retval = string.Empty;
+            string reportDate = dtReportDate.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            string organizationId = merchantSettings.MerchantId;
+            string endpoint = $"{CybersourceConstants.REPORTING}report-downloads?reportDate={reportDate}&organizationId={organizationId}&reportName={reportName}";
+            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+            if (response != null)
+            {
+                //= JsonConvert.DeserializeObject<>(response.Message);
+                Console.WriteLine($"[{response.StatusCode}] {response.Message}");
+                retval = $"[{response.StatusCode}] {response.Message}";
+            }
+
+            return retval;
+        }
+
+        /// <summary>
+        /// Retrieve a list of the available reports to which you are subscribed.
+        /// This will also give you the reportId value, which you can also use to download a report.
+        /// </summary>
+        /// <param name="dtStartTime"></param>
+        /// <param name="dtEndTime"></param>
+        /// <returns></returns>
+        public async Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            string retval = string.Empty;
+            string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            //MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            //string organizationId = merchantSettings.MerchantId;
+            //string endpoint = $"{CybersourceConstants.REPORTING}reports&startTime={startTime}&endTime={endTime}&organizationId={organizationId}";
+            string endpoint = $"{CybersourceConstants.REPORTING}reports?startTime={startTime}&endTime={endTime}&timeQueryType=executedTime";
+            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+            if (response != null)
+            {
+                //= JsonConvert.DeserializeObject<>(response.Message);
+                Console.WriteLine($"[{response.StatusCode}] {response.Message}");
+                retval = $"[{response.StatusCode}] {response.Message}";
+            }
+
+            return retval;
+        }
+
+        public async Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            string retval = string.Empty;
+            string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
+            //MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            //string organizationId = merchantSettings.MerchantId;
+            string endpoint = $"{CybersourceConstants.REPORTING}purchase-refund-details?startTime={startTime}&endTime={endTime}";
+            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+            if (response != null)
+            {
+                //= JsonConvert.DeserializeObject<>(response.Message);
+                Console.WriteLine($"[{response.StatusCode}] {response.Message}");
+                retval = $"[{response.StatusCode}] {response.Message}";
+            }
+
+            return retval;
         }
         #endregion Reporting
 
@@ -505,6 +673,47 @@ namespace Cybersource.Services
 
             //_context.Vtex.Logger.Debug("GenerateSignatureString", null, signatureString.ToString());
             Console.WriteLine(signatureString.ToString());
+
+            return signatureHeaderValue.ToString();
+        }
+
+        private async Task<string> GenerateReportSignatureString(MerchantSettings merchantSettings, string hostName, string gmtDateTime, string requestTarget, string digest)
+        {
+            var signatureString = new StringBuilder();
+            var signatureHeaderValue = new StringBuilder();
+            string headersString = "host v-c-date (request-target) v-c-merchant-id";
+
+            signatureString.Append('\n');
+            signatureString.Append("host");
+            signatureString.Append(": ");
+            signatureString.Append(hostName);
+            signatureString.Append('\n');
+            signatureString.Append("v-c-date");
+            signatureString.Append(": ");
+            signatureString.Append(gmtDateTime);
+            signatureString.Append('\n');
+            signatureString.Append("(request-target)");
+            signatureString.Append(": ");
+            signatureString.Append(requestTarget);
+            signatureString.Append('\n');
+            signatureString.Append("v-c-merchant-id");
+            signatureString.Append(": ");
+            signatureString.Append(merchantSettings.MerchantId);
+            signatureString.Remove(0, 1);
+
+            var signatureByteString = Encoding.UTF8.GetBytes(signatureString.ToString());
+            var decodedKey = Convert.FromBase64String(merchantSettings.SharedSecretKey);
+            var aKeyId = new HMACSHA256(decodedKey);
+            var hashmessage = aKeyId.ComputeHash(signatureByteString);
+            var base64EncodedSignature = Convert.ToBase64String(hashmessage);
+
+            signatureHeaderValue.Append("keyid=\"" + merchantSettings.MerchantKey + "\"");
+            signatureHeaderValue.Append(", algorithm=\"" + CybersourceConstants.SignatureAlgorithm + "\"");
+            signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
+            signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
+
+            //_context.Vtex.Logger.Debug("GenerateSignatureString", null, signatureString.ToString());
+            //Console.WriteLine(signatureHeaderValue.ToString());
 
             return signatureHeaderValue.ToString();
         }

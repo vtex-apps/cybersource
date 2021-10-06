@@ -12,6 +12,7 @@
     using System.Diagnostics;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
 
     public class RoutesController : Controller
     {
@@ -40,8 +41,9 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                //_context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
+                _context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
+                Console.WriteLine($" - CreatePayment - CreatePayment - CreatePayment - {createPaymentRequest.CallbackUrl}");
                 paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
             }
 
@@ -299,8 +301,25 @@
         public async Task<IActionResult> ConversionDetailReport()
         {
             Response.Headers.Add("Cache-Control", "no-cache");
-            await _cybersourcePaymentService.ConversionDetailReport(DateTime.Now.AddDays(-7), DateTime.Now);
-            return Json("--result goes here");
+            return Json(await _cybersourcePaymentService.ConversionDetailReport(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
+        }
+
+        public async Task<IActionResult> RetrieveAvailableReports()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.RetrieveAvailableReports(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
+        }
+
+        public async Task<IActionResult> GetPurchaseAndRefundDetails()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.GetPurchaseAndRefundDetails(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
+        }
+
+        public async Task<IActionResult> ProcessConversions()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.ProcessConversions());
         }
     }
 }

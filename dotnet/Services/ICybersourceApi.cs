@@ -17,6 +17,8 @@ namespace Cybersource.Services
 
         Task<PaymentsResponse> CalculateTaxes(Payments payments);
 
-        Task ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime);
+        Task<ConversionReportResponse> ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime);
+        Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime);
+        Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime);
     }
 }

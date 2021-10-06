@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Cybersource.Data;
 using Cybersource.Models;
@@ -52,9 +53,17 @@ namespace Cybersource.Services
         #region Payments
         public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
         {
+            CreatePaymentResponse createPaymentResponse = null;
+            PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
+            if(paymentData != null && paymentData.CreatePaymentResponse != null)
+            {
+                Console.WriteLine("Returning CreatePaymentResponse from storage.");
+                _context.Vtex.Logger.Debug("CreatePayment", null, "Returning CreatePaymentResponse from storage.");
+                return paymentData.CreatePaymentResponse;
+            }
+
             _context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            CreatePaymentResponse createPaymentResponse = null;
             Payments payment = new Payments
             {
                 clientReferenceInformation = new ClientReferenceInformation
@@ -106,7 +115,7 @@ namespace Cybersource.Services
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode
                     },
-                    lineItems = new System.Collections.Generic.List<LineItem>()
+                    lineItems = new List<LineItem>()
                 },
                 deviceInformation = new DeviceInformation
                 {
@@ -329,14 +338,16 @@ namespace Cybersource.Services
                     decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.authorizedAmount, out authAmount);
                 }
 
-                PaymentData paymentData = new PaymentData
+                paymentData = new PaymentData
                 {
                     AuthorizationId = createPaymentResponse.AuthorizationId,
                     TransactionId = createPaymentResponse.Tid,
                     PaymentId = createPaymentResponse.PaymentId,
                     Value = authAmount,
                     RequestId = null,
-                    CaptureId = null
+                    CaptureId = null,
+                    CreatePaymentResponse = createPaymentResponse,
+                    CallbackUrl = createPaymentRequest.CallbackUrl
                 };
 
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
@@ -569,7 +580,7 @@ namespace Cybersource.Services
                     sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
                     break;
                 default:
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
                     break;
             };
 
@@ -596,16 +607,40 @@ namespace Cybersource.Services
         #endregion Antifraud
 
         #region Reporting
-        public async Task ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime)
+        public async Task<ConversionReportResponse> ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime)
         {
-            await _cybersourceApi.ConversionDetailReport(dtStartTime, dtEndTime);
+            return await _cybersourceApi.ConversionDetailReport(dtStartTime, dtEndTime);
         }
 
-        public async Task ConversionDetailReport(string atartTime, string endTime)
+        public async Task<ConversionReportResponse> ConversionDetailReport(string startTime, string endTime)
         {
-            DateTime dtStartTime = DateTime.Parse(atartTime);
+            DateTime dtStartTime = DateTime.Parse(startTime);
             DateTime dtEndTime = DateTime.Parse(endTime);
-            await _cybersourceApi.ConversionDetailReport(dtStartTime, dtEndTime);
+            return await this.ConversionDetailReport(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            return await _cybersourceApi.RetrieveAvailableReports(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> RetrieveAvailableReports(string startTime, string endTime)
+        {
+            DateTime dtStartTime = DateTime.Parse(startTime);
+            DateTime dtEndTime = DateTime.Parse(endTime);
+            return await this.RetrieveAvailableReports(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            return await _cybersourceApi.GetPurchaseAndRefundDetails(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> GetPurchaseAndRefundDetails(string startTime, string endTime)
+        {
+            DateTime dtStartTime = DateTime.Parse(startTime);
+            DateTime dtEndTime = DateTime.Parse(endTime);
+            return await this.GetPurchaseAndRefundDetails(dtStartTime, dtEndTime);
         }
         #endregion Reporting
 
@@ -654,6 +689,60 @@ namespace Cybersource.Services
             return authUrl;
         }
         #endregion OAuth
+
+        public async Task<string> ProcessConversions()
+        {
+            string results = string.Empty;
+            StringBuilder sb = new StringBuilder();
+            DateTime dtStartTime = DateTime.Now.AddDays(-1);
+            DateTime dtEndTime = DateTime.Now;
+            ConversionReportResponse conversionReport = await this.ConversionDetailReport(dtStartTime, dtEndTime);
+            if(conversionReport != null)
+            {
+                foreach(ConversionDetail conversionDetail in conversionReport.ConversionDetails)
+                {
+                    //sb.AppendLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} - {conversionDetail.NewDecision} ");
+                    PaymentData paymentData = await _cybersourceRepository.GetPaymentData(conversionDetail.MerchantReferenceNumber);
+                    if(paymentData != null && paymentData.CreatePaymentResponse != null)
+                    {
+                        if(paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Undefined))
+                        {
+                            bool updateStatus = true;
+                            switch(conversionDetail.NewDecision)
+                            {
+                                case CybersourceConstants.CybersourceDecision.Accept:
+                                    paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
+                                    break;
+                                case CybersourceConstants.CybersourceDecision.Reject:
+                                    paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
+                                    break;
+                                case CybersourceConstants.CybersourceDecision.Review:
+                                    updateStatus = false;
+                                    break;
+                            }
+
+                            if(updateStatus)
+                            {
+                                if (paymentData.CallbackUrl != null)
+                                {
+                                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
+                                    if (sendResponse != null)
+                                    {
+                                        sb.AppendLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} - {conversionDetail.NewDecision} updated? {sendResponse.Success}");
+                                        Console.WriteLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} -> {conversionDetail.NewDecision} updated? {sendResponse.Success}");
+                                        await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            results = sb.ToString();
+
+            return results;
+        }
 
         public async Task<bool> HealthCheck()
         {
