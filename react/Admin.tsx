@@ -117,7 +117,7 @@ const Admin: FC = () => {
     return (
       <Layout
         pageHeader={
-          <PageHeader title={<FormattedMessage id="admin/taxjar.title" />} />
+          <PageHeader title={<FormattedMessage id="admin/cybersource.title" />} />
         }
         fullWidth
       >

@@ -824,8 +824,7 @@ namespace Cybersource.Services
                 {
                     new Hook
                     {
-                        //Major = 1,
-                        //Url = new Uri($"https://{this._httpContextAccessor.HttpContext.Request.Headers[TaxjarConstants.HEADER_VTEX_WORKSPACE]}--{this._httpContextAccessor.HttpContext.Request.Headers[TaxjarConstants.VTEX_ACCOUNT_HEADER_NAME]}.myvtex.com/taxjar/oms/invoice")
+
                     }
                 },
                 ItemTaxResponse = new List<ItemTaxResponse>()
