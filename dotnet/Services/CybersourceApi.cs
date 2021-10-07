@@ -210,6 +210,8 @@ namespace Cybersource.Services
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}v-c-merchant-id", merchantSettings.MerchantId);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Date", gmtDateTime);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Host", urlBase);
+                request.Headers.Remove("Host");
+                request.Headers.Remove("Date");
                 if (!method.Equals(HttpMethod.Get) && !method.Equals(HttpMethod.Delete))
                 {
                     SendResponse proxyTokenSendResponse = await this.SendProxyTokenRequest(jsonSerializedData, proxyTokenUrl);
@@ -335,7 +337,7 @@ namespace Cybersource.Services
             /// TESTING ------------------------------------------
             //Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
             //payments.paymentInformation.card.number = "4111111111111111";
-            //payments.paymentInformation.card.securityCode = "123";
+            //payments.paymentInformation.card.securityCode = "111";
             //payments.orderInformation.amountDetails.totalAmount = "401";
             //payments.orderInformation.billTo.postalCode = "28650";
             /// TESTING ------------------------------------------

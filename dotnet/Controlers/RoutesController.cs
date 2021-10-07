@@ -41,9 +41,8 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                _context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
+                //_context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
-                Console.WriteLine($" - CreatePayment - CreatePayment - CreatePayment - {createPaymentRequest.CallbackUrl}");
                 paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
             }
 
@@ -319,7 +318,7 @@
         public async Task<IActionResult> ProcessConversions()
         {
             Response.Headers.Add("Cache-Control", "no-cache");
-            return Json(await _cybersourcePaymentService.ProcessConversions());
+            return Json(await _vtexApiService.ProcessConversions());
         }
     }
 }

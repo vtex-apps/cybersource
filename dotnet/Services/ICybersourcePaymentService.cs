@@ -21,7 +21,5 @@ namespace Cybersource.Services
         Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime);
         Task<string> GetPurchaseAndRefundDetails(string atartTime, string endTime);
         Task<string> GetAuthUrl();
-
-        Task<string> ProcessConversions();
     }
 }

@@ -58,7 +58,8 @@ namespace Cybersource.Services
             if(paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 Console.WriteLine("Returning CreatePaymentResponse from storage.");
-                _context.Vtex.Logger.Debug("CreatePayment", null, "Returning CreatePaymentResponse from storage.");
+                //_context.Vtex.Logger.Debug("CreatePayment", null, "Returning CreatePaymentResponse from storage.");
+                await _vtexApiService.ProcessConversions();
                 return paymentData.CreatePaymentResponse;
             }
 
@@ -689,60 +690,6 @@ namespace Cybersource.Services
             return authUrl;
         }
         #endregion OAuth
-
-        public async Task<string> ProcessConversions()
-        {
-            string results = string.Empty;
-            StringBuilder sb = new StringBuilder();
-            DateTime dtStartTime = DateTime.Now.AddDays(-1);
-            DateTime dtEndTime = DateTime.Now;
-            ConversionReportResponse conversionReport = await this.ConversionDetailReport(dtStartTime, dtEndTime);
-            if(conversionReport != null)
-            {
-                foreach(ConversionDetail conversionDetail in conversionReport.ConversionDetails)
-                {
-                    //sb.AppendLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} - {conversionDetail.NewDecision} ");
-                    PaymentData paymentData = await _cybersourceRepository.GetPaymentData(conversionDetail.MerchantReferenceNumber);
-                    if(paymentData != null && paymentData.CreatePaymentResponse != null)
-                    {
-                        if(paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Undefined))
-                        {
-                            bool updateStatus = true;
-                            switch(conversionDetail.NewDecision)
-                            {
-                                case CybersourceConstants.CybersourceDecision.Accept:
-                                    paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
-                                    break;
-                                case CybersourceConstants.CybersourceDecision.Reject:
-                                    paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
-                                    break;
-                                case CybersourceConstants.CybersourceDecision.Review:
-                                    updateStatus = false;
-                                    break;
-                            }
-
-                            if(updateStatus)
-                            {
-                                if (paymentData.CallbackUrl != null)
-                                {
-                                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
-                                    if (sendResponse != null)
-                                    {
-                                        sb.AppendLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} - {conversionDetail.NewDecision} updated? {sendResponse.Success}");
-                                        Console.WriteLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} -> {conversionDetail.NewDecision} updated? {sendResponse.Success}");
-                                        await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            results = sb.ToString();
-
-            return results;
-        }
 
         public async Task<bool> HealthCheck()
         {
