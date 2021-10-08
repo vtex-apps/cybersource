@@ -14,5 +14,8 @@ namespace Cybersource.Services
         Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse);
         Task<bool> ProcessNotification(AllStatesNotification allStatesNotification);
         Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest);
+
+        Task<SendResponse> PostCallbackResponse(string callbackUrl, CreatePaymentResponse createPaymentResponse);
+        Task<string> ProcessConversions();
     }
 }

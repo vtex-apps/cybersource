@@ -7,8 +7,8 @@ namespace Cybersource.Models
         [JsonProperty("url")]
         public string Url { get; set; }
 
-        //[JsonProperty("authorizationHeader")]
-        //public string AuthorizationHeader { get; set; }
+        [JsonProperty("authorizationHeader")]
+        public string AuthorizationHeader { get; set; }
 
         [JsonProperty("allowExecutionAfterErrors")]
         public bool AllowExecutionAfterErrors { get; set; }

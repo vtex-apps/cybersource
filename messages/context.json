@@ -14,6 +14,7 @@
   "admin/cybersource.settings.merchantId.helpText": "Write your merchant Id",
   "admin/cybersource.settings.merchantKey.helpText": "Write your merchant Key",
   "admin/cybersource.settings.sharedSecretKey.helpText": "Write your shared secret key",
+  "admin/cybersource.settings.EnableTax.label": "Enable Tax Calculations",
   "admin/cybersource.settings.enableTransactionPosting.helpText": "Enable transaction posting",
   "admin/cybersource.settings.salesChannelExclude.helpText": "Comma separated list of sales channel ids to exclude."
 }

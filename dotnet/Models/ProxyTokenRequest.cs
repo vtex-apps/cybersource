@@ -10,8 +10,8 @@ namespace Cybersource.Models
 
     public class RequestToken
     {
-        [JsonProperty("alias")]
-        public string Alias { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
 
         [JsonProperty("value")]
         public Value Value { get; set; }

@@ -12,6 +12,7 @@
     using System.Diagnostics;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
 
     public class RoutesController : Controller
     {
@@ -134,13 +135,13 @@
             {
                 string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
-                this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
 
-                sendAntifraudDataResponse = new SendAntifraudDataResponse
-                {
-                    Id = sendAntifraudDataRequest.Id,
-                    Status = CybersourceConstants.VtexAntifraudStatus.Received
-                };
+                //sendAntifraudDataResponse = new SendAntifraudDataResponse
+                //{
+                //    Id = sendAntifraudDataRequest.Id,
+                //    Status = CybersourceConstants.VtexAntifraudStatus.Received
+                //};
             }
 
             return Json(sendAntifraudDataResponse);
@@ -214,7 +215,7 @@
                         if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
                         {
                             fromCache = true;
-                            _context.Vtex.Logger.Info("TaxjarOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
+                            _context.Vtex.Logger.Info("CybersourceOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
                         }
                         else
                         {
@@ -293,7 +294,31 @@
 
         public async Task<IActionResult> HealthCheck()
         {
-            return null;
+            return Json("--result goes here");
+        }
+
+        public async Task<IActionResult> ConversionDetailReport()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.ConversionDetailReport(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
+        }
+
+        public async Task<IActionResult> RetrieveAvailableReports()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.RetrieveAvailableReports(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
+        }
+
+        public async Task<IActionResult> GetPurchaseAndRefundDetails()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.GetPurchaseAndRefundDetails(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
+        }
+
+        public async Task<IActionResult> ProcessConversions()
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _vtexApiService.ProcessConversions());
         }
     }
 }

@@ -38,6 +38,7 @@ const Admin: FC = () => {
     Region: '',
     EnableTransactionPosting: false,
     SalesChannelExclude: '',
+    EnableTax: false,
   })
 
   const { data } = useQuery(AppSettings, {
@@ -57,6 +58,7 @@ const Admin: FC = () => {
     { value: 'Prosa', label: 'Prosa' },
     { value: 'Santander', label: 'Santander' },
     { value: 'Amex Direct', label: 'American Express Direct' },
+    { value: 'Other', label: 'Other' },
   ]
 
   const regionOptions = [
@@ -64,13 +66,14 @@ const Admin: FC = () => {
     { value: 'PE', label: 'Peru' },
     { value: 'MX', label: 'Mexico' },
     { value: 'BR', label: 'Brasil' },
+    { value: 'Other', label: 'Other' },
   ]
 
   const handleSaveSettings = async (showToast: any) => {
     setSettingsLoading(true)
 
     try {
-      if (settingsState.IsLive) {
+      if (settingsState.EnableTax) {
         await initConfig()
       } else {
         await removeConfig()
@@ -114,7 +117,7 @@ const Admin: FC = () => {
     return (
       <Layout
         pageHeader={
-          <PageHeader title={<FormattedMessage id="admin/taxjar.title" />} />
+          <PageHeader title={<FormattedMessage id="admin/cybersource.title" />} />
         }
         fullWidth
       >
@@ -248,7 +251,26 @@ const Admin: FC = () => {
                     })
                   }
                 />
-              </section>
+                </section>
+                <section className="pv4">
+                  <Toggle
+                    semantic
+                    label={formatMessage({
+                        id: 'admin/cybersource.settings.EnableTax.label',
+                    })}
+                    size="large"
+                        checked={settingsState.EnableTax}
+                    onChange={() => {
+                        setSettingsState({
+                            ...settingsState,
+                            EnableTax: !settingsState.EnableTax,
+                        })
+                    }}
+                    helpText={formatMessage({
+                        id: 'admin/cybersource.settings.EnableTax.helpText',
+                    })}
+                />
+                </section>
               <section className="pv4">
                 <Toggle
                   semantic

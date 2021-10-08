@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Cybersource.Data;
 using Cybersource.Models;
@@ -52,9 +53,18 @@ namespace Cybersource.Services
         #region Payments
         public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
         {
+            CreatePaymentResponse createPaymentResponse = null;
+            PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
+            if(paymentData != null && paymentData.CreatePaymentResponse != null)
+            {
+                Console.WriteLine("Returning CreatePaymentResponse from storage.");
+                //_context.Vtex.Logger.Debug("CreatePayment", null, "Returning CreatePaymentResponse from storage.");
+                await _vtexApiService.ProcessConversions();
+                return paymentData.CreatePaymentResponse;
+            }
+
             _context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            CreatePaymentResponse createPaymentResponse = null;
             Payments payment = new Payments
             {
                 clientReferenceInformation = new ClientReferenceInformation
@@ -106,7 +116,7 @@ namespace Cybersource.Services
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode
                     },
-                    lineItems = new System.Collections.Generic.List<LineItem>()
+                    lineItems = new List<LineItem>()
                 },
                 deviceInformation = new DeviceInformation
                 {
@@ -138,7 +148,7 @@ namespace Cybersource.Services
             switch (merchantSettings.Processor)
             {
                 case CybersourceConstants.Processors.Braspag:
-                    if(merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
+                    if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
                     {
                         payment.processingInformation = new ProcessingInformation
                         {
@@ -266,7 +276,7 @@ namespace Cybersource.Services
                     break;
             }
 
-            foreach(VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
+            foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
                 LineItem lineItem = new LineItem
                 {
@@ -281,7 +291,7 @@ namespace Cybersource.Services
             }
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
-            if(paymentsResponse != null)
+            if (paymentsResponse != null)
             {
                 createPaymentResponse = new CreatePaymentResponse();
                 createPaymentResponse.AuthorizationId = paymentsResponse.Id;
@@ -297,7 +307,7 @@ namespace Cybersource.Services
                 // PENDING_REVIEW
                 // DECLINED
                 // INVALID_REQUEST
-                switch(paymentsResponse.Status)
+                switch (paymentsResponse.Status)
                 {
                     case "AUTHORIZED":
                     case "PARTIAL_AUTHORIZED":
@@ -316,31 +326,35 @@ namespace Cybersource.Services
                 }
 
                 createPaymentResponse.Status = paymentStatus;
-                if(paymentsResponse.ProcessorInformation != null)
+                if (paymentsResponse.ProcessorInformation != null)
                 {
                     createPaymentResponse.Nsu = paymentsResponse.ProcessorInformation.TransactionId;
                 }
-            
+
                 createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
 
                 decimal authAmount = 0m;
-                if(paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
+                if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
                 {
                     decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.authorizedAmount, out authAmount);
                 }
 
-                PaymentData paymentData = new PaymentData
+                paymentData = new PaymentData
                 {
                     AuthorizationId = createPaymentResponse.AuthorizationId,
                     TransactionId = createPaymentResponse.Tid,
                     PaymentId = createPaymentResponse.PaymentId,
                     Value = authAmount,
                     RequestId = null,
-                    CaptureId = null
+                    CaptureId = null,
+                    CreatePaymentResponse = createPaymentResponse,
+                    CallbackUrl = createPaymentRequest.CallbackUrl
                 };
 
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
             }
+
+            _context.Vtex.Logger.Debug("createPaymentResponse", null, JsonConvert.SerializeObject(createPaymentResponse));
 
             return createPaymentResponse;
         }
@@ -369,7 +383,7 @@ namespace Cybersource.Services
             };
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessReversal(payment, paymentData.AuthorizationId);
-            if(paymentsResponse != null)
+            if (paymentsResponse != null)
             {
                 cancelPaymentResponse = new CancelPaymentResponse();
                 cancelPaymentResponse.PaymentId = cancelPaymentRequest.PaymentId;
@@ -405,7 +419,7 @@ namespace Cybersource.Services
             };
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, paymentData.AuthorizationId);
-            if(paymentsResponse != null)
+            if (paymentsResponse != null)
             {
                 capturePaymentResponse = new CapturePaymentResponse();
                 capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
@@ -417,7 +431,7 @@ namespace Cybersource.Services
                 capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
 
                 decimal authAmount = 0m;
-                if(paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
+                if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
                 {
                     decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.authorizedAmount, out authAmount);
                 }
@@ -452,9 +466,9 @@ namespace Cybersource.Services
                     }
                 }
             };
-            
+
             PaymentsResponse paymentsResponse = await _cybersourceApi.RefundCapture(payment, paymentData.CaptureId);
-            if(paymentsResponse != null)
+            if (paymentsResponse != null)
             {
                 refundPaymentResponse = new RefundPaymentResponse();
                 refundPaymentResponse.PaymentId = refundPaymentRequest.PaymentId;
@@ -463,7 +477,7 @@ namespace Cybersource.Services
                 refundPaymentResponse.RefundId = paymentsResponse.Id;
                 refundPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
 
-                if(paymentsResponse.RefundAmountDetails != null && paymentsResponse.RefundAmountDetails.RefundAmount != null)
+                if (paymentsResponse.RefundAmountDetails != null && paymentsResponse.RefundAmountDetails.RefundAmount != null)
                 {
                     refundPaymentResponse.Value = decimal.Parse(paymentsResponse.RefundAmountDetails.RefundAmount);
                 }
@@ -477,7 +491,7 @@ namespace Cybersource.Services
         public async Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest)
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
-            
+
             Payments payment = new Payments
             {
                 clientReferenceInformation = new ClientReferenceInformation
@@ -524,7 +538,7 @@ namespace Cybersource.Services
                 }
             };
 
-            foreach(AntifraudItem vtexItem in sendAntifraudDataRequest.MiniCart.Items)
+            foreach (AntifraudItem vtexItem in sendAntifraudDataRequest.MiniCart.Items)
             {
                 LineItem lineItem = new LineItem
                 {
@@ -552,7 +566,7 @@ namespace Cybersource.Services
                 Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
             };
 
-            switch(paymentsResponse.Status)
+            switch (paymentsResponse.Status)
             {
                 case "ACCEPTED":
                     sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
@@ -569,17 +583,17 @@ namespace Cybersource.Services
                     sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
                     break;
                 default:
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
                     break;
             };
 
             string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
             Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);
             Func<Dictionary<string, object>, IEnumerable<KeyValuePair<string, object>>> flatten = null;
-            flatten = dict => dict.SelectMany(kv => 
-                        kv.Value is Dictionary<string,object> 
-                            ? flatten((Dictionary<string,object>)kv.Value)
-                            : new List<KeyValuePair<string,object>>(){ kv}
+            flatten = dict => dict.SelectMany(kv =>
+                        kv.Value is Dictionary<string, object>
+                            ? flatten((Dictionary<string, object>)kv.Value)
+                            : new List<KeyValuePair<string, object>>() { kv }
                        );
 
             sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
@@ -594,6 +608,44 @@ namespace Cybersource.Services
             return await _cybersourceRepository.GetAntifraudData(id);
         }
         #endregion Antifraud
+
+        #region Reporting
+        public async Task<ConversionReportResponse> ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            return await _cybersourceApi.ConversionDetailReport(dtStartTime, dtEndTime);
+        }
+
+        public async Task<ConversionReportResponse> ConversionDetailReport(string startTime, string endTime)
+        {
+            DateTime dtStartTime = DateTime.Parse(startTime);
+            DateTime dtEndTime = DateTime.Parse(endTime);
+            return await this.ConversionDetailReport(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            return await _cybersourceApi.RetrieveAvailableReports(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> RetrieveAvailableReports(string startTime, string endTime)
+        {
+            DateTime dtStartTime = DateTime.Parse(startTime);
+            DateTime dtEndTime = DateTime.Parse(endTime);
+            return await this.RetrieveAvailableReports(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime)
+        {
+            return await _cybersourceApi.GetPurchaseAndRefundDetails(dtStartTime, dtEndTime);
+        }
+
+        public async Task<string> GetPurchaseAndRefundDetails(string startTime, string endTime)
+        {
+            DateTime dtStartTime = DateTime.Parse(startTime);
+            DateTime dtEndTime = DateTime.Parse(endTime);
+            return await this.GetPurchaseAndRefundDetails(dtStartTime, dtEndTime);
+        }
+        #endregion Reporting
 
         #region OAuth
         public async Task<string> GetAuthUrl()
