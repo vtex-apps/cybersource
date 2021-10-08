@@ -354,6 +354,8 @@ namespace Cybersource.Services
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
             }
 
+            _context.Vtex.Logger.Debug("createPaymentResponse", null, JsonConvert.SerializeObject(createPaymentResponse));
+
             return createPaymentResponse;
         }
 

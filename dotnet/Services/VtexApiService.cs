@@ -765,6 +765,7 @@ namespace Cybersource.Services
                         if (paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Undefined))
                         {
                             bool updateStatus = true;
+                            paymentData.CreatePaymentResponse.Message = conversionDetail.ReviewerComments;
                             switch (conversionDetail.NewDecision)
                             {
                                 case CybersourceConstants.CybersourceDecision.Accept:

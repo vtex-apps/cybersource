@@ -1,8 +1,21 @@
 type Query {
-	none: String
+  conversionReport(startDate: String, endDate: String): ConversionReport
 }
 
 type Mutation {
   initConfiguration: String
   removeConfiguration: String
+}
+
+type ConversionReport {
+  conversionDetails: [ConversionDetail]
+}
+
+type ConversionDetail {
+  conversionTime: String
+  merchantReferenceNumber: String
+  newDecision: String
+  originalDecision: String
+  reviewer: String
+  reviewerComments: String
 }

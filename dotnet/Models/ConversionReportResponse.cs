@@ -27,7 +27,7 @@ namespace Cybersource.Models
         public string MerchantReferenceNumber { get; set; }
 
         [JsonProperty("conversionTime")]
-        public DateTimeOffset ConversionTime { get; set; }
+        public string ConversionTime { get; set; }
 
         [JsonProperty("requestId")]
         public string RequestId { get; set; }
@@ -57,7 +57,7 @@ namespace Cybersource.Models
     public class Note
     {
         [JsonProperty("time")]
-        public DateTimeOffset Time { get; set; }
+        public string Time { get; set; }
 
         [JsonProperty("comments")]
         public string Comments { get; set; }
