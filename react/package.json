@@ -1,6 +1,6 @@
 {
   "name": "cybersource",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Cybersource payment",
   "repository": "https://github.com/vtex-apps/cybersource",
   "devDependencies": {
