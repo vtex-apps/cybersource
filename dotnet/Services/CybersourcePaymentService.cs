@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Cybersource.Data;
 using Cybersource.Models;
@@ -67,6 +68,10 @@ namespace Cybersource.Services
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             Payments payment = new Payments
             {
+                merchantInformation = new MerchantInformation
+                {
+                    merchantName = merchantSettings.merchantName
+                },
                 clientReferenceInformation = new ClientReferenceInformation
                 {
                     code = createPaymentRequest.PaymentId,
@@ -144,7 +149,31 @@ namespace Cybersource.Services
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
             decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
-            Console.WriteLine($"    ------------------ Processor: {merchantSettings.Processor} ------------------    ");
+            //CybersourceConstants.CardType cardType = this.FindType(createPaymentRequest.Card.Bin);
+            CybersourceConstants.CardType cardType = CybersourceConstants.CardType.Unknown;
+            BinLookup binLookup = await _vtexApiService.BinLookup(createPaymentRequest.Card.Bin);
+            if(binLookup != null)
+            {
+                Console.WriteLine($"Bin lookup {binLookup.Bank.Name} {binLookup.Scheme} {binLookup.Type}");
+                if (Enum.TryParse(binLookup.Bank.Name, true, out cardType))
+                {
+                    Console.WriteLine($"Set to {cardType} from Bank Name.");
+                }
+                else if (Enum.TryParse(binLookup.Scheme, true, out cardType))
+                {
+                    Console.WriteLine($"Set to {cardType} from Scheme.");
+                }
+                else
+                {
+                    cardType = this.FindType(createPaymentRequest.Card.Bin);
+                }
+            }
+            else
+            {
+                cardType = this.FindType(createPaymentRequest.Card.Bin);
+            }
+
+            Console.WriteLine($"    ------------------ Processor: {merchantSettings.Processor} [{cardType}] ------------------    ");
             switch (merchantSettings.Processor)
             {
                 case CybersourceConstants.Processors.Braspag:
@@ -184,27 +213,39 @@ namespace Cybersource.Services
 
                     break;
                 case CybersourceConstants.Processors.VPC:
-                    payment.processingInformation = new ProcessingInformation
+                    if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
                     {
-                        commerceIndicator = CybersourceConstants.INSTALLMENT
-                    };
+                        if (cardType.Equals(CybersourceConstants.CardType.Visa))
+                        {
+                            payment.processingInformation = new ProcessingInformation
+                            {
+                                commerceIndicator = CybersourceConstants.INSTALLMENT
+                            };
 
-                    payment.installmentInformation = new InstallmentInformation
-                    {
-                        totalCount = numberOfInstallments
-                    };
+                            payment.installmentInformation = new InstallmentInformation
+                            {
+                                totalCount = numberOfInstallments
+                            };
+                        }
+                    }
 
                     break;
                 case CybersourceConstants.Processors.Izipay:
-                    plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
-                    payment.issuerInformation = new IssuerInformation
+                    if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Peru))
                     {
-                        //POS 1 - 6:014001
-                        //POS 7 - 8: # of installments
-                        //POS 9 - 16:00000000
-                        //POS 17: plan(0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días)
-                        discretionaryData = $"14001{numberOfInstallments}00000000{plan}"
-                    };
+                        if (cardType.Equals(CybersourceConstants.CardType.Visa) || cardType.Equals(CybersourceConstants.CardType.MasterCard))
+                        {
+                            plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
+                            payment.issuerInformation = new IssuerInformation
+                            {
+                                //POS 1 - 6:014001
+                                //POS 7 - 8: # of installments
+                                //POS 9 - 16:00000000
+                                //POS 17: plan(0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días)
+                                discretionaryData = $"14001{numberOfInstallments}00000000{plan}"
+                            };
+                        }
+                    }
 
                     break;
                 case CybersourceConstants.Processors.eGlobal:
@@ -749,6 +790,7 @@ namespace Cybersource.Services
                 case "discover":
                     cardType = "004";
                     break;
+                case "diners":
                 case "diners club":
                     cardType = "005";
                     break;
@@ -807,5 +849,59 @@ namespace Cybersource.Services
 
             return cardType;
         }
+
+        public CybersourceConstants.CardType FindType(string cardNumber)
+        {
+            // Visa:   / ^4(?!38935 | 011 | 51416 | 576)\d{ 12} (?:\d{ 3})?$/
+            // Master: / ^5(?!04175 | 067 | 06699)\d{ 15}$/
+            // Amex:   / ^3[47]\d{ 13}$/
+            // Hiper:  / ^(38 | 60)\d{ 11} (?:\d{ 3})?(?:\d{ 3})?$/
+            // Diners: / ^3(?:0[15] |[68]\d)\d{ 11}$/
+            // Elo:    / ^[456](?:011 | 38935 | 51416 | 576 | 04175 | 067 | 06699 | 36368 | 36297)\d{ 10} (?:\d{ 2})?$/
+            //https://www.regular-expressions.info/creditcard.html
+            if (Regex.Match(cardNumber, @"^4[0-9]{5}$").Success)
+            {
+                return CybersourceConstants.CardType.Visa;
+            }
+
+            if (Regex.Match(cardNumber, @"^(?:5[1-5][0-9]{3}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{3}|27[01][0-9]|2720)[0-9]$").Success)
+            {
+                return CybersourceConstants.CardType.MasterCard;
+            }
+
+            if (Regex.Match(cardNumber, @"^3[47][0-9]{4}$").Success)
+            {
+                return CybersourceConstants.CardType.AmericanExpress;
+            }
+
+            if (Regex.Match(cardNumber, @"^65[4-9][0-9]{3}|64[4-9][0-9]{3}|6011[0-9]{2}|(622(?:12[6-9]|1[3-9][0-9]|[2-8][0-9][0-9]|9[01][0-9]|92[0-5])[0-9]{3})$").Success)
+            {
+                return CybersourceConstants.CardType.Discover;
+            }
+
+            if (Regex.Match(cardNumber, @"^(?:2131|1800|35\d{3})\d{1}$").Success)
+            {
+                return CybersourceConstants.CardType.JCB;
+            }
+
+            if (Regex.Match(cardNumber, @"^3(?:0[0-5]|[68][0-9])[0-9]{3}$").Success)
+            {
+                return CybersourceConstants.CardType.Diners;
+            }
+
+            //if (Regex.Match(cardNumber, @"^(636368|438935|504175|451416|636297|5067[0-9]{2}|4576[0-9]{2}|4011[0-9]{2})$").Success)
+            if (Regex.Match(cardNumber, @"^[456](?:011|38935|51416|576|04175|067|06699|36368|36297)?$").Success)
+            {
+                return CybersourceConstants.CardType.Elo;
+            }
+
+            if (Regex.Match(cardNumber, @"^(38|60)\d{4}?$").Success)
+            {
+                return CybersourceConstants.CardType.Hipercard;
+            }
+
+            return CybersourceConstants.CardType.Unknown;
+        }
+
     }
 }

@@ -17,5 +17,7 @@ namespace Cybersource.Services
 
         Task<SendResponse> PostCallbackResponse(string callbackUrl, CreatePaymentResponse createPaymentResponse);
         Task<string> ProcessConversions();
+
+        Task<BinLookup> BinLookup(string bin);
     }
 }

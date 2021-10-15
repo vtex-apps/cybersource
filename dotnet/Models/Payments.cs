@@ -16,5 +16,6 @@ namespace Cybersource.Models
         public BuyerInformation buyerInformation { get; set; }
         public IssuerInformation issuerInformation { get; set; }
         public TaxInformation taxInformation { get; set; }
+        public MerchantInformation merchantInformation { get; set; }
     }
 }

@@ -118,6 +118,8 @@
             methods.PaymentMethods.Add("Discover");
             methods.PaymentMethods.Add("JCB");
             methods.PaymentMethods.Add("Diners");
+            methods.PaymentMethods.Add("Hipercard");
+            methods.PaymentMethods.Add("Elo");
 
             //Response.Headers.Add("Cache-Control", "private");
 
@@ -312,7 +314,7 @@
         public async Task<IActionResult> GetPurchaseAndRefundDetails()
         {
             Response.Headers.Add("Cache-Control", "no-cache");
-            return Json(await _cybersourcePaymentService.GetPurchaseAndRefundDetails(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
+            return Json(await _cybersourcePaymentService.GetPurchaseAndRefundDetails(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(0)));
         }
 
         public async Task<IActionResult> ProcessConversions()

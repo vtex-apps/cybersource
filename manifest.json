@@ -66,6 +66,13 @@
       }
     },
     {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "lookup.binlist.net",
+        "path": "/*"
+      }
+    },
+    {
       "name": "vbase-read-write"
     }
   ],

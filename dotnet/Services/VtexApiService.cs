@@ -946,5 +946,46 @@ namespace Cybersource.Services
 
             return sendResponse;
         }
+
+        public async Task<BinLookup> BinLookup(string bin)
+        {
+            // GET https://lookup.binlist.net/{{BIN}}
+
+            BinLookup binLookup = null;
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"https://lookup.binlist.net/{bin}")
+                };
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    binLookup = JsonConvert.DeserializeObject<BinLookup>(responseContent);
+                }
+                else
+                {
+                    Console.WriteLine($"BinLookup [{response.StatusCode}] {responseContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"BinLookup Error: {ex.Message}");
+            }
+
+            return binLookup;
+        }
     }
 }
