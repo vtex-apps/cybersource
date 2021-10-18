@@ -31,5 +31,15 @@
       "name": "JCB",
       "allowsSplit": "onCapture"
     }
+  ],
+  "customFields": [
+    {
+      "name": "Company Name",
+      "type": "text"
+    },
+    {
+      "name": "Company Tax Id",
+      "type": "text"
+    }
   ]
 }

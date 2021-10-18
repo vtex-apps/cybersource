@@ -346,10 +346,6 @@ namespace Cybersource.Services
                 }
             };
 
-            //proxyTokenRequest.Tokens[0].Value.HmacSha256.Add(key, hmacSha256Class);
-
-            Console.WriteLine($"SendProxySignatureRequest:\n{JsonConvert.SerializeObject(proxyTokenRequest)}\n");
-
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
 
             return sendResponse;

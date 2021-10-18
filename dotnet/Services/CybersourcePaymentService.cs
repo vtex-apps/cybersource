@@ -73,6 +73,7 @@ namespace Cybersource.Services
                     merchantName = merchantSettings.merchantName,
                     taxId = merchantSettings.merchantTaxId
                 },
+                //merchantDefinedInformation = new List<MerchantDefinedInformation>(),
                 clientReferenceInformation = new ClientReferenceInformation
                 {
                     code = createPaymentRequest.PaymentId,
@@ -152,6 +153,7 @@ namespace Cybersource.Services
             decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
             //CybersourceConstants.CardType cardType = this.FindType(createPaymentRequest.Card.Bin);
             CybersourceConstants.CardType cardType = CybersourceConstants.CardType.Unknown;
+            bool isDebit = false;
             BinLookup binLookup = await _vtexApiService.BinLookup(createPaymentRequest.Card.Bin);
             if(binLookup != null)
             {
@@ -168,13 +170,18 @@ namespace Cybersource.Services
                 {
                     cardType = this.FindType(createPaymentRequest.Card.Bin);
                 }
+
+                if (binLookup.Type != null)
+                {
+                    isDebit = binLookup.Type.Equals("debit", StringComparison.OrdinalIgnoreCase);
+                }
             }
             else
             {
                 cardType = this.FindType(createPaymentRequest.Card.Bin);
             }
 
-            Console.WriteLine($"    ------------------ Processor: {merchantSettings.Processor} [{cardType}] ------------------    ");
+            Console.WriteLine($"    ------------------ Processor: {merchantSettings.Processor} [{cardType}] Debit? {isDebit} ------------------    ");
             switch (merchantSettings.Processor)
             {
                 case CybersourceConstants.Processors.Braspag:
@@ -216,7 +223,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.VPC:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
                     {
-                        if (cardType.Equals(CybersourceConstants.CardType.Visa))
+                        if (cardType.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
                         {
                             payment.processingInformation = new ProcessingInformation
                             {

@@ -41,7 +41,8 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                //_context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
+                _context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
+                Console.WriteLine(bodyAsText);
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                 paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
             }
@@ -124,6 +125,69 @@
             //Response.Headers.Add("Cache-Control", "private");
 
             return Json(methods);
+        }
+
+        public JsonResult Manifest()
+        {
+            Console.WriteLine(" ------- MANIFEST ----------- ");
+            Manifest manifest = new Manifest
+            {
+                PaymentMethods = new List<PaymentMethod>
+                {
+                    new PaymentMethod
+                    {
+                        Name = "Visa",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "American Express",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "Diners",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "Mastercard",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "Hipercard",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "Elo",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "JCB",
+                        AllowsSplit = "onCapture"
+                    }
+                },
+                CustomFields = new List<CustomField>
+                {
+                    new CustomField
+                    {
+                        Name = "Company Name",
+                        Type = "text"
+                    },
+                    new CustomField
+                    {
+                        Name = "Company Tax Id",
+                        Type = "text"
+                    }
+                }
+            };
+
+            //Response.Headers.Add("Cache-Control", "private");
+
+            return Json(manifest);
         }
 
         /// <summary>

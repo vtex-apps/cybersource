@@ -11,6 +11,10 @@
       "path": "/cybersource/payment-provider/payment-methods",
       "public": true
     },
+    "manifest": {
+      "path": "/cybersource/payment-provider/manifest",
+      "public": true
+    },
     "createPayment": {
       "path": "/cybersource/payment-provider/payments",
       "public": true
