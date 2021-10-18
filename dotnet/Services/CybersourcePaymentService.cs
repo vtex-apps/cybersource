@@ -70,7 +70,8 @@ namespace Cybersource.Services
             {
                 merchantInformation = new MerchantInformation
                 {
-                    merchantName = merchantSettings.merchantName
+                    merchantName = merchantSettings.merchantName,
+                    taxId = merchantSettings.merchantTaxId
                 },
                 clientReferenceInformation = new ClientReferenceInformation
                 {

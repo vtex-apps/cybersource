@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Cybersource.Models
 {
@@ -23,26 +24,30 @@ namespace Cybersource.Models
         [JsonProperty("sha256")]
         public Sha256 Sha256 { get; set; }
 
+        //[JsonProperty("hmac-sha256")]
+        //public HmacSha256Element HmacSha256 { get; set; }
+
         [JsonProperty("hmac-sha256")]
-        public HmacSha256 HmacSha256 { get; set; }
+        public object[] HmacSha256 { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Sha256
     {
         [JsonProperty("replaceTokens")]
         public string[] ReplaceTokens { get; set; }
     }
 
+    //[JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    //public class HmacSha256Element
+    //{
+
+    //}
+
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
-    public class HmacSha256
+    public class HmacSha256Class
     {
         [JsonProperty("replaceTokens")]
         public string[] ReplaceTokens { get; set; }
-
-        [JsonProperty("key")]
-        public string[] Key { get; set; }
-
-        [JsonProperty("data")]
-        public string[] Data { get; set; }
     }
 }

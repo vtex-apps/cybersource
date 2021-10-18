@@ -232,6 +232,11 @@ namespace Cybersource.Services
                 }
 
                 signatureString = await this.GenerateProxySignatureString(merchantSettings, urlBase, gmtDateTime, $"{method.ToString().ToLower()} {endpoint}", digest, proxyTokenUrl);
+                if(string.IsNullOrEmpty(signatureString))
+                {
+                    return sendResponse;
+                }
+
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Signature", signatureString);  // A comma-separated list of parameters that are formatted as name-value pairs
 
                 request.Headers.Add(CybersourceConstants.PROXY_FORWARD_TO, requestUri);
@@ -317,15 +322,33 @@ namespace Cybersource.Services
                         Name = "signature",
                         Value = new Value
                         {
-                            HmacSha256 = new HmacSha256
+                            HmacSha256 = new object[]
                             {
-                                Key = new string[] { key },
-                                Data = new string[] { jsonSerializedData }
+                                key,
+                                new HmacSha256Class
+                                {
+                                    ReplaceTokens = new string[]
+                                    {
+                                        jsonSerializedData
+                                    }
+                                }
                             }
                         }
                     }
                 }
             };
+
+            HmacSha256Class hmacSha256Class = new HmacSha256Class
+            {
+                ReplaceTokens = new string[]
+                {
+                    jsonSerializedData
+                }
+            };
+
+            //proxyTokenRequest.Tokens[0].Value.HmacSha256.Add(key, hmacSha256Class);
+
+            Console.WriteLine($"SendProxySignatureRequest:\n{JsonConvert.SerializeObject(proxyTokenRequest)}\n");
 
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
 
@@ -780,6 +803,7 @@ namespace Cybersource.Services
             else
             {
                 Console.WriteLine("Did not calculate signature!");
+                return null;
             }
 
             signatureHeaderValue.Append("keyid=\"" + merchantSettings.MerchantKey + "\"");
