@@ -212,7 +212,7 @@ namespace Cybersource.Services
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Host", urlBase);
                 if (!method.Equals(HttpMethod.Get) && !method.Equals(HttpMethod.Delete))
                 {
-                    SendResponse proxyTokenSendResponse = await this.SendProxyTokenRequest(jsonSerializedData, proxyTokenUrl);
+                    SendResponse proxyTokenSendResponse = await this.SendProxyDigestRequest(jsonSerializedData, proxyTokenUrl);
                     if (proxyTokenSendResponse.Success)
                     {
                         ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
@@ -231,7 +231,12 @@ namespace Cybersource.Services
                     request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Digest", digest); // Do not pass this header field for GET requests. It is a hash of the JSON payload made using a SHA-256 hashing algorithm.
                 }
 
-                signatureString = await this.GenerateSignatureString(merchantSettings, urlBase, gmtDateTime, $"{method.ToString().ToLower()} {endpoint}", digest);
+                signatureString = await this.GenerateProxySignatureString(merchantSettings, urlBase, gmtDateTime, $"{method.ToString().ToLower()} {endpoint}", digest, proxyTokenUrl);
+                if(string.IsNullOrEmpty(signatureString))
+                {
+                    return sendResponse;
+                }
+
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Signature", signatureString);  // A comma-separated list of parameters that are formatted as name-value pairs
 
                 request.Headers.Add(CybersourceConstants.PROXY_FORWARD_TO, requestUri);
@@ -276,10 +281,79 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
-        public async Task<SendResponse> SendProxyTokenRequest(string jsonSerializedData, string proxyTokenUrl)
+        public async Task<SendResponse> SendProxyDigestRequest(string jsonSerializedData, string proxyTokenUrl)
         {
             SendResponse sendResponse = null;
-            ProxyTokenRequest proxyTokenRequest = null;
+            ProxyTokenRequest proxyTokenRequest = new ProxyTokenRequest
+            {
+                Tokens = new RequestToken[]
+                {
+                    new RequestToken
+                    {
+                        Name = "digest",
+                        Value = new Value
+                        {
+                            Sha256 = new Sha256
+                            {
+                                ReplaceTokens = new string[]
+                                {
+                                    jsonSerializedData
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
+
+            return sendResponse;
+        }
+
+        public async Task<SendResponse> SendProxySignatureRequest(string jsonSerializedData, string proxyTokenUrl, string key)
+        {
+            SendResponse sendResponse = null;
+            ProxyTokenRequest proxyTokenRequest = new ProxyTokenRequest
+            {
+                Tokens = new RequestToken[]
+                {
+                    new RequestToken
+                    {
+                        Name = "signature",
+                        Value = new Value
+                        {
+                            HmacSha256 = new object[]
+                            {
+                                key,
+                                new HmacSha256Class
+                                {
+                                    ReplaceTokens = new string[]
+                                    {
+                                        jsonSerializedData
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            HmacSha256Class hmacSha256Class = new HmacSha256Class
+            {
+                ReplaceTokens = new string[]
+                {
+                    jsonSerializedData
+                }
+            };
+
+            sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
+
+            return sendResponse;
+        }
+
+        public async Task<SendResponse> SendProxyTokenRequest(ProxyTokenRequest proxyTokenRequest, string proxyTokenUrl)
+        {
+            SendResponse sendResponse = null;
 
             try
             {
@@ -289,31 +363,7 @@ namespace Cybersource.Services
                     RequestUri = new Uri(proxyTokenUrl)
                 };
 
-                if (!string.IsNullOrEmpty(jsonSerializedData))
-                {
-                    proxyTokenRequest = new ProxyTokenRequest
-                    {
-                        Tokens = new RequestToken[]
-                        {
-                            new RequestToken
-                            {
-                                Name = "digest",
-                                Value = new Value
-                                {
-                                    Sha256 = new Sha256
-                                    {
-                                        ReplaceTokens = new string[]
-                                        {
-                                            jsonSerializedData
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    };
-
-                    request.Content = new StringContent(JsonConvert.SerializeObject(proxyTokenRequest), Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
-                }
+                request.Content = new StringContent(JsonConvert.SerializeObject(proxyTokenRequest), Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
 
                 var client = _clientFactory.CreateClient();
                 var response = await client.SendAsync(request);
@@ -344,6 +394,7 @@ namespace Cybersource.Services
             /// TESTING ------------------------------------------
             //Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
             //payments.paymentInformation.card.number = "4111111111111111";
+            //payments.paymentInformation.card.number = "6362970000457013";
             //payments.paymentInformation.card.securityCode = "111";
             //payments.orderInformation.amountDetails.totalAmount = "401";
             //payments.orderInformation.billTo.postalCode = "28650";
@@ -686,6 +737,77 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
             //_context.Vtex.Logger.Debug("GenerateSignatureString", null, signatureString.ToString());
+            Console.WriteLine(signatureString.ToString());
+
+            return signatureHeaderValue.ToString();
+        }
+
+        private async Task<string> GenerateProxySignatureString(MerchantSettings merchantSettings, string hostName, string gmtDateTime, string requestTarget, string digest, string proxyTokenUrl)
+        {
+            var signatureString = new StringBuilder();
+            var signatureHeaderValue = new StringBuilder();
+            string headersString = string.Empty;
+            const string getOrDeleteHeaders = "host date (request-target) v-c-merchant-id";
+            const string postOrPutHeaders = "host date (request-target) digest v-c-merchant-id";
+            if (string.IsNullOrEmpty(digest))
+            {
+                headersString = getOrDeleteHeaders;
+            }
+            else
+            {
+                headersString = postOrPutHeaders;
+            }
+
+            signatureString.Append('\n');
+            signatureString.Append("host");
+            signatureString.Append(": ");
+            signatureString.Append(hostName);
+            signatureString.Append('\n');
+            signatureString.Append("date");
+            signatureString.Append(": ");
+            signatureString.Append(gmtDateTime);
+            signatureString.Append('\n');
+            signatureString.Append("(request-target)");
+            signatureString.Append(": ");
+            signatureString.Append(requestTarget);
+            signatureString.Append('\n');
+            if (!string.IsNullOrEmpty(digest))
+            {
+                signatureString.Append("digest");
+                signatureString.Append(": ");
+                signatureString.Append(digest);
+                signatureString.Append('\n');
+            }
+
+            signatureString.Append("v-c-merchant-id");
+            signatureString.Append(": ");
+            signatureString.Append(merchantSettings.MerchantId);
+            signatureString.Remove(0, 1);
+
+            //var signatureByteString = Encoding.UTF8.GetBytes(signatureString.ToString());
+            //var decodedKey = Convert.FromBase64String(merchantSettings.SharedSecretKey);
+            //var aKeyId = new HMACSHA256(decodedKey);
+            //var hashmessage = aKeyId.ComputeHash(signatureByteString);
+            //var base64EncodedSignature = Convert.ToBase64String(hashmessage);
+            string base64EncodedSignature = string.Empty;
+            SendResponse proxyTokenSendResponse = await this.SendProxySignatureRequest(signatureString.ToString(), proxyTokenUrl, merchantSettings.SharedSecretKey);
+            if (proxyTokenSendResponse.Success)
+            {
+                ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
+                base64EncodedSignature = proxyToken.Tokens[0].Placeholder;
+            }
+            else
+            {
+                Console.WriteLine("Did not calculate signature!");
+                return null;
+            }
+
+            signatureHeaderValue.Append("keyid=\"" + merchantSettings.MerchantKey + "\"");
+            signatureHeaderValue.Append(", algorithm=\"" + CybersourceConstants.SignatureAlgorithm + "\"");
+            signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
+            signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
+
+            _context.Vtex.Logger.Debug("GenerateProxySignatureString", null, signatureString.ToString());
             Console.WriteLine(signatureString.ToString());
 
             return signatureHeaderValue.ToString();

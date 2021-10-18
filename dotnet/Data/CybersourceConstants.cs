@@ -143,6 +143,19 @@ namespace Cybersource.Data
             public const string AmexDirect = "Amex Direct";
         }
 
+        public enum CardType
+        {
+            Unknown,
+            MasterCard,
+            Visa,
+            AmericanExpress,
+            Discover,
+            JCB,
+            Diners,
+            Elo,
+            Hipercard
+        }
+
         public static Dictionary<string, string> CountryCodesMapping = new Dictionary<string, string>()
         {
            { "AFG", "AF" },    // Afghanistan

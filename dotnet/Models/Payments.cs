@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Cybersource.Models
 {
@@ -16,5 +17,7 @@ namespace Cybersource.Models
         public BuyerInformation buyerInformation { get; set; }
         public IssuerInformation issuerInformation { get; set; }
         public TaxInformation taxInformation { get; set; }
+        public MerchantInformation merchantInformation { get; set; }
+        public List<MerchantDefinedInformation> merchantDefinedInformation { get; set; }
     }
 }
