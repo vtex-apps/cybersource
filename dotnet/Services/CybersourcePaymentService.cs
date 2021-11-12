@@ -66,14 +66,31 @@ namespace Cybersource.Services
 
             _context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            string merchantName = createPaymentRequest.MerchantName;
+            string merchantTaxId = string.Empty;
+            if (createPaymentRequest.MerchantSettings != null)
+            {
+                foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
+                {
+                    switch(merchantSetting.Name)
+                    {
+                        case "Company Name":
+                            merchantName = merchantSetting.Value;
+                            break;
+                        case "Company Tax Id":
+                            merchantTaxId = merchantSetting.Value;
+                            break;
+                    }
+                }
+            }
+
             Payments payment = new Payments
             {
                 merchantInformation = new MerchantInformation
                 {
-                    merchantName = merchantSettings.merchantName,
-                    taxId = merchantSettings.merchantTaxId
+                    merchantName = merchantName,
+                    taxId = merchantTaxId
                 },
-                //merchantDefinedInformation = new List<MerchantDefinedInformation>(),
                 clientReferenceInformation = new ClientReferenceInformation
                 {
                     code = createPaymentRequest.PaymentId,
@@ -147,6 +164,22 @@ namespace Cybersource.Services
                     }
                 }
             };
+
+            if (createPaymentRequest.MerchantSettings != null)
+            {
+                payment.merchantDefinedInformation = new List<MerchantDefinedInformation>();
+                foreach (KeyValuePair<string,string> merchantSetting in merchantSettings.MerchantDefinedValues)
+                {
+                    MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                    {
+                        key = merchantSetting.Key,
+                        value = this.GetPropertyValue(createPaymentRequest, merchantSetting.Value)
+                    };
+
+                    Console.WriteLine($"ADDING SETTING {merchantSetting.Key} : {merchantSetting.Value} = {merchantDefinedInformation.value}");
+                    payment.merchantDefinedInformation.Add(merchantDefinedInformation);
+                }
+            }
 
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
@@ -333,7 +366,12 @@ namespace Cybersource.Services
                     productName = vtexItem.Name,
                     unitPrice = vtexItem.Price.ToString(),
                     quantity = vtexItem.Quantity.ToString(),
-                    discountAmount = vtexItem.Discount.ToString()
+                    discountAmount = vtexItem.Discount.ToString(),
+                    taxRate = vtexItem.TaxRate.ToString(),
+                    taxAmount = vtexItem.TaxValue.ToString(),
+                    //commodityCode = "",
+                    //productCode = "",
+
                 };
 
                 payment.orderInformation.lineItems.Add(lineItem);
@@ -911,5 +949,21 @@ namespace Cybersource.Services
             return CybersourceConstants.CardType.Unknown;
         }
 
+        public string GetPropertyValue(object cart, string propertyName)
+        {
+            string retval = string.Empty;
+            try
+            {
+                retval = cart.GetType().GetProperties()
+                   .Single(pi => pi.Name == propertyName)
+                   .GetValue(cart, null).ToString();
+            }
+            catch(Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetPropertyValue", null, $"Could not get value of '{propertyName}'", ex);
+            }
+
+            return retval;
+        }
     }
 }

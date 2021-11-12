@@ -94,7 +94,7 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
+                //Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
 
                 StringBuilder sb = new StringBuilder();
                 foreach (var header in request.Headers)
@@ -165,7 +165,7 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                Console.WriteLine($"- SendReportRequest: [{response.StatusCode}] {responseContent} -");
+                //Console.WriteLine($"- SendReportRequest: [{response.StatusCode}] {responseContent} -");
 
                 _context.Vtex.Logger.Debug("SendReportRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
             }
@@ -223,11 +223,6 @@ namespace Cybersource.Services
                         Console.WriteLine("Did not calculate digest!");
                     }
 
-                    /// TESTING ------------------------------------------
-                    //Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
-                    //digest = await this.GenerateDigest(jsonSerializedData);
-                    /// TESTING ------------------------------------------
-
                     request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Digest", digest); // Do not pass this header field for GET requests. It is a hash of the JSON payload made using a SHA-256 hashing algorithm.
                 }
 
@@ -259,7 +254,7 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
+                //Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
                 StringBuilder sb = new StringBuilder();
                 foreach (var header in request.Headers)
                 {
@@ -375,7 +370,7 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                Console.WriteLine($"- SendProxyTokenRequest: [{response.StatusCode}] - ");
+                //Console.WriteLine($"- SendProxyTokenRequest: [{response.StatusCode}] - ");
 
                 _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{request.RequestUri}\n{JsonConvert.SerializeObject(proxyTokenRequest)}\n[{response.StatusCode}]\n{responseContent}");
             }
@@ -391,22 +386,9 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
-            /// TESTING ------------------------------------------
-            //Console.WriteLine("     !!!!    OVERRIDING CARD DATA FOR TESTING    !!!!    ");
-            //payments.paymentInformation.card.number = "4111111111111111";
-            //payments.paymentInformation.card.number = "6362970000457013";
-            //payments.paymentInformation.card.securityCode = "111";
-            //payments.orderInformation.amountDetails.totalAmount = "401";
-            //payments.orderInformation.billTo.postalCode = "28650";
-            /// TESTING ------------------------------------------
-
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-            
-
-            //SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            //response = await this.SendRequest(HttpMethod.Post, endpoint, json);
             
             if (response != null)
             {
@@ -737,7 +719,7 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
             //_context.Vtex.Logger.Debug("GenerateSignatureString", null, signatureString.ToString());
-            Console.WriteLine(signatureString.ToString());
+            //Console.WriteLine(signatureString.ToString());
 
             return signatureHeaderValue.ToString();
         }
@@ -783,12 +765,6 @@ namespace Cybersource.Services
             signatureString.Append(": ");
             signatureString.Append(merchantSettings.MerchantId);
             signatureString.Remove(0, 1);
-
-            //var signatureByteString = Encoding.UTF8.GetBytes(signatureString.ToString());
-            //var decodedKey = Convert.FromBase64String(merchantSettings.SharedSecretKey);
-            //var aKeyId = new HMACSHA256(decodedKey);
-            //var hashmessage = aKeyId.ComputeHash(signatureByteString);
-            //var base64EncodedSignature = Convert.ToBase64String(hashmessage);
             string base64EncodedSignature = string.Empty;
             SendResponse proxyTokenSendResponse = await this.SendProxySignatureRequest(signatureString.ToString(), proxyTokenUrl, merchantSettings.SharedSecretKey);
             if (proxyTokenSendResponse.Success)
@@ -807,8 +783,8 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
-            _context.Vtex.Logger.Debug("GenerateProxySignatureString", null, signatureString.ToString());
-            Console.WriteLine(signatureString.ToString());
+            _context.Vtex.Logger.Debug("GenerateProxySignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
+            //Console.WriteLine(signatureString.ToString());
 
             return signatureHeaderValue.ToString();
         }
