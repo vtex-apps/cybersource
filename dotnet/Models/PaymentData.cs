@@ -10,5 +10,6 @@ namespace Cybersource.Models
         public string CaptureId { get; set; }
         public CreatePaymentResponse CreatePaymentResponse { get; set; }
         public string CallbackUrl { get; set; }
+        public string OrderId { get; set; }
     }
 }

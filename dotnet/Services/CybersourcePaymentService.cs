@@ -93,7 +93,7 @@ namespace Cybersource.Services
                 },
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = createPaymentRequest.PaymentId,
+                    code = createPaymentRequest.OrderId,
                     //transactionId = createPaymentRequest.TransactionId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
@@ -165,19 +165,29 @@ namespace Cybersource.Services
                 }
             };
 
-            if (createPaymentRequest.MerchantSettings != null)
-            {
-                payment.merchantDefinedInformation = new List<MerchantDefinedInformation>();
-                foreach (KeyValuePair<string,string> merchantSetting in merchantSettings.MerchantDefinedValues)
-                {
-                    MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
-                    {
-                        key = merchantSetting.Key,
-                        value = this.GetPropertyValue(createPaymentRequest, merchantSetting.Value)
-                    };
+            // Make a copy of the payment request and add fields that are not available in the payment request / skip fields that should not be exposed
+            PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+            requestWrapper.MerchantId = merchantSettings.MerchantId;
+            requestWrapper.CompanyName = merchantName;
+            requestWrapper.CompanyTaxId = merchantTaxId;
 
-                    Console.WriteLine($"ADDING SETTING {merchantSetting.Key} : {merchantSetting.Value} = {merchantDefinedInformation.value}");
+            payment.merchantDefinedInformation = new List<MerchantDefinedInformation>();
+            foreach (KeyValuePair<string, string> merchantSetting in merchantSettings.MerchantDefinedValues)
+            {
+                MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                {
+                    key = merchantSetting.Key,
+                    value = this.GetPropertyValue(requestWrapper, merchantSetting.Value).ToString()
+                };
+
+                Console.WriteLine($"ADDING SETTING {merchantSetting.Key} : {merchantSetting.Value} = {merchantDefinedInformation.value}");
+                try
+                {
                     payment.merchantDefinedInformation.Add(merchantDefinedInformation);
+                }
+                catch(Exception ex)
+                {
+                    _context.Vtex.Logger.Error("CreatePayment", "MerchantDefinedInformation", $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
                 }
             }
 
@@ -435,7 +445,8 @@ namespace Cybersource.Services
                     RequestId = null,
                     CaptureId = null,
                     CreatePaymentResponse = createPaymentResponse,
-                    CallbackUrl = createPaymentRequest.CallbackUrl
+                    CallbackUrl = createPaymentRequest.CallbackUrl,
+                    OrderId = createPaymentRequest.OrderId
                 };
 
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
@@ -491,7 +502,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = capturePaymentRequest.PaymentId,
+                    code = paymentData.OrderId, //capturePaymentRequest.PaymentId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -949,21 +960,43 @@ namespace Cybersource.Services
             return CybersourceConstants.CardType.Unknown;
         }
 
-        public string GetPropertyValue(object cart, string propertyName)
+        public object GetPropertyValue(object obj, string propertyName)
         {
-            string retval = string.Empty;
+            //string retval = string.Empty;
             try
             {
-                retval = cart.GetType().GetProperties()
-                   .Single(pi => pi.Name == propertyName)
-                   .GetValue(cart, null).ToString();
+                //retval = cart.GetType().GetProperties()
+                //   .Single(pi => pi.Name == propertyName)
+                //   .GetValue(cart, null).ToString();
+                foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
+                    obj = prop.GetValue(obj, null);
             }
             catch(Exception ex)
             {
+                Console.WriteLine($"Could not get value of '{propertyName}' {ex.Message}");
                 _context.Vtex.Logger.Error("GetPropertyValue", null, $"Could not get value of '{propertyName}'", ex);
             }
 
-            return retval;
+            return obj;
+        }
+
+        public async Task AddDefaultMerchantDefinedValues(List<MerchantDefinedInformation> merchantDefinedValues, CreatePaymentRequest createPaymentRequest)
+        {
+            MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+            {
+                key = "MID",
+                value = createPaymentRequest.MerchantSettings.Where(s => s.Name.Equals("Company Name")).Select(s => s.Value).ToString()
+            };
+
+            merchantDefinedValues.Add(merchantDefinedInformation);
+
+            merchantDefinedInformation = new MerchantDefinedInformation
+            {
+                key = "Order Type",
+                value = createPaymentRequest.MerchantSettings.Where(s => s.Name.Equals("Company Name")).Select(s => s.Value).ToString()
+            };
+
+            merchantDefinedValues.Add(merchantDefinedInformation);
         }
     }
 }

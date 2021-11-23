@@ -105,7 +105,8 @@ namespace Cybersource.Services
                     //Console.WriteLine($" |-| {headerName} : {headerContent}");
                 }
 
-                _context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                _context.Vtex.Logger.Debug("SendRequest", $"Production? {merchantSettings.IsLive}", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                Console.WriteLine($"    |-| IS PRODUCTION ? {merchantSettings.IsLive}       ");
                 //Console.WriteLine($"- SendRequest: [{response.StatusCode}] {responseContent}");
                 //Console.WriteLine($"v-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}");
 
@@ -385,11 +386,21 @@ namespace Cybersource.Services
         #region Payments
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
+            /// TESTING
+            payments.paymentInformation.card.number = "4111111111111111";
+            payments.paymentInformation.card.securityCode = "111";
+            payments.paymentInformation.card.expirationMonth = "04";
+            payments.paymentInformation.card.expirationYear = "2023";
+            payments.paymentInformation.card.type = "001";
+            /// TESTING
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-            
+            /// TESTING
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            /// TESTING
+            //SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+
             if (response != null)
             {
                 if (response.Success)

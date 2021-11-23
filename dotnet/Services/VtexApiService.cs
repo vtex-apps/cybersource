@@ -754,44 +754,62 @@ namespace Cybersource.Services
         public async Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments)
         {
             string results = string.Empty;
-            PaymentData paymentData = await _cybersourceRepository.GetPaymentData(merchantReferenceNumber);
-            if (paymentData != null && paymentData.CreatePaymentResponse != null)
+            VtexOrder vtexOrder = await this.GetOrderInformation($"{merchantReferenceNumber}-01");
+            if (vtexOrder != null && vtexOrder.PaymentData != null && vtexOrder.PaymentData.Transactions != null)
             {
-                if (paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Undefined))
+                var payment = vtexOrder.PaymentData.Transactions.Select(t => t.Payments).FirstOrDefault();
+                string paymentId = payment.Select(p => p.Id).FirstOrDefault();
+                PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
+                if (paymentData != null && paymentData.CreatePaymentResponse != null)
                 {
-                    bool updateStatus = true;
-                    paymentData.CreatePaymentResponse.Message = comments;
-                    switch (newDecision)
+                    if (paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Undefined))
                     {
-                        case CybersourceConstants.CybersourceDecision.Accept:
-                            paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
-                            break;
-                        case CybersourceConstants.CybersourceDecision.Reject:
-                            paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
-                            break;
-                        case CybersourceConstants.CybersourceDecision.Review:
-                            updateStatus = false;
-                            break;
-                    }
-
-                    if (updateStatus)
-                    {
-                        await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
-                        if (paymentData.CallbackUrl != null)
+                        bool updateStatus = true;
+                        paymentData.CreatePaymentResponse.Message = comments;
+                        switch (newDecision)
                         {
-                            SendResponse sendResponse = await this.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
-                            if (sendResponse != null)
+                            case CybersourceConstants.CybersourceDecision.Accept:
+                                paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
+                                break;
+                            case CybersourceConstants.CybersourceDecision.Reject:
+                                paymentData.CreatePaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
+                                break;
+                            case CybersourceConstants.CybersourceDecision.Review:
+                                updateStatus = false;
+                                break;
+                        }
+
+                        if (updateStatus)
+                        {
+                            await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
+                            if (paymentData.CallbackUrl != null)
                             {
-                                results = ($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
-                                Console.WriteLine($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
+                                SendResponse sendResponse = await this.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
+                                if (sendResponse != null)
+                                {
+                                    results = ($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
+                                    Console.WriteLine($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
+                                }
+                                else
+                                {
+                                    results = ($"{merchantReferenceNumber} - {newDecision} Null response.");
+                                }
                             }
-                            else
-                            {
-                                results = ($"{merchantReferenceNumber} - {newDecision} Null response.");
-                            }
+                        }
+                        else
+                        {
+                            results = ($"{merchantReferenceNumber} - {newDecision} No Update.");
                         }
                     }
                 }
+                else
+                {
+                    results = ($"{merchantReferenceNumber} - {newDecision} No Payment Data.");
+                }
+            }
+            else
+            {
+                results = ($"{merchantReferenceNumber} - {newDecision} No Order Data.");
             }
 
             return results;

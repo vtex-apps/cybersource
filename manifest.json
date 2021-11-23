@@ -61,6 +61,48 @@
     {
       "name": "outbound-access",
       "attrs": {
+        "host": "apitest.cybersource.com",
+        "path": "/risk/v1/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "api.cybersource.com",
+        "path": "/risk/v1/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "apitest.cybersource.com",
+        "path": "/vas/v2/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "api.cybersource.com",
+        "path": "/vas/v2/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "apitest.cybersource.com",
+        "path": "/reporting/v3/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "api.cybersource.com",
+        "path": "/reporting/v3/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
         "host": "vtexus.myvtex.com",
         "path": "/_v/tax-fallback/*"
       }

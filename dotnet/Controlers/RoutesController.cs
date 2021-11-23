@@ -45,7 +45,7 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                _context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
+                _context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
                 //Console.WriteLine(bodyAsText);
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                 paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
@@ -68,6 +68,7 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                _context.Vtex.Logger.Debug("CancelPayment", "bodyAsText", bodyAsText);
                 CancelPaymentRequest cancelPaymentRequest = JsonConvert.DeserializeObject<CancelPaymentRequest>(bodyAsText);
                 cancelResponse = await this._cybersourcePaymentService.CancelPayment(cancelPaymentRequest);
             }
@@ -87,6 +88,7 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                _context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
                 CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
                 captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
             }
@@ -106,6 +108,7 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                _context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
                 RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
                 refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
             }
@@ -396,9 +399,10 @@
         {
             string result = string.Empty;
             string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-            //_context.Vtex.Logger.Debug("DecisionManagerNotify", null, bodyAsText);
+            _context.Vtex.Logger.Debug("DecisionManagerNotify", "1", bodyAsText);
             bodyAsText = HttpUtility.UrlDecode(bodyAsText);
             bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
+            _context.Vtex.Logger.Debug("DecisionManagerNotify", "2", bodyAsText);
             try
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(CaseManagementOrderStatus));
@@ -409,9 +413,9 @@
                     caseManagementOrderStatus = (CaseManagementOrderStatus)serializer.Deserialize(reader);
                 };
 
-                //Console.WriteLine($"DecisionManagerNotify {caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
+                Console.WriteLine($"DecisionManagerNotify {caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
                 result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
-                _context.Vtex.Logger.Info("DecisionManagerNotify", null, result);
+                _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{result}\n{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
                 Console.WriteLine(result);
             }
             catch (Exception ex)
