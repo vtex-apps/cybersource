@@ -221,6 +221,7 @@ namespace Cybersource.Services
                     }
                     else
                     {
+                        _context.Vtex.Logger.Error("SendProxyRequest", null, $"Did not calculate digest!\n{jsonSerializedData}");
                         Console.WriteLine("Did not calculate digest!");
                     }
 
@@ -238,6 +239,7 @@ namespace Cybersource.Services
                 request.Headers.Add(CybersourceConstants.PROXY_FORWARD_TO, requestUri);
 
                 string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                //string authToken = _context.Vtex.AuthToken;
                 if (authToken != null)
                 {
                     request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
@@ -350,6 +352,7 @@ namespace Cybersource.Services
         public async Task<SendResponse> SendProxyTokenRequest(ProxyTokenRequest proxyTokenRequest, string proxyTokenUrl)
         {
             SendResponse sendResponse = null;
+            string jsonSerializedData = JsonConvert.SerializeObject(proxyTokenRequest);
 
             try
             {
@@ -359,7 +362,7 @@ namespace Cybersource.Services
                     RequestUri = new Uri(proxyTokenUrl)
                 };
 
-                request.Content = new StringContent(JsonConvert.SerializeObject(proxyTokenRequest), Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
+                request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
 
                 var client = _clientFactory.CreateClient();
                 var response = await client.SendAsync(request);
@@ -372,8 +375,16 @@ namespace Cybersource.Services
                 };
 
                 //Console.WriteLine($"- SendProxyTokenRequest: [{response.StatusCode}] - ");
+                StringBuilder sb = new StringBuilder();
+                foreach (var header in request.Headers)
+                {
+                    string headerName = header.Key;
+                    string headerContent = string.Join(",", header.Value.ToArray());
+                    sb.AppendLine($"{headerName} : {headerContent}");
+                    //Console.WriteLine($" |-| {headerName} : {headerContent}");
+                }
 
-                _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{request.RequestUri}\n{JsonConvert.SerializeObject(proxyTokenRequest)}\n[{response.StatusCode}]\n{responseContent}");
+                _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -387,19 +398,22 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             /// TESTING
-            payments.paymentInformation.card.number = "4111111111111111";
-            payments.paymentInformation.card.securityCode = "111";
-            payments.paymentInformation.card.expirationMonth = "04";
-            payments.paymentInformation.card.expirationYear = "2023";
-            payments.paymentInformation.card.type = "001";
+            //if (!string.IsNullOrEmpty(payments.deviceInformation.fingerprintSessionId))
+            //{
+            //payments.paymentInformation.card.number = "4111111111111111";
+            //payments.paymentInformation.card.securityCode = "111";
+            //payments.paymentInformation.card.expirationMonth = "04";
+            //payments.paymentInformation.card.expirationYear = "2023";
+            //payments.paymentInformation.card.type = "001";
+            //}
             /// TESTING
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
             /// TESTING
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            //SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
             /// TESTING
-            //SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
 
             if (response != null)
             {

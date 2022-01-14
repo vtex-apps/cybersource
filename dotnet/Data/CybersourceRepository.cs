@@ -64,18 +64,19 @@
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
-            //Console.WriteLine($" - GetMerchantSettings - '{responseContent}'");
+            Console.WriteLine($" - GetMerchantSettings - '{responseContent}'");
             if (response.IsSuccessStatusCode)
             {
                 merchantSettings = JsonConvert.DeserializeObject<MerchantSettings>(responseContent);
-                if(merchantSettings.MerchantDefinedValues == null)
+                //if(merchantSettings.MerchantDefinedValues == null)
                 {
                     merchantSettings.MerchantDefinedValues = new Dictionary<string, string>();
-                    merchantSettings.MerchantDefinedValues.Add("MID", "MerchantId");
-                    merchantSettings.MerchantDefinedValues.Add("Order Type", "CompanyName");
-                    merchantSettings.MerchantDefinedValues.Add("CALL CENTER", "CompanyTaxId");
-                    merchantSettings.MerchantDefinedValues.Add("Customer Name", "CustomerName");
-                    merchantSettings.MerchantDefinedValues.Add("Total Cart Amount", "TotalCartValue");
+                    merchantSettings.MerchantDefinedValues.Add("MID", "{{MerchantId}}");
+                    merchantSettings.MerchantDefinedValues.Add("Order Type", "{{CompanyName}}");
+                    merchantSettings.MerchantDefinedValues.Add("CALL CENTER", "{{CompanyTaxId}}");
+                    merchantSettings.MerchantDefinedValues.Add("Customer Name", "{{CustomerName}}");
+                    merchantSettings.MerchantDefinedValues.Add("Total Cart Amount", "{{TotalCartValue}}");
+                    merchantSettings.MerchantDefinedValues.Add("Concat Test", "TEST:{{OrderId}}-{{Reference}}");
                     await this.SetMerchantSettings(merchantSettings);
                 }
             }

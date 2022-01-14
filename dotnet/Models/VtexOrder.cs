@@ -1081,7 +1081,7 @@ namespace Cybersource.Models
         public string PickupPointId { get; set; }
 
         [JsonProperty("pickupDistance")]
-        public double PickupDistance { get; set; }
+        public object PickupDistance { get; set; }
 
         [JsonProperty("polygonName")]
         public object PolygonName { get; set; }

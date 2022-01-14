@@ -172,22 +172,47 @@ namespace Cybersource.Services
             requestWrapper.CompanyTaxId = merchantTaxId;
 
             payment.merchantDefinedInformation = new List<MerchantDefinedInformation>();
+            string startCharacter = "{{";
+            string endCharacter = "}}";
             foreach (KeyValuePair<string, string> merchantSetting in merchantSettings.MerchantDefinedValues)
             {
-                MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                string merchantDefinedValue = merchantSetting.Value;
+                if (!string.IsNullOrEmpty(merchantDefinedValue))
                 {
-                    key = merchantSetting.Key,
-                    value = this.GetPropertyValue(requestWrapper, merchantSetting.Value).ToString()
-                };
+                    if (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter))
+                    {
+                        int sanityCheck = 0;
+                        do
+                        {
+                            int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
+                            string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
+                            string propValue = string.Empty;
+                            if (!string.IsNullOrEmpty(valueSubStr))
+                            {
+                                propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                            }
 
-                Console.WriteLine($"ADDING SETTING {merchantSetting.Key} : {merchantSetting.Value} = {merchantDefinedInformation.value}");
-                try
-                {
-                    payment.merchantDefinedInformation.Add(merchantDefinedInformation);
-                }
-                catch(Exception ex)
-                {
-                    _context.Vtex.Logger.Error("CreatePayment", "MerchantDefinedInformation", $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
+                            merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{valueSubStr}{endCharacter}", propValue);
+                            sanityCheck = sanityCheck+1;
+                        }
+                        while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
+                    }
+
+                    MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                    {
+                        key = merchantSetting.Key,
+                        value = merchantDefinedValue
+                    };
+
+                    Console.WriteLine($"ADDING SETTING {merchantSetting.Key} : {merchantSetting.Value} = {merchantDefinedInformation.value}");
+                    try
+                    {
+                        payment.merchantDefinedInformation.Add(merchantDefinedInformation);
+                    }
+                    catch (Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("CreatePayment", "MerchantDefinedInformation", $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
+                    }
                 }
             }
 
@@ -368,20 +393,81 @@ namespace Cybersource.Services
                     break;
             }
 
+            //VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}-01");
+            VtexOrder[] vtexOrders = await _vtexApiService.GetOrderGroup(createPaymentRequest.OrderId);
+            //VtexOrder vtexOrder = vtexOrders.FirstOrDefault();
+            //foreach (VtexOrderItem vtexItem in vtexOrder.Items)
+            //{
+            //    LineItem lineItem = new LineItem
+            //    {
+            //        productSKU = vtexItem.Id,
+            //        productName = vtexItem.Name,
+            //        unitPrice = vtexItem.SellingPrice.ToString(),
+            //        quantity = vtexItem.Quantity.ToString(),
+            //        taxAmount = (vtexItem.Tax / 100).ToString(),
+            //        commodityCode = vtexItem.TaxCode
+            //    };
+
+            //    payment.orderInformation.lineItems.Add(lineItem);
+            //}
+
+            List<VtexOrderItem> vtexOrderItems = new List<VtexOrderItem>();
+            if (vtexOrders != null)
+            {
+                foreach (VtexOrder vtexOrder in vtexOrders)
+                {
+                    foreach (VtexOrderItem vtexItem in vtexOrder.Items)
+                    {
+                        if (!vtexOrderItems.Contains(vtexItem))
+                        {
+                            vtexOrderItems.Add(vtexItem);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("!!!  FAILED TO GET ORDER GROUP   !!!");
+            }
+
             foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
+                string taxAmount = null;
+                string commodityCode = null;
+                VtexOrderItem vtexOrderItem = vtexOrderItems.Where(i => i.Id.Equals(vtexItem.Id)).FirstOrDefault();
+                if (vtexOrderItem != null)
+                {
+                    long itemTax = 0L;
+                    foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
+                    {
+                        string name = priceTag.Name.ToLower();
+                        if (name.Contains("tax@") || name.Contains("taxhub@"))
+                        {
+                            if (priceTag.IsPercentual ?? false)
+                            {
+                                itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                            }
+                            else
+                            {
+                                itemTax += priceTag.Value / (long)vtexOrderItem.Quantity;
+                            }
+                        }
+                    }
+
+                    taxAmount = ((decimal)itemTax / 100).ToString();
+                    Console.WriteLine($"itemTax {itemTax} / 100 = taxAmount {taxAmount}");
+                    commodityCode = vtexOrderItem.TaxCode;
+                }
+
                 LineItem lineItem = new LineItem
                 {
                     productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
-                    unitPrice = vtexItem.Price.ToString(),
+                    unitPrice = (vtexItem.Price - vtexItem.Discount).ToString(),
                     quantity = vtexItem.Quantity.ToString(),
-                    discountAmount = vtexItem.Discount.ToString(),
-                    taxRate = vtexItem.TaxRate.ToString(),
-                    taxAmount = vtexItem.TaxValue.ToString(),
-                    //commodityCode = "",
-                    //productCode = "",
-
+                    //discountAmount = vtexItem.Discount.ToString(),
+                    taxAmount = taxAmount,
+                    commodityCode = commodityCode
                 };
 
                 payment.orderInformation.lineItems.Add(lineItem);

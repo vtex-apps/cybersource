@@ -38,10 +38,20 @@
       "name": "SaveOrderFormConfiguration"
     },
     {
+      "name": "AcessaTodosPedidos"
+    },
+    {
       "name": "outbound-access",
       "attrs": {
         "host": "{{account}}.vtexcommercestable.com.br",
         "path": "/api/checkout/pvt/configuration/orderForm"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "{{account}}.vtexcommercestable.com.br",
+        "path": "/api/checkout/pub/orders/order-group/*"
       }
     },
     {
@@ -112,6 +122,13 @@
       "attrs": {
         "host": "lookup.binlist.net",
         "path": "/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "{{account}}.vtexpayments.com.br",
+        "path": "/payment-provider/transactions/*"
       }
     },
     {
