@@ -675,114 +675,120 @@ namespace Cybersource.Services
         public async Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest)
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
-
-            Payments payment = new Payments
+            if (sendAntifraudDataRequest != null)
             {
-                clientReferenceInformation = new ClientReferenceInformation
+                Payments payment = new Payments
                 {
-                    code = sendAntifraudDataRequest.Id,
-                    comments = sendAntifraudDataRequest.Reference,
-                    applicationName = _context.Vtex.App.Name,
-                    applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
-                },
-                orderInformation = new OrderInformation
-                {
-                    amountDetails = new AmountDetails
+                    clientReferenceInformation = new ClientReferenceInformation
                     {
-                        totalAmount = sendAntifraudDataRequest.Value.ToString()
+                        code = sendAntifraudDataRequest.Id,
+                        comments = sendAntifraudDataRequest.Reference,
+                        applicationName = _context.Vtex.App.Name,
+                        applicationVersion = _context.Vtex.App.Version,
+                        applicationUser = _context.Vtex.App.Vendor
                     },
-                    billTo = new BillTo
+                    orderInformation = new OrderInformation
                     {
-                        firstName = sendAntifraudDataRequest.MiniCart.Buyer.FirstName,
-                        lastName = sendAntifraudDataRequest.MiniCart.Buyer.LastName,
-                        address1 = $"{sendAntifraudDataRequest.MiniCart.Buyer.Address.Number} {sendAntifraudDataRequest.MiniCart.Buyer.Address.Street}",
-                        address2 = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
-                        locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
-                        administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
-                        postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
-                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Buyer.Address.Country),
-                        email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
-                        phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
+                        amountDetails = new AmountDetails
+                        {
+                            totalAmount = sendAntifraudDataRequest.Value.ToString()
+                        },
+                        billTo = new BillTo
+                        {
+                            firstName = sendAntifraudDataRequest.MiniCart.Buyer.FirstName,
+                            lastName = sendAntifraudDataRequest.MiniCart.Buyer.LastName,
+                            address1 = $"{sendAntifraudDataRequest.MiniCart.Buyer.Address.Number} {sendAntifraudDataRequest.MiniCart.Buyer.Address.Street}",
+                            address2 = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
+                            locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
+                            administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
+                            postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
+                            country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Buyer.Address.Country),
+                            email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
+                            phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
+                        },
+                        shipTo = new ShipTo
+                        {
+                            address1 = $"{sendAntifraudDataRequest.MiniCart.Shipping.Address.Number} {sendAntifraudDataRequest.MiniCart.Shipping.Address.Street}",
+                            address2 = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
+                            administrativeArea = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
+                            country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Shipping.Address.Country),
+                            postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
+                        },
+                        lineItems = new List<LineItem>()
                     },
-                    shipTo = new ShipTo
+                    deviceInformation = new DeviceInformation
                     {
-                        address1 = $"{sendAntifraudDataRequest.MiniCart.Shipping.Address.Number} {sendAntifraudDataRequest.MiniCart.Shipping.Address.Street}",
-                        address2 = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
-                        administrativeArea = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
-                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Shipping.Address.Country),
-                        postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
-                    },
-                    lineItems = new List<LineItem>()
-                },
-                deviceInformation = new DeviceInformation
-                {
-                    ipAddress = sendAntifraudDataRequest.Ip,
-                    fingerprintSessionId = sendAntifraudDataRequest.DeviceFingerprint
-                }
-            };
-
-            foreach (AntifraudItem vtexItem in sendAntifraudDataRequest.MiniCart.Items)
-            {
-                LineItem lineItem = new LineItem
-                {
-                    productSKU = vtexItem.Id,
-                    productName = vtexItem.Name,
-                    unitPrice = vtexItem.Price.ToString(),
-                    quantity = vtexItem.Quantity.ToString(),
-                    discountAmount = vtexItem.Discount.ToString()
+                        ipAddress = sendAntifraudDataRequest.Ip,
+                        fingerprintSessionId = sendAntifraudDataRequest.DeviceFingerprint
+                    }
                 };
 
-                payment.orderInformation.lineItems.Add(lineItem);
-            };
+                foreach (AntifraudItem vtexItem in sendAntifraudDataRequest.MiniCart.Items)
+                {
+                    LineItem lineItem = new LineItem
+                    {
+                        productSKU = vtexItem.Id,
+                        productName = vtexItem.Name,
+                        unitPrice = vtexItem.Price.ToString(),
+                        quantity = vtexItem.Quantity.ToString(),
+                        discountAmount = vtexItem.Discount.ToString()
+                    };
 
-            PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
+                    payment.orderInformation.lineItems.Add(lineItem);
+                };
 
-            sendAntifraudDataResponse = new SendAntifraudDataResponse
+                PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
+
+                sendAntifraudDataResponse = new SendAntifraudDataResponse
+                {
+                    Id = sendAntifraudDataRequest.Id,
+                    Tid = paymentsResponse.Id,
+                    Status = CybersourceConstants.VtexAntifraudStatus.Undefined,
+                    Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
+                    AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
+                    Responses = new Dictionary<string, string>(),
+                    Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
+                    Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
+                };
+
+                switch (paymentsResponse.Status)
+                {
+                    case "ACCEPTED":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                        break;
+                    case "PENDING_REVIEW":
+                    case "PENDING_AUTHENTICATION":
+                    case "INVALID_REQUEST":
+                    case "CHALLENGE":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                        break;
+                    case "REJECTED":
+                    case "DECLINED":
+                    case "AUTHENTICATION_FAILED":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
+                        break;
+                    default:
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                        break;
+                };
+
+                string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
+                Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);
+                Func<Dictionary<string, object>, IEnumerable<KeyValuePair<string, object>>> flatten = null;
+                flatten = dict => dict.SelectMany(kv =>
+                            kv.Value is Dictionary<string, object>
+                                ? flatten((Dictionary<string, object>)kv.Value)
+                                : new List<KeyValuePair<string, object>>() { kv }
+                           );
+
+                sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
+
+                await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
+            }
+            else
             {
-                Id = sendAntifraudDataRequest.Id,
-                Tid = paymentsResponse.Id,
-                Status = CybersourceConstants.VtexAntifraudStatus.Undefined,
-                Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
-                AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
-                Responses = new Dictionary<string, string>(),
-                Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
-                Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
-            };
-
-            switch (paymentsResponse.Status)
-            {
-                case "ACCEPTED":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
-                    break;
-                case "PENDING_REVIEW":
-                case "PENDING_AUTHENTICATION":
-                case "INVALID_REQUEST":
-                case "CHALLENGE":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
-                    break;
-                case "REJECTED":
-                case "DECLINED":
-                case "AUTHENTICATION_FAILED":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
-                    break;
-                default:
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
-                    break;
-            };
-
-            string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
-            Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);
-            Func<Dictionary<string, object>, IEnumerable<KeyValuePair<string, object>>> flatten = null;
-            flatten = dict => dict.SelectMany(kv =>
-                        kv.Value is Dictionary<string, object>
-                            ? flatten((Dictionary<string, object>)kv.Value)
-                            : new List<KeyValuePair<string, object>>() { kv }
-                       );
-
-            sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
-
-            await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
+                _context.Vtex.Logger.Warn("SendAntifraudData", null, "Null request");
+            }
 
             return sendAntifraudDataResponse;
         }
