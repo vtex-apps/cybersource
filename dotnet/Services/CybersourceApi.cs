@@ -211,6 +211,7 @@ namespace Cybersource.Services
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}v-c-merchant-id", merchantSettings.MerchantId);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Date", gmtDateTime);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Host", urlBase);
+
                 if (!method.Equals(HttpMethod.Get) && !method.Equals(HttpMethod.Delete))
                 {
                     SendResponse proxyTokenSendResponse = await this.SendProxyDigestRequest(jsonSerializedData, proxyTokenUrl);

@@ -182,17 +182,75 @@ namespace Cybersource.Services
                     if (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter))
                     {
                         int sanityCheck = 0;
+                        char valueSeparator = '|';
                         do
                         {
                             int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
                             string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
+                            string originalValueSubStr = valueSubStr;
                             string propValue = string.Empty;
                             if (!string.IsNullOrEmpty(valueSubStr))
                             {
-                                propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                if (valueSubStr.Contains(valueSeparator))
+                                {
+                                    string[] valueSubStrArr = valueSubStr.Split(valueSeparator);
+                                    valueSubStr = valueSubStrArr[0];
+                                    if (!string.IsNullOrEmpty(valueSubStr))
+                                    {
+                                        propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                    }
+
+                                    string operation = valueSubStrArr[1];
+                                    if (!string.IsNullOrEmpty(operation))
+                                    {
+                                        switch (operation.ToUpper())
+                                        {
+                                            case "PAD":
+                                                string[] paddArr = valueSubStrArr[2].Split(':');
+                                                int totalLength = 0;
+                                                if (int.TryParse(paddArr[0], out totalLength))
+                                                {
+                                                    if (propValue.Length < totalLength)
+                                                    {
+                                                        char padChar = paddArr[1].ToCharArray().First();
+                                                        propValue = propValue.PadLeft(totalLength, padChar);
+                                                    }
+                                                    else if (propValue.Length > totalLength)
+                                                    {
+                                                        propValue = propValue.Substring(0, totalLength);
+                                                    }
+                                                }
+
+                                                break;
+                                            case "TRIM":
+                                                int trimLength = 0;
+                                                if (int.TryParse(valueSubStrArr[2], out trimLength))
+                                                {
+                                                    int currentLength = propValue.Length;
+                                                    int offset = Math.Max(0, currentLength - trimLength);
+                                                    propValue = propValue.Substring(offset);
+                                                }
+
+                                                break;
+                                            case "DATE":
+                                                DateTime dt = DateTime.Now;
+                                                string dateFormat = valueSubStrArr[2];
+                                                propValue = dt.ToString(dateFormat);
+                                                break;
+                                            default:
+                                                Console.WriteLine($"Invalid operation '{operation}'");
+                                                _context.Vtex.Logger.Warn("CreatePayment", "MerchantDefinedInformation", $"Invalid operation '{operation}'");
+                                                break;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                }
                             }
 
-                            merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{valueSubStr}{endCharacter}", propValue);
+                            merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{originalValueSubStr}{endCharacter}", propValue);
                             sanityCheck = sanityCheck+1;
                         }
                         while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);

@@ -77,6 +77,7 @@
                     merchantSettings.MerchantDefinedValues.Add("Customer Name", "{{CustomerName}}");
                     merchantSettings.MerchantDefinedValues.Add("Total Cart Amount", "{{TotalCartValue}}");
                     merchantSettings.MerchantDefinedValues.Add("Concat Test", "TEST:{{OrderId}}-{{Reference}}");
+                    merchantSettings.MerchantDefinedValues.Add("PaymentId", "26940{{Reference|Pad|9:0}}{{|date|yy}}");
                     await this.SetMerchantSettings(merchantSettings);
                 }
             }

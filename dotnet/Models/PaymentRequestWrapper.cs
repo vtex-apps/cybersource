@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Cybersource.Models
 {
+    /// <summary>
+    /// This wrapper makes certain fields available for the merchant to add in Merchant Defined Data
+    /// </summary>
     public class PaymentRequestWrapper : CreatePaymentRequest
     {
         public string MerchantId { get; set; }
@@ -31,6 +34,7 @@ namespace Cybersource.Models
             this.TransactionId = createPaymentRequest.TransactionId;
             this.Value = createPaymentRequest.Value;
             this.MiniCart = createPaymentRequest.MiniCart;
+            this.Reference = createPaymentRequest.Reference;
         }
     }
 }
