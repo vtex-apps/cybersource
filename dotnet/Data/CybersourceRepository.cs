@@ -68,7 +68,7 @@
             if (response.IsSuccessStatusCode)
             {
                 merchantSettings = JsonConvert.DeserializeObject<MerchantSettings>(responseContent);
-                //if(merchantSettings.MerchantDefinedValues == null)
+                if(merchantSettings.MerchantDefinedValues == null)
                 {
                     merchantSettings.MerchantDefinedValues = new Dictionary<string, string>();
                     merchantSettings.MerchantDefinedValues.Add("MID", "{{MerchantId}}");
@@ -76,8 +76,8 @@
                     merchantSettings.MerchantDefinedValues.Add("CALL CENTER", "{{CompanyTaxId}}");
                     merchantSettings.MerchantDefinedValues.Add("Customer Name", "{{CustomerName}}");
                     merchantSettings.MerchantDefinedValues.Add("Total Cart Amount", "{{TotalCartValue}}");
-                    merchantSettings.MerchantDefinedValues.Add("Concat Test", "TEST:{{OrderId}}-{{Reference}}");
-                    merchantSettings.MerchantDefinedValues.Add("PaymentId", "26940{{Reference|Pad|9:0}}{{|date|yy}}");
+                    //merchantSettings.MerchantDefinedValues.Add("Concat Test", "TEST:{{OrderId}}-{{Reference}}");
+                    //merchantSettings.MerchantDefinedValues.Add("PaymentId", "26940{{Reference|Pad|9:0}}{{|date|yy}}");
                     await this.SetMerchantSettings(merchantSettings);
                 }
             }

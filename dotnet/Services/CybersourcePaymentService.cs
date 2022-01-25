@@ -95,9 +95,9 @@ namespace Cybersource.Services
                 {
                     code = createPaymentRequest.OrderId,
                     //transactionId = createPaymentRequest.TransactionId,
-                    applicationName = _context.Vtex.App.Name,
+                    applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.Account
                 },
                 paymentInformation = new PaymentInformation
                 {
