@@ -13,6 +13,10 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Xml;
+    using System.Web;
+    using System.Xml.Serialization;
+    using System.IO;
 
     public class RoutesController : Controller
     {
@@ -40,9 +44,9 @@
             CreatePaymentResponse paymentResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                _context.Vtex.Logger.Debug("CreatePayment", null, bodyAsText);
-                Console.WriteLine(bodyAsText);
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                _context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
+                //Console.WriteLine(bodyAsText);
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                 paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
             }
@@ -63,7 +67,8 @@
             CancelPaymentResponse cancelResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                _context.Vtex.Logger.Debug("CancelPayment", "bodyAsText", bodyAsText);
                 CancelPaymentRequest cancelPaymentRequest = JsonConvert.DeserializeObject<CancelPaymentRequest>(bodyAsText);
                 cancelResponse = await this._cybersourcePaymentService.CancelPayment(cancelPaymentRequest);
             }
@@ -82,7 +87,8 @@
             CapturePaymentResponse captureResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                _context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
                 CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
                 captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
             }
@@ -101,7 +107,8 @@
             RefundPaymentResponse refundResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                _context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
                 RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
                 refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
             }
@@ -129,7 +136,6 @@
 
         public JsonResult Manifest()
         {
-            Console.WriteLine(" ------- MANIFEST ----------- ");
             Manifest manifest = new Manifest
             {
                 PaymentMethods = new List<PaymentMethod>
@@ -199,7 +205,7 @@
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
                 sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
 
@@ -222,7 +228,7 @@
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
                 sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
             }
@@ -268,7 +274,7 @@
             Response.Headers.Add(CybersourceConstants.CONTENT_TYPE, CybersourceConstants.MINICART);
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 if (!string.IsNullOrEmpty(bodyAsText))
                 {
                     VtexTaxRequest taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
@@ -281,7 +287,7 @@
                         if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
                         {
                             fromCache = true;
-                            _context.Vtex.Logger.Info("CybersourceOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
+                            //_context.Vtex.Logger.Debug("CybersourceOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
                         }
                         else
                         {
@@ -296,6 +302,7 @@
             }
 
             timer.Stop();
+            Console.WriteLine($"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
             _context.Vtex.Logger.Debug("TaxHandler", null, $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
 
             return Json(vtexTaxResponse);
@@ -320,7 +327,7 @@
             bool success = false;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 CybersourceToken token = JsonConvert.DeserializeObject<CybersourceToken>(bodyAsText);
 
                 success = await _cybersourceRepository.SaveToken(token, isLive);
@@ -350,7 +357,7 @@
             VtexTaxResponse vtexTaxResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsText = await new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 PaymentsResponse taxResponse = JsonConvert.DeserializeObject<PaymentsResponse>(bodyAsText);
                 vtexTaxResponse = await this._vtexApiService.CybersourceResponseToVtexResponse(taxResponse);
             }
@@ -385,6 +392,38 @@
         {
             Response.Headers.Add("Cache-Control", "no-cache");
             return Json(await _vtexApiService.ProcessConversions());
+        }
+
+        public async Task<IActionResult> DecisionManagerNotify()
+        {
+            string result = string.Empty;
+            string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+            _context.Vtex.Logger.Debug("DecisionManagerNotify", "1", bodyAsText);
+            bodyAsText = HttpUtility.UrlDecode(bodyAsText);
+            bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
+            _context.Vtex.Logger.Debug("DecisionManagerNotify", "2", bodyAsText);
+            try
+            {
+                XmlSerializer serializer = new XmlSerializer(typeof(CaseManagementOrderStatus));
+                CaseManagementOrderStatus caseManagementOrderStatus;
+
+                using (TextReader reader = new StringReader(bodyAsText))
+                {
+                    caseManagementOrderStatus = (CaseManagementOrderStatus)serializer.Deserialize(reader);
+                };
+
+                Console.WriteLine($"DecisionManagerNotify {caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
+                result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
+                _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{result}\n{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
+                Console.WriteLine(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DecisionManagerNotify Error: {ex.Message}");
+                _context.Vtex.Logger.Error("DecisionManagerNotify", null, bodyAsText, ex);
+            }
+
+            return Ok();
         }
     }
 }

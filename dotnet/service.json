@@ -82,6 +82,10 @@
     "processConversions": {
       "path": "/cybersource/payment-provider/process-conversions",
       "public": true
+    },
+    "decisionManagerNotify": {
+      "path": "/cybersource/notify",
+      "public": true
     }
   },
   "events": {

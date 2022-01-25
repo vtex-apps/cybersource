@@ -17,6 +17,9 @@ namespace Cybersource.Services
 
         Task<SendResponse> PostCallbackResponse(string callbackUrl, CreatePaymentResponse createPaymentResponse);
         Task<string> ProcessConversions();
+        Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments);
+        Task<VtexOrder> GetOrderInformation(string orderId);
+        Task<VtexOrder[]> GetOrderGroup(string orderId);
 
         Task<BinLookup> BinLookup(string bin);
     }

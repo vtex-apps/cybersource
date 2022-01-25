@@ -16,8 +16,9 @@ namespace Cybersource.Models
         public bool EnableTax { get; set; }
         public bool EnableTransactionPosting { get; set; }
         public string SalesChannelExclude { get; set; }
-        // merchantInformation
-        public string merchantName { get; set; }
-        public string merchantTaxId { get; set; }
+        //  merchantInformation moved to configuration.json
+        //public string merchantName { get; set; }
+        //public string merchantTaxId { get; set; }
+        public Dictionary<string, string> MerchantDefinedValues { get; set; }
     }
 }

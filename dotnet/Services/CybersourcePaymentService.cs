@@ -66,21 +66,38 @@ namespace Cybersource.Services
 
             _context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            string merchantName = createPaymentRequest.MerchantName;
+            string merchantTaxId = string.Empty;
+            if (createPaymentRequest.MerchantSettings != null)
+            {
+                foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
+                {
+                    switch(merchantSetting.Name)
+                    {
+                        case "Company Name":
+                            merchantName = merchantSetting.Value;
+                            break;
+                        case "Company Tax Id":
+                            merchantTaxId = merchantSetting.Value;
+                            break;
+                    }
+                }
+            }
+
             Payments payment = new Payments
             {
                 merchantInformation = new MerchantInformation
                 {
-                    merchantName = merchantSettings.merchantName,
-                    taxId = merchantSettings.merchantTaxId
+                    merchantName = merchantName,
+                    taxId = merchantTaxId
                 },
-                //merchantDefinedInformation = new List<MerchantDefinedInformation>(),
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = createPaymentRequest.PaymentId,
+                    code = createPaymentRequest.OrderId,
                     //transactionId = createPaymentRequest.TransactionId,
-                    applicationName = _context.Vtex.App.Name,
+                    applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.Account
                 },
                 paymentInformation = new PaymentInformation
                 {
@@ -147,6 +164,14 @@ namespace Cybersource.Services
                     }
                 }
             };
+
+            // Make a copy of the payment request and add fields that are not available in the payment request / skip fields that should not be exposed
+            PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+            requestWrapper.MerchantId = merchantSettings.MerchantId;
+            requestWrapper.CompanyName = merchantName;
+            requestWrapper.CompanyTaxId = merchantTaxId;
+
+            payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
 
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
@@ -325,15 +350,81 @@ namespace Cybersource.Services
                     break;
             }
 
+            //VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}-01");
+            VtexOrder[] vtexOrders = await _vtexApiService.GetOrderGroup(createPaymentRequest.OrderId);
+            //VtexOrder vtexOrder = vtexOrders.FirstOrDefault();
+            //foreach (VtexOrderItem vtexItem in vtexOrder.Items)
+            //{
+            //    LineItem lineItem = new LineItem
+            //    {
+            //        productSKU = vtexItem.Id,
+            //        productName = vtexItem.Name,
+            //        unitPrice = vtexItem.SellingPrice.ToString(),
+            //        quantity = vtexItem.Quantity.ToString(),
+            //        taxAmount = (vtexItem.Tax / 100).ToString(),
+            //        commodityCode = vtexItem.TaxCode
+            //    };
+
+            //    payment.orderInformation.lineItems.Add(lineItem);
+            //}
+
+            List<VtexOrderItem> vtexOrderItems = new List<VtexOrderItem>();
+            if (vtexOrders != null)
+            {
+                foreach (VtexOrder vtexOrder in vtexOrders)
+                {
+                    foreach (VtexOrderItem vtexItem in vtexOrder.Items)
+                    {
+                        if (!vtexOrderItems.Contains(vtexItem))
+                        {
+                            vtexOrderItems.Add(vtexItem);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("!!!  FAILED TO GET ORDER GROUP   !!!");
+            }
+
             foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
+                string taxAmount = null;
+                string commodityCode = null;
+                VtexOrderItem vtexOrderItem = vtexOrderItems.Where(i => i.Id.Equals(vtexItem.Id)).FirstOrDefault();
+                if (vtexOrderItem != null)
+                {
+                    long itemTax = 0L;
+                    foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
+                    {
+                        string name = priceTag.Name.ToLower();
+                        if (name.Contains("tax@") || name.Contains("taxhub@"))
+                        {
+                            if (priceTag.IsPercentual ?? false)
+                            {
+                                itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                            }
+                            else
+                            {
+                                itemTax += priceTag.Value / (long)vtexOrderItem.Quantity;
+                            }
+                        }
+                    }
+
+                    taxAmount = ((decimal)itemTax / 100).ToString();
+                    Console.WriteLine($"itemTax {itemTax} / 100 = taxAmount {taxAmount}");
+                    commodityCode = vtexOrderItem.TaxCode;
+                }
+
                 LineItem lineItem = new LineItem
                 {
                     productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
-                    unitPrice = vtexItem.Price.ToString(),
+                    unitPrice = (vtexItem.Price - vtexItem.Discount).ToString(),
                     quantity = vtexItem.Quantity.ToString(),
-                    discountAmount = vtexItem.Discount.ToString()
+                    //discountAmount = vtexItem.Discount.ToString(),
+                    taxAmount = taxAmount,
+                    commodityCode = commodityCode
                 };
 
                 payment.orderInformation.lineItems.Add(lineItem);
@@ -397,7 +488,8 @@ namespace Cybersource.Services
                     RequestId = null,
                     CaptureId = null,
                     CreatePaymentResponse = createPaymentResponse,
-                    CallbackUrl = createPaymentRequest.CallbackUrl
+                    CallbackUrl = createPaymentRequest.CallbackUrl,
+                    OrderId = createPaymentRequest.OrderId
                 };
 
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
@@ -453,7 +545,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = capturePaymentRequest.PaymentId,
+                    code = paymentData.OrderId, //capturePaymentRequest.PaymentId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -540,114 +632,120 @@ namespace Cybersource.Services
         public async Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest)
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
-
-            Payments payment = new Payments
+            if (sendAntifraudDataRequest != null)
             {
-                clientReferenceInformation = new ClientReferenceInformation
+                Payments payment = new Payments
                 {
-                    code = sendAntifraudDataRequest.Id,
-                    comments = sendAntifraudDataRequest.Reference,
-                    applicationName = _context.Vtex.App.Name,
-                    applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
-                },
-                orderInformation = new OrderInformation
-                {
-                    amountDetails = new AmountDetails
+                    clientReferenceInformation = new ClientReferenceInformation
                     {
-                        totalAmount = sendAntifraudDataRequest.Value.ToString()
+                        code = sendAntifraudDataRequest.Id,
+                        comments = sendAntifraudDataRequest.Reference,
+                        applicationName = _context.Vtex.App.Name,
+                        applicationVersion = _context.Vtex.App.Version,
+                        applicationUser = _context.Vtex.App.Vendor
                     },
-                    billTo = new BillTo
+                    orderInformation = new OrderInformation
                     {
-                        firstName = sendAntifraudDataRequest.MiniCart.Buyer.FirstName,
-                        lastName = sendAntifraudDataRequest.MiniCart.Buyer.LastName,
-                        address1 = $"{sendAntifraudDataRequest.MiniCart.Buyer.Address.Number} {sendAntifraudDataRequest.MiniCart.Buyer.Address.Street}",
-                        address2 = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
-                        locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
-                        administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
-                        postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
-                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Buyer.Address.Country),
-                        email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
-                        phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
+                        amountDetails = new AmountDetails
+                        {
+                            totalAmount = sendAntifraudDataRequest.Value.ToString()
+                        },
+                        billTo = new BillTo
+                        {
+                            firstName = sendAntifraudDataRequest.MiniCart.Buyer.FirstName,
+                            lastName = sendAntifraudDataRequest.MiniCart.Buyer.LastName,
+                            address1 = $"{sendAntifraudDataRequest.MiniCart.Buyer.Address.Number} {sendAntifraudDataRequest.MiniCart.Buyer.Address.Street}",
+                            address2 = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
+                            locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
+                            administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
+                            postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
+                            country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Buyer.Address.Country),
+                            email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
+                            phoneNumber = sendAntifraudDataRequest.MiniCart.Buyer.Phone
+                        },
+                        shipTo = new ShipTo
+                        {
+                            address1 = $"{sendAntifraudDataRequest.MiniCart.Shipping.Address.Number} {sendAntifraudDataRequest.MiniCart.Shipping.Address.Street}",
+                            address2 = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
+                            administrativeArea = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
+                            country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Shipping.Address.Country),
+                            postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
+                        },
+                        lineItems = new List<LineItem>()
                     },
-                    shipTo = new ShipTo
+                    deviceInformation = new DeviceInformation
                     {
-                        address1 = $"{sendAntifraudDataRequest.MiniCart.Shipping.Address.Number} {sendAntifraudDataRequest.MiniCart.Shipping.Address.Street}",
-                        address2 = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
-                        administrativeArea = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
-                        country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Shipping.Address.Country),
-                        postalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode
-                    },
-                    lineItems = new List<LineItem>()
-                },
-                deviceInformation = new DeviceInformation
-                {
-                    ipAddress = sendAntifraudDataRequest.Ip,
-                    fingerprintSessionId = sendAntifraudDataRequest.DeviceFingerprint
-                }
-            };
-
-            foreach (AntifraudItem vtexItem in sendAntifraudDataRequest.MiniCart.Items)
-            {
-                LineItem lineItem = new LineItem
-                {
-                    productSKU = vtexItem.Id,
-                    productName = vtexItem.Name,
-                    unitPrice = vtexItem.Price.ToString(),
-                    quantity = vtexItem.Quantity.ToString(),
-                    discountAmount = vtexItem.Discount.ToString()
+                        ipAddress = sendAntifraudDataRequest.Ip,
+                        fingerprintSessionId = sendAntifraudDataRequest.DeviceFingerprint
+                    }
                 };
 
-                payment.orderInformation.lineItems.Add(lineItem);
-            };
+                foreach (AntifraudItem vtexItem in sendAntifraudDataRequest.MiniCart.Items)
+                {
+                    LineItem lineItem = new LineItem
+                    {
+                        productSKU = vtexItem.Id,
+                        productName = vtexItem.Name,
+                        unitPrice = vtexItem.Price.ToString(),
+                        quantity = vtexItem.Quantity.ToString(),
+                        discountAmount = vtexItem.Discount.ToString()
+                    };
 
-            PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
+                    payment.orderInformation.lineItems.Add(lineItem);
+                };
 
-            sendAntifraudDataResponse = new SendAntifraudDataResponse
+                PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
+
+                sendAntifraudDataResponse = new SendAntifraudDataResponse
+                {
+                    Id = sendAntifraudDataRequest.Id,
+                    Tid = paymentsResponse.Id,
+                    Status = CybersourceConstants.VtexAntifraudStatus.Undefined,
+                    Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
+                    AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
+                    Responses = new Dictionary<string, string>(),
+                    Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
+                    Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
+                };
+
+                switch (paymentsResponse.Status)
+                {
+                    case "ACCEPTED":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                        break;
+                    case "PENDING_REVIEW":
+                    case "PENDING_AUTHENTICATION":
+                    case "INVALID_REQUEST":
+                    case "CHALLENGE":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                        break;
+                    case "REJECTED":
+                    case "DECLINED":
+                    case "AUTHENTICATION_FAILED":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
+                        break;
+                    default:
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                        break;
+                };
+
+                string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
+                Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);
+                Func<Dictionary<string, object>, IEnumerable<KeyValuePair<string, object>>> flatten = null;
+                flatten = dict => dict.SelectMany(kv =>
+                            kv.Value is Dictionary<string, object>
+                                ? flatten((Dictionary<string, object>)kv.Value)
+                                : new List<KeyValuePair<string, object>>() { kv }
+                           );
+
+                sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
+
+                await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
+            }
+            else
             {
-                Id = sendAntifraudDataRequest.Id,
-                Tid = paymentsResponse.Id,
-                Status = CybersourceConstants.VtexAntifraudStatus.Undefined,
-                Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
-                AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
-                Responses = new Dictionary<string, string>(),
-                Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
-                Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
-            };
-
-            switch (paymentsResponse.Status)
-            {
-                case "ACCEPTED":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
-                    break;
-                case "PENDING_REVIEW":
-                case "PENDING_AUTHENTICATION":
-                case "INVALID_REQUEST":
-                case "CHALLENGE":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
-                    break;
-                case "REJECTED":
-                case "DECLINED":
-                case "AUTHENTICATION_FAILED":
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
-                    break;
-                default:
-                    sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
-                    break;
-            };
-
-            string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
-            Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);
-            Func<Dictionary<string, object>, IEnumerable<KeyValuePair<string, object>>> flatten = null;
-            flatten = dict => dict.SelectMany(kv =>
-                        kv.Value is Dictionary<string, object>
-                            ? flatten((Dictionary<string, object>)kv.Value)
-                            : new List<KeyValuePair<string, object>>() { kv }
-                       );
-
-            sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
-
-            await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
+                _context.Vtex.Logger.Warn("SendAntifraudData", null, "Null request");
+            }
 
             return sendAntifraudDataResponse;
         }
@@ -911,5 +1009,158 @@ namespace Cybersource.Services
             return CybersourceConstants.CardType.Unknown;
         }
 
+        public object GetPropertyValue(object obj, string propertyName)
+        {
+            //string retval = string.Empty;
+            try
+            {
+                //retval = cart.GetType().GetProperties()
+                //   .Single(pi => pi.Name == propertyName)
+                //   .GetValue(cart, null).ToString();
+                foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
+                    obj = prop.GetValue(obj, null);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Could not get value of '{propertyName}' {ex.Message}");
+                _context.Vtex.Logger.Error("GetPropertyValue", null, $"Could not get value of '{propertyName}'", ex);
+            }
+
+            return obj;
+        }
+
+        public async Task AddDefaultMerchantDefinedValues(List<MerchantDefinedInformation> merchantDefinedValues, CreatePaymentRequest createPaymentRequest)
+        {
+            MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+            {
+                key = "MID",
+                value = createPaymentRequest.MerchantSettings.Where(s => s.Name.Equals("Company Name")).Select(s => s.Value).ToString()
+            };
+
+            merchantDefinedValues.Add(merchantDefinedInformation);
+
+            merchantDefinedInformation = new MerchantDefinedInformation
+            {
+                key = "Order Type",
+                value = createPaymentRequest.MerchantSettings.Where(s => s.Name.Equals("Company Name")).Select(s => s.Value).ToString()
+            };
+
+            merchantDefinedValues.Add(merchantDefinedInformation);
+        }
+
+        private async Task<List<MerchantDefinedInformation>> GetMerchantDefinedInformation(MerchantSettings merchantSettings, PaymentRequestWrapper requestWrapper)
+        {
+            List<MerchantDefinedInformation> merchantDefinedInformationList = new List<MerchantDefinedInformation>();
+            string startCharacter = "{{";
+            string endCharacter = "}}";
+            string valueSeparator = "|";
+            try
+            {
+                foreach (KeyValuePair<string, string> merchantSetting in merchantSettings.MerchantDefinedValues)
+                {
+                    string merchantDefinedValue = merchantSetting.Value;
+                    if (!string.IsNullOrEmpty(merchantDefinedValue))
+                    {
+                        if (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter))
+                        {
+                            int sanityCheck = 0; // prevent infinate loops jic
+                            do
+                            {
+                                int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
+                                string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
+                                string originalValueSubStr = valueSubStr;
+                                string propValue = string.Empty;
+                                if (!string.IsNullOrEmpty(valueSubStr))
+                                {
+                                    if (valueSubStr.Contains(valueSeparator))
+                                    {
+                                        string[] valueSubStrArr = valueSubStr.Split(valueSeparator);
+                                        valueSubStr = valueSubStrArr[0];
+                                        if (!string.IsNullOrEmpty(valueSubStr))
+                                        {
+                                            propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                        }
+
+                                        string operation = valueSubStrArr[1];
+                                        if (!string.IsNullOrEmpty(operation))
+                                        {
+                                            switch (operation.ToUpper())
+                                            {
+                                                case "PAD":
+                                                    string[] paddArr = valueSubStrArr[2].Split(':');
+                                                    int totalLength = 0;
+                                                    if (int.TryParse(paddArr[0], out totalLength))
+                                                    {
+                                                        if (propValue.Length < totalLength)
+                                                        {
+                                                            char padChar = paddArr[1].ToCharArray().First();
+                                                            propValue = propValue.PadLeft(totalLength, padChar);
+                                                        }
+                                                        else if (propValue.Length > totalLength)
+                                                        {
+                                                            propValue = propValue.Substring(0, totalLength);
+                                                        }
+                                                    }
+
+                                                    break;
+                                                case "TRIM":
+                                                    int trimLength = 0;
+                                                    if (int.TryParse(valueSubStrArr[2], out trimLength))
+                                                    {
+                                                        int currentLength = propValue.Length;
+                                                        int offset = Math.Max(0, currentLength - trimLength);
+                                                        propValue = propValue.Substring(offset);
+                                                    }
+
+                                                    break;
+                                                case "DATE":
+                                                    DateTime dt = DateTime.Now;
+                                                    string dateFormat = valueSubStrArr[2];
+                                                    propValue = dt.ToString(dateFormat);
+                                                    break;
+                                                default:
+                                                    Console.WriteLine($"Invalid operation '{operation}'");
+                                                    _context.Vtex.Logger.Warn("GetMerchantDefinedInformation", null, $"Invalid operation '{operation}'");
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                    }
+                                }
+
+                                merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{originalValueSubStr}{endCharacter}", propValue);
+                                sanityCheck = sanityCheck + 1;
+                            }
+                            while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
+                        }
+
+                        MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                        {
+                            key = merchantSetting.Key,
+                            value = merchantDefinedValue
+                        };
+
+                        Console.WriteLine($"ADDING SETTING {merchantSetting.Key} : {merchantSetting.Value} = {merchantDefinedInformation.value}");
+                        try
+                        {
+                            merchantDefinedInformationList.Add(merchantDefinedInformation);
+                        }
+                        catch (Exception ex)
+                        {
+                            _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, null, ex);
+            }
+
+            return merchantDefinedInformationList;
+        }
     }
 }

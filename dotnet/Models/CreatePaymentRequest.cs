@@ -125,6 +125,18 @@ namespace Cybersource.Models
 
         [JsonProperty("totalCartValue")]
         public double TotalCartValue { get; set; }
+
+        [JsonProperty("merchantSettings")]
+        public List<MerchantSetting> MerchantSettings { get; set; }
+    }
+
+    public class MerchantSetting
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("value")]
+        public string Value { get; set; }
     }
 
     public class VtexCardExpiration
@@ -377,6 +389,21 @@ namespace Cybersource.Models
         /// </summary>
         [JsonProperty("discount")]
         public decimal Discount { get; set; }
+
+        [JsonProperty("deliveryType")]
+        public string DeliveryType { get; set; }
+
+        [JsonProperty("categoryId")]
+        public string CategoryId { get; set; }
+
+        [JsonProperty("sellerId")]
+        public string SellerId { get; set; }
+
+        [JsonProperty("taxValue")]
+        public decimal TaxValue { get; set; }
+
+        [JsonProperty("taxRate")]
+        public decimal TaxRate { get; set; }
     }
 
     public class MiniCart
