@@ -136,7 +136,6 @@
 
         public JsonResult Manifest()
         {
-            //Console.WriteLine(" ------- MANIFEST ----------- ");
             Manifest manifest = new Manifest
             {
                 PaymentMethods = new List<PaymentMethod>

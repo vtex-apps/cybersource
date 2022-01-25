@@ -145,7 +145,6 @@ namespace Cybersource.Services
 
                 string digest = string.Empty;
                 string signatureString = string.Empty;
-                string signature = string.Empty;
                 string gmtDateTime = DateTime.UtcNow.ToString("r");
 
                 request.Headers.Add("v-c-merchant-id", merchantSettings.MerchantId);
@@ -206,7 +205,6 @@ namespace Cybersource.Services
 
                 string digest = string.Empty;
                 string signatureString = string.Empty;
-                string signature = string.Empty;
                 string gmtDateTime = DateTime.UtcNow.ToString("r");
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}v-c-merchant-id", merchantSettings.MerchantId);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Date", gmtDateTime);
@@ -240,7 +238,6 @@ namespace Cybersource.Services
                 request.Headers.Add(CybersourceConstants.PROXY_FORWARD_TO, requestUri);
 
                 string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                //string authToken = _context.Vtex.AuthToken;
                 if (authToken != null)
                 {
                     request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
@@ -334,14 +331,6 @@ namespace Cybersource.Services
                             }
                         }
                     }
-                }
-            };
-
-            HmacSha256Class hmacSha256Class = new HmacSha256Class
-            {
-                ReplaceTokens = new string[]
-                {
-                    jsonSerializedData
                 }
             };
 
@@ -551,8 +540,6 @@ namespace Cybersource.Services
             ConversionReportResponse retval = null;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
             string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
-            //string startTime = dtStartTime.ToString("yyyy-MM-ddT00:00:00.000Z");
-            //string endTime = dtEndTime.ToString("yyyy-MM-ddT23:00:00.000Z");
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string organizationId = merchantSettings.MerchantId;
             string endpoint = $"{CybersourceConstants.REPORTING}conversion-details?startTime={startTime}&endTime={endTime}&organizationId={organizationId}&";
@@ -589,7 +576,6 @@ namespace Cybersource.Services
             SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
             if (response != null)
             {
-                //= JsonConvert.DeserializeObject<>(response.Message);
                 Console.WriteLine($"[{response.StatusCode}] {response.Message}");
                 retval = $"[{response.StatusCode}] {response.Message}";
             }
@@ -613,7 +599,6 @@ namespace Cybersource.Services
             SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
             if (response != null)
             {
-                //= JsonConvert.DeserializeObject<>(response.Message);
                 Console.WriteLine($"[{response.StatusCode}] {response.Message}");
                 retval = $"[{response.StatusCode}] {response.Message}";
             }
@@ -633,14 +618,10 @@ namespace Cybersource.Services
             string retval = string.Empty;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
             string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
-            //MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            //string organizationId = merchantSettings.MerchantId;
-            //string endpoint = $"{CybersourceConstants.REPORTING}reports&startTime={startTime}&endTime={endTime}&organizationId={organizationId}";
             string endpoint = $"{CybersourceConstants.REPORTING}reports?startTime={startTime}&endTime={endTime}&timeQueryType=executedTime";
             SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
             if (response != null)
             {
-                //= JsonConvert.DeserializeObject<>(response.Message);
                 Console.WriteLine($"[{response.StatusCode}] {response.Message}");
                 retval = $"[{response.StatusCode}] {response.Message}";
             }
@@ -653,13 +634,10 @@ namespace Cybersource.Services
             string retval = string.Empty;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
             string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
-            //MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            //string organizationId = merchantSettings.MerchantId;
             string endpoint = $"{CybersourceConstants.REPORTING}purchase-refund-details?startTime={startTime}&endTime={endTime}";
             SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
             if (response != null)
             {
-                //= JsonConvert.DeserializeObject<>(response.Message);
                 Console.WriteLine($"[{response.StatusCode}] {response.Message}");
                 retval = $"[{response.StatusCode}] {response.Message}";
             }

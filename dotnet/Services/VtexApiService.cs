@@ -69,8 +69,6 @@ namespace Cybersource.Services
                     request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
                 }
 
-                //StringBuilder sb = new StringBuilder();
-
                 var client = _clientFactory.CreateClient();
                 var response = await client.SendAsync(request);
                 string responseContent = await response.Content.ReadAsStringAsync();
@@ -112,8 +110,6 @@ namespace Cybersource.Services
                     request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
                     request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
                 }
-
-                //StringBuilder sb = new StringBuilder();
 
                 var client = _clientFactory.CreateClient();
                 var response = await client.SendAsync(request);
@@ -270,7 +266,6 @@ namespace Cybersource.Services
         public async Task<string> InitConfiguration()
         {
             string retval = string.Empty;
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string jsonSerializedOrderConfig = await this._cybersourceRepository.GetOrderConfiguration();
             if (string.IsNullOrEmpty(jsonSerializedOrderConfig))
             {
@@ -299,7 +294,6 @@ namespace Cybersource.Services
         public async Task<string> RemoveConfiguration()
         {
             string retval = string.Empty;
-            //MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string jsonSerializedOrderConfig = await this._cybersourceRepository.GetOrderConfiguration();
             if (string.IsNullOrEmpty(jsonSerializedOrderConfig))
             {
