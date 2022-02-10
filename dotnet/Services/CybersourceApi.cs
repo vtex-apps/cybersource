@@ -289,12 +289,16 @@ namespace Cybersource.Services
                         Name = "digest",
                         Value = new Value
                         {
-                            Sha256 = new Sha256
+                            Sha256 = new object[]
                             {
-                                ReplaceTokens = new string[]
+                                new Sha256
                                 {
-                                    jsonSerializedData
-                                }
+                                    ReplaceTokens = new string[]
+                                    {
+                                        jsonSerializedData
+                                    }
+                                },
+                                CybersourceConstants.SIGNATURE_ENCODING
                             }
                         }
                     }
@@ -302,6 +306,8 @@ namespace Cybersource.Services
             };
 
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
+
+            _context.Vtex.Logger.Debug("SendProxyDigestRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
 
             return sendResponse;
         }
@@ -327,7 +333,8 @@ namespace Cybersource.Services
                                     {
                                         jsonSerializedData
                                     }
-                                }
+                                },
+                                CybersourceConstants.SIGNATURE_ENCODING
                             }
                         }
                     }
@@ -335,6 +342,10 @@ namespace Cybersource.Services
             };
 
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
+
+            _context.Vtex.Logger.Debug("SendProxySignatureRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
+            //Console.WriteLine($"proxyTokenRequest=\n{JsonConvert.SerializeObject(proxyTokenRequest)}");
+            //Console.WriteLine($"SendProxyTokenRequest=\n'{sendResponse.Message}' [{sendResponse.Success}] {sendResponse.StatusCode}");
 
             return sendResponse;
         }
@@ -387,22 +398,9 @@ namespace Cybersource.Services
         #region Payments
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
-            /// TESTING
-            //if (!string.IsNullOrEmpty(payments.deviceInformation.fingerprintSessionId))
-            //{
-            //payments.paymentInformation.card.number = "4111111111111111";
-            //payments.paymentInformation.card.securityCode = "111";
-            //payments.paymentInformation.card.expirationMonth = "04";
-            //payments.paymentInformation.card.expirationYear = "2023";
-            //payments.paymentInformation.card.type = "001";
-            //}
-            /// TESTING
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-            /// TESTING
-            //SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            /// TESTING
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
 
             if (response != null)
@@ -413,8 +411,12 @@ namespace Cybersource.Services
                 }
                 else
                 {
-                    Console.WriteLine($"    ProcessPayment: {response.Message}");
+                    _context.Vtex.Logger.Error("ProcessPayment", null, $"[{response.StatusCode}] {response.Message}");
                 }
+            }
+            else
+            {
+                _context.Vtex.Logger.Error("ProcessPayment", null, "Null Response");
             }
 
             return paymentsResponse;
@@ -775,10 +777,12 @@ namespace Cybersource.Services
             {
                 ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
                 base64EncodedSignature = proxyToken.Tokens[0].Placeholder;
+                //Console.WriteLine($"base64EncodedSignature='{base64EncodedSignature}'");
             }
             else
             {
                 Console.WriteLine("Did not calculate signature!");
+                _context.Vtex.Logger.Error("GenerateProxySignatureString", null, "Did not calculate signature");
                 return null;
             }
 
