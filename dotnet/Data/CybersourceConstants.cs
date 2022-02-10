@@ -22,7 +22,7 @@ namespace Cybersource.Data
         public const string LOCAL_ENVIRONMENT = "myvtex";
         public const string VTEX_ID_HEADER_NAME = "VtexIdclientAutCookie";
         public const string HEADER_VTEX_WORKSPACE = "X-Vtex-Workspace";
-        public const string APP_SETTINGS = "vtex.cybersource";
+        public const string APP_SETTINGS = "vtex.cybersource-ui";
         public const string ACCEPT = "Accept";
         public const string CONTENT_TYPE = "Content-Type";
         public const string MINICART = "application/vnd.vtex.checkout.minicart.v1+json";
@@ -34,27 +34,28 @@ namespace Cybersource.Data
         public const string TOKEN_TEST = "oauth-token-test";
         public const string TOKEN_LIVE = "oauth-token-live";
         public const string CACHE_BUCKET = "tax-cache";
+        public const string SIGNATURE_ENCODING = "base64";
 
         public const string PAYMENTS = "/pts/v2/";
         public const string RISK = "/risk/v1/";
         public const string TAX = "/vas/v2/";
         public const string REPORTING = "/reporting/v3/";
 
-        public class CybersourceDecision
+        public static class CybersourceDecision
         {
             public const string Review = "REVIEW";
             public const string Reject = "REJECT";
             public const string Accept = "ACCEPT";
         }
 
-        public class VtexAuthStatus
+        public static class VtexAuthStatus
         {
             public const string Approved = "approved";
             public const string Denied = "denied";
             public const string Undefined = "undefined";
         }
 
-        public class VtexAntifraudStatus
+        public static class VtexAntifraudStatus
         {
             public const string Received = "received";
             public const string Approved = "approved";
@@ -62,13 +63,13 @@ namespace Cybersource.Data
             public const string Undefined = "undefined";
         }
 
-        public class VtexAntifraudType
+        public static class VtexAntifraudType
         {
             public const string Automatic = "automatic";
             public const string Manual = "manual ";
         }
 
-        public class VtexOrderStatus
+        public static class VtexOrderStatus
         {
             public const string OrderCreated = "order-created";
             public const string OrderCompleted = "order-completed";
@@ -98,7 +99,7 @@ namespace Cybersource.Data
             public const string Cancelled = "cancelled";
         }
 
-        public class Domain
+        public static class Domain
         {
             public const string Fulfillment = "Fulfillment";
             public const string Marketplace = "Marketplace";
@@ -109,7 +110,7 @@ namespace Cybersource.Data
         public const string ProductionApiEndpoint = "api.cybersource.com";
         public const string SignatureAlgorithm = "HmacSHA256";
 
-        public const string AUTH_SITE_BASE = "brian--googleauth.myvtex.com"; //"googleauth.myvtex.com"; "brian--sandboxusdev.myvtex.com";
+        public const string AUTH_SITE_BASE = "googleauth.myvtex.com";
         public const string REDIRECT_PATH = "return";
         public const string AUTH_APP_PATH = "cybersource";
         public const string AUTH_PATH = "auth";
@@ -122,7 +123,7 @@ namespace Cybersource.Data
         public const string INSTALLMENT_INTERNET = "install_internet";
         public const string INTERNET = "internet";
 
-        public class Regions
+        public static class Regions
         {
             public const string Colombia = "CO";
             public const string Peru = "PE";
@@ -130,7 +131,7 @@ namespace Cybersource.Data
             public const string Brasil = "BR";
         }
 
-        public class Processors
+        public static class Processors
         {
             public const string Braspag = "Braspag";
             public const string VPC = "VPC";
@@ -156,7 +157,7 @@ namespace Cybersource.Data
             Hipercard
         }
 
-        public static Dictionary<string, string> CountryCodesMapping = new Dictionary<string, string>()
+        internal static readonly Dictionary<string, string> CountryCodesMapping = new Dictionary<string, string>()
         {
            { "AFG", "AF" },    // Afghanistan
            { "ALB", "AL" },    // Albania

@@ -49,37 +49,41 @@
             MerchantSettings merchantSettings = null;
             // Load merchant settings
             // 'http://apps.{{region}}.vtex.io/{{account}}/{{workspace}}/apps/{{appName}}/settings'
-            var request = new HttpRequestMessage
+            try
             {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri($"http://apps.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/apps/{CybersourceConstants.APP_SETTINGS}/settings"),
-            };
-
-            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            if (authToken != null)
-            {
-                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-            }
-
-            var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($" - GetMerchantSettings - '{responseContent}'");
-            if (response.IsSuccessStatusCode)
-            {
-                merchantSettings = JsonConvert.DeserializeObject<MerchantSettings>(responseContent);
-                if(merchantSettings.MerchantDefinedValues == null)
+                var request = new HttpRequestMessage
                 {
-                    merchantSettings.MerchantDefinedValues = new Dictionary<string, string>();
-                    merchantSettings.MerchantDefinedValues.Add("MID", "{{MerchantId}}");
-                    merchantSettings.MerchantDefinedValues.Add("Order Type", "{{CompanyName}}");
-                    merchantSettings.MerchantDefinedValues.Add("CALL CENTER", "{{CompanyTaxId}}");
-                    merchantSettings.MerchantDefinedValues.Add("Customer Name", "{{CustomerName}}");
-                    merchantSettings.MerchantDefinedValues.Add("Total Cart Amount", "{{TotalCartValue}}");
-                    //merchantSettings.MerchantDefinedValues.Add("Concat Test", "TEST:{{OrderId}}-{{Reference}}");
-                    //merchantSettings.MerchantDefinedValues.Add("PaymentId", "26940{{Reference|Pad|9:0}}{{|date|yy}}");
-                    await this.SetMerchantSettings(merchantSettings);
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"http://apps.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/apps/{CybersourceConstants.APP_SETTINGS}/settings"),
+                };
+
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
                 }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    merchantSettings = JsonConvert.DeserializeObject<MerchantSettings>(responseContent);
+                    //if (merchantSettings.MerchantDefinedValues == null)
+                    //{
+                    //    merchantSettings.MerchantDefinedValues = new Dictionary<int, string>();
+                    //    merchantSettings.MerchantDefinedValues.Add(1, "MID {{MerchantId}}");
+                    //    merchantSettings.MerchantDefinedValues.Add(2, "Order Type {{CompanyName}}");
+                    //    merchantSettings.MerchantDefinedValues.Add(3, "CALL CENTER {{CompanyTaxId}}");
+                    //    merchantSettings.MerchantDefinedValues.Add(4, "Customer Name {{CustomerName}}");
+                    //    merchantSettings.MerchantDefinedValues.Add(5, "Total Cart Amount {{TotalCartValue}}");
+                    //    await this.SetMerchantSettings(merchantSettings);
+                    //}
+                }
+            }
+            catch(Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetMerchantSettings", null, null, ex);
             }
 
             return merchantSettings;

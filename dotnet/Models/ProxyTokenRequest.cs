@@ -21,11 +21,11 @@ namespace Cybersource.Models
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Value
     {
-        [JsonProperty("sha256")]
-        public Sha256 Sha256 { get; set; }
+        //[JsonProperty("sha256")]
+        //public Sha256 Sha256 { get; set; }
 
-        //[JsonProperty("hmac-sha256")]
-        //public HmacSha256Element HmacSha256 { get; set; }
+        [JsonProperty("sha256")]
+        public object[] Sha256 { get; set; }
 
         [JsonProperty("hmac-sha256")]
         public object[] HmacSha256 { get; set; }
@@ -37,12 +37,6 @@ namespace Cybersource.Models
         [JsonProperty("replaceTokens")]
         public string[] ReplaceTokens { get; set; }
     }
-
-    //[JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
-    //public class HmacSha256Element
-    //{
-
-    //}
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class HmacSha256Class

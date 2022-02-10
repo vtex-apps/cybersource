@@ -1029,25 +1029,6 @@ namespace Cybersource.Services
             return obj;
         }
 
-        public async Task AddDefaultMerchantDefinedValues(List<MerchantDefinedInformation> merchantDefinedValues, CreatePaymentRequest createPaymentRequest)
-        {
-            MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
-            {
-                key = "MID",
-                value = createPaymentRequest.MerchantSettings.Where(s => s.Name.Equals("Company Name")).Select(s => s.Value).ToString()
-            };
-
-            merchantDefinedValues.Add(merchantDefinedInformation);
-
-            merchantDefinedInformation = new MerchantDefinedInformation
-            {
-                key = "Order Type",
-                value = createPaymentRequest.MerchantSettings.Where(s => s.Name.Equals("Company Name")).Select(s => s.Value).ToString()
-            };
-
-            merchantDefinedValues.Add(merchantDefinedInformation);
-        }
-
         private async Task<List<MerchantDefinedInformation>> GetMerchantDefinedInformation(MerchantSettings merchantSettings, PaymentRequestWrapper requestWrapper)
         {
             List<MerchantDefinedInformation> merchantDefinedInformationList = new List<MerchantDefinedInformation>();
@@ -1056,7 +1037,7 @@ namespace Cybersource.Services
             string valueSeparator = "|";
             try
             {
-                foreach (KeyValuePair<string, string> merchantSetting in merchantSettings.MerchantDefinedValues)
+                foreach (KeyValuePair<int, string> merchantSetting in merchantSettings.MerchantDefinedValues)
                 {
                     string merchantDefinedValue = merchantSetting.Value;
                     if (!string.IsNullOrEmpty(merchantDefinedValue))

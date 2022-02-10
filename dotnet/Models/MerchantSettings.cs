@@ -19,6 +19,6 @@ namespace Cybersource.Models
         //  merchantInformation moved to configuration.json
         //public string merchantName { get; set; }
         //public string merchantTaxId { get; set; }
-        public Dictionary<string, string> MerchantDefinedValues { get; set; }
+        public Dictionary<int, string> MerchantDefinedValues { get; set; }
     }
 }
