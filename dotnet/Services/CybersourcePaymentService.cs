@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Cybersource.Data;
@@ -391,7 +390,7 @@ namespace Cybersource.Services
             {
                 string taxAmount = null;
                 string commodityCode = null;
-                VtexOrderItem vtexOrderItem = vtexOrderItems.Where(i => i.Id.Equals(vtexItem.Id)).FirstOrDefault();
+                VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => i.Id.Equals(vtexItem.Id));
                 if (vtexOrderItem != null)
                 {
                     long itemTax = 0L;
@@ -406,28 +405,31 @@ namespace Cybersource.Services
                             }
                             else
                             {
-                                itemTax += priceTag.Value / (long)vtexOrderItem.Quantity;
+                                itemTax += priceTag.Value / vtexOrderItem.Quantity;
                             }
                         }
                     }
 
                     taxAmount = ((decimal)itemTax / 100).ToString();
-                    Console.WriteLine($"itemTax {itemTax} / 100 = taxAmount {taxAmount}");
+                    //Console.WriteLine($"itemTax {itemTax} / 100 = taxAmount {taxAmount}");
                     commodityCode = vtexOrderItem.TaxCode;
                 }
+
+                decimal unitDiscount = vtexItem.Discount / vtexItem.Quantity;
 
                 LineItem lineItem = new LineItem
                 {
                     productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
-                    unitPrice = (vtexItem.Price - vtexItem.Discount).ToString(),
+                    unitPrice = (vtexItem.Price + unitDiscount).ToString(),    // Discount is negative
                     quantity = vtexItem.Quantity.ToString(),
-                    //discountAmount = vtexItem.Discount.ToString(),
+                    discountAmount = unitDiscount.ToString(),
                     taxAmount = taxAmount,
                     commodityCode = commodityCode
                 };
 
                 payment.orderInformation.lineItems.Add(lineItem);
+                Console.WriteLine($"lineItem [{lineItem.productSKU}] '{lineItem.productName}' ${lineItem.unitPrice} x{lineItem.quantity} -{lineItem.discountAmount}");
             }
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
@@ -840,6 +842,7 @@ namespace Cybersource.Services
         }
         #endregion OAuth
 
+        #region Helpers
         public async Task<bool> HealthCheck()
         {
             bool success = true;
@@ -1032,6 +1035,11 @@ namespace Cybersource.Services
         private async Task<List<MerchantDefinedInformation>> GetMerchantDefinedInformation(MerchantSettings merchantSettings, PaymentRequestWrapper requestWrapper)
         {
             List<MerchantDefinedInformation> merchantDefinedInformationList = new List<MerchantDefinedInformation>();
+            if(merchantSettings.MerchantDefinedValues == null)
+            {
+                return merchantDefinedInformationList;
+            }
+
             string startCharacter = "{{";
             string endCharacter = "}}";
             string valueSeparator = "|";
@@ -1143,5 +1151,6 @@ namespace Cybersource.Services
 
             return merchantDefinedInformationList;
         }
+        #endregion
     }
 }

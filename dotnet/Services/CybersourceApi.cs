@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -43,7 +44,7 @@ namespace Cybersource.Services
                 $"{this._environmentVariableProvider.ApplicationVendor}.{this._environmentVariableProvider.ApplicationName}";
         }
 
-        public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData)
+        public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData, string gmtDateTime = null)
         {
             SendResponse sendResponse = null;
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
@@ -68,20 +69,21 @@ namespace Cybersource.Services
 
                 string digest = string.Empty;
                 string signatureString = string.Empty;
-                string signature = string.Empty;
-                string gmtDateTime = DateTime.UtcNow.ToString("r");
+                if (string.IsNullOrEmpty(gmtDateTime))
+                {
+                    gmtDateTime = DateTime.UtcNow.ToString("r");
+                }
 
                 request.Headers.Add("v-c-merchant-id", merchantSettings.MerchantId);
                 request.Headers.Add("Date", gmtDateTime);
                 request.Headers.Add("Host", urlBase);
-                if(!method.Equals(HttpMethod.Get) && !method.Equals(HttpMethod.Delete))
+                if (!method.Equals(HttpMethod.Get) && !method.Equals(HttpMethod.Delete))
                 {
                     digest = await this.GenerateDigest(jsonSerializedData);
                     request.Headers.Add("Digest", digest); // Do not pass this header field for GET requests. It is a hash of the JSON payload made using a SHA-256 hashing algorithm.
                 }
 
                 signatureString = await this.GenerateSignatureString(merchantSettings, urlBase, gmtDateTime, $"{method.ToString().ToLower()} {endpoint}", digest);
-                //signature = await this.GenerateSignatureFromParams(signatureString, merchantSettings.SharedSecretKey);
                 request.Headers.Add("Signature", signatureString);  // A comma-separated list of parameters that are formatted as name-value pairs
 
                 var client = _clientFactory.CreateClient();
@@ -94,22 +96,15 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                //Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
-
                 StringBuilder sb = new StringBuilder();
                 foreach (var header in request.Headers)
                 {
                     string headerName = header.Key;
                     string headerContent = string.Join(",", header.Value.ToArray());
                     sb.AppendLine($"{headerName} : {headerContent}");
-                    //Console.WriteLine($" |-| {headerName} : {headerContent}");
                 }
 
                 _context.Vtex.Logger.Debug("SendRequest", $"Production? {merchantSettings.IsLive}", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
-                Console.WriteLine($"    |-| IS PRODUCTION ? {merchantSettings.IsLive}       ");
-                //Console.WriteLine($"- SendRequest: [{response.StatusCode}] {responseContent}");
-                //Console.WriteLine($"v-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}");
-
                 //_context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
@@ -165,8 +160,6 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                //Console.WriteLine($"- SendReportRequest: [{response.StatusCode}] {responseContent} -");
-
                 _context.Vtex.Logger.Debug("SendReportRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
@@ -177,11 +170,10 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
-        public async Task<SendResponse> SendProxyRequest(HttpMethod method, string endpoint, string jsonSerializedData, string proxyUrl, string proxyTokenUrl)
+        public async Task<SendResponse> SendProxyRequest(HttpMethod method, string endpoint, string jsonSerializedData, string proxyUrl, string proxyTokenUrl, string gmtDateTime)
         {
             SendResponse sendResponse = null;
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            //CybersourceToken token = await this.GetOAuthToken(merchantSettings.IsLive);
             string urlBase = CybersourceConstants.ProductionApiEndpoint;
             if (!merchantSettings.IsLive)
             {
@@ -205,7 +197,6 @@ namespace Cybersource.Services
 
                 string digest = string.Empty;
                 string signatureString = string.Empty;
-                string gmtDateTime = DateTime.UtcNow.ToString("r");
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}v-c-merchant-id", merchantSettings.MerchantId);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Date", gmtDateTime);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Host", urlBase);
@@ -216,7 +207,7 @@ namespace Cybersource.Services
                     if (proxyTokenSendResponse.Success)
                     {
                         ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
-                        digest = proxyToken.Tokens[0].Placeholder;
+                        digest = $"SHA-256={proxyToken.Tokens[0].Placeholder}";
                     }
                     else
                     {
@@ -233,15 +224,12 @@ namespace Cybersource.Services
                     return sendResponse;
                 }
 
+                await this.GetProxyTokens(proxyTokenUrl);
                 request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Signature", signatureString);  // A comma-separated list of parameters that are formatted as name-value pairs
-
                 request.Headers.Add(CybersourceConstants.PROXY_FORWARD_TO, requestUri);
-
                 string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
                 if (authToken != null)
                 {
-                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
                     request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
                 }
 
@@ -255,24 +243,65 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                //Console.WriteLine($"- SendRequest: [{response.StatusCode}] - ");
                 StringBuilder sb = new StringBuilder();
                 foreach (var header in request.Headers)
                 {
                     string headerName = header.Key;
                     string headerContent = string.Join(",", header.Value.ToArray());
                     sb.AppendLine($"{headerName} : {headerContent}");
-                    //Console.WriteLine($" |-| {headerName} : {headerContent}");
+                    Console.WriteLine($" |-| {headerName} : {headerContent}");
                 }
 
                 _context.Vtex.Logger.Debug("SendRequest", "Proxy", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
-                //_context.Vtex.Logger.Debug("SendRequest", "Proxy", $"{request.RequestUri}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
-                //_context.Vtex.Logger.Debug("SendRequest", "Proxy", $"{request.RequestUri}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendRequest", "Proxy", $"Error ", ex);
+                List<(string, string)> dict = new List<(string, string)>()
+                {
+                    ( "method", method.ToString() ),
+                    ( "endpoint", endpoint ),
+                    ( "proxyUrl", proxyUrl ),
+                    ( "proxyTokenUrl", proxyTokenUrl ),
+                    ( "body", jsonSerializedData ),
+                };
+
+                _context.Vtex.Logger.Error("SendRequest", "Proxy", $"Error ", ex, dict.ToArray());
             }
+
+            return sendResponse;
+        }
+
+        public async Task<SendResponse> GetProxyTokens(string proxyTokenUrl)
+        {
+            SendResponse sendResponse = null;
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri(proxyTokenUrl)
+                };
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                sendResponse = new SendResponse
+                {
+                    StatusCode = response.StatusCode.ToString(),
+                    Success = response.IsSuccessStatusCode,
+                    Message = responseContent
+                };
+
+                _context.Vtex.Logger.Debug("GetProxyTokens", null, $"{request.RequestUri}\n{response.StatusCode}]\n{responseContent}");
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetProxyTokens", null, $"Error ", ex);
+            }
+
+            Console.WriteLine($"sendResponse.Message=\n{sendResponse.Message}");
+            _context.Vtex.Logger.Debug("GetProxyTokens", null, $"Response:\n{sendResponse.Message}");
 
             return sendResponse;
         }
@@ -306,8 +335,7 @@ namespace Cybersource.Services
             };
 
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
-
-            _context.Vtex.Logger.Debug("SendProxyDigestRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
+            _context.Vtex.Logger.Debug("SendProxyDigestRequest", null, $"Request:\n{JsonConvert.SerializeObject(proxyTokenRequest)}\nResponse:\n{sendResponse.Message}");
 
             return sendResponse;
         }
@@ -343,9 +371,7 @@ namespace Cybersource.Services
 
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
 
-            _context.Vtex.Logger.Debug("SendProxySignatureRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
-            //Console.WriteLine($"proxyTokenRequest=\n{JsonConvert.SerializeObject(proxyTokenRequest)}");
-            //Console.WriteLine($"SendProxyTokenRequest=\n'{sendResponse.Message}' [{sendResponse.Success}] {sendResponse.StatusCode}");
+            _context.Vtex.Logger.Debug("SendProxySignatureRequest", null, $"Request:\n{JsonConvert.SerializeObject(proxyTokenRequest)}\nResponse:\n{sendResponse.Message}");
 
             return sendResponse;
         }
@@ -375,14 +401,13 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                //Console.WriteLine($"- SendProxyTokenRequest: [{response.StatusCode}] - ");
+                Console.WriteLine($"- SendProxyTokenRequest: [{response.StatusCode}] - ");
                 StringBuilder sb = new StringBuilder();
                 foreach (var header in request.Headers)
                 {
                     string headerName = header.Key;
                     string headerContent = string.Join(",", header.Value.ToArray());
                     sb.AppendLine($"{headerName} : {headerContent}");
-                    //Console.WriteLine($" |-| {headerName} : {headerContent}");
                 }
 
                 _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n[{response.StatusCode}]\n{responseContent}");
@@ -398,10 +423,12 @@ namespace Cybersource.Services
         #region Payments
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
+            Console.WriteLine("     ProcessPayment ProcessPayment ProcessPayment    ");
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            string gmtDateTime = DateTime.UtcNow.ToString("r");
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl, gmtDateTime);
 
             if (response != null)
             {
@@ -662,15 +689,6 @@ namespace Cybersource.Services
             return digest;
         }
 
-        private async Task<string> GenerateSignatureFromParams(string signatureParams, string secretKey)
-        {
-            var sigBytes = Encoding.UTF8.GetBytes(signatureParams);
-            var decodedSecret = Convert.FromBase64String(secretKey);
-            var hmacSha256 = new HMACSHA256(decodedSecret);
-            var messageHash = hmacSha256.ComputeHash(sigBytes);
-            return Convert.ToBase64String(messageHash);
-        }
-
         private async Task<string> GenerateSignatureString(MerchantSettings merchantSettings, string hostName, string gmtDateTime, string requestTarget, string digest)
         {
             var signatureString = new StringBuilder();
@@ -724,8 +742,7 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
-            //_context.Vtex.Logger.Debug("GenerateSignatureString", null, signatureString.ToString());
-            //Console.WriteLine(signatureString.ToString());
+            _context.Vtex.Logger.Debug("GenerateSignatureString", null, signatureString.ToString());
 
             return signatureHeaderValue.ToString();
         }
@@ -777,7 +794,6 @@ namespace Cybersource.Services
             {
                 ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
                 base64EncodedSignature = proxyToken.Tokens[0].Placeholder;
-                //Console.WriteLine($"base64EncodedSignature='{base64EncodedSignature}'");
             }
             else
             {
@@ -792,7 +808,6 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
             _context.Vtex.Logger.Debug("GenerateProxySignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
-            //Console.WriteLine(signatureString.ToString());
 
             return signatureHeaderValue.ToString();
         }
@@ -831,9 +846,6 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", algorithm=\"" + CybersourceConstants.SignatureAlgorithm + "\"");
             signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
-
-            //_context.Vtex.Logger.Debug("GenerateSignatureString", null, signatureString.ToString());
-            //Console.WriteLine(signatureHeaderValue.ToString());
 
             return signatureHeaderValue.ToString();
         }

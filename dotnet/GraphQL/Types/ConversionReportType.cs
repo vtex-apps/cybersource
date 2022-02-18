@@ -1,11 +1,8 @@
 ﻿using Cybersource.Models;
 using GraphQL;
 using GraphQL.Types;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace cybersource.GraphQL.Types
+namespace Cybersource.GraphQL.Types
 {
     [GraphQLMetadata("ConversionReport")]
     public class ConversionReportType : ObjectGraphType<ConversionReportResponse>

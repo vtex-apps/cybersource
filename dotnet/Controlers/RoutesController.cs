@@ -12,8 +12,6 @@
     using System.Diagnostics;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
-    using System.Xml;
     using System.Web;
     using System.Xml.Serialization;
     using System.IO;
@@ -41,6 +39,7 @@
         /// <returns></returns>
         public async Task<IActionResult> CreatePayment()
         {
+            Console.WriteLine("     CreatePayment CreatePayment CreatePayment    ");
             CreatePaymentResponse paymentResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
