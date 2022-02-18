@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -12,7 +11,6 @@
     using Microsoft.AspNetCore.Http;
     using Newtonsoft.Json;
     using Vtex.Api.Context;
-    using Cybersource.Data;
 
     public class CybersourceRepository : ICybersourceRepository
     {
@@ -49,6 +47,7 @@
             MerchantSettings merchantSettings = null;
             // Load merchant settings
             // 'http://apps.{{region}}.vtex.io/{{account}}/{{workspace}}/apps/{{appName}}/settings'
+
             try
             {
                 var request = new HttpRequestMessage
@@ -69,16 +68,6 @@
                 if (response.IsSuccessStatusCode)
                 {
                     merchantSettings = JsonConvert.DeserializeObject<MerchantSettings>(responseContent);
-                    //if (merchantSettings.MerchantDefinedValues == null)
-                    //{
-                    //    merchantSettings.MerchantDefinedValues = new Dictionary<int, string>();
-                    //    merchantSettings.MerchantDefinedValues.Add(1, "MID {{MerchantId}}");
-                    //    merchantSettings.MerchantDefinedValues.Add(2, "Order Type {{CompanyName}}");
-                    //    merchantSettings.MerchantDefinedValues.Add(3, "CALL CENTER {{CompanyTaxId}}");
-                    //    merchantSettings.MerchantDefinedValues.Add(4, "Customer Name {{CustomerName}}");
-                    //    merchantSettings.MerchantDefinedValues.Add(5, "Total Cart Amount {{TotalCartValue}}");
-                    //    await this.SetMerchantSettings(merchantSettings);
-                    //}
                 }
             }
             catch(Exception ex)
@@ -89,7 +78,7 @@
             return merchantSettings;
         }
 
-        public async Task SetMerchantSettings(MerchantSettings merchantSettings)
+        public async Task<bool> SetMerchantSettings(MerchantSettings merchantSettings)
         {
             var jsonSerializedMerchantSettings = JsonConvert.SerializeObject(merchantSettings);
             var request = new HttpRequestMessage
@@ -107,6 +96,8 @@
 
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
+
+            return response.IsSuccessStatusCode;
         }
 
         public async Task<PaymentData> GetPaymentData(string paymentIdentifier)
@@ -384,7 +375,6 @@
 
             request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
             string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            //string authToken = _context.Vtex.AdminUserAuthToken;
             if (authToken != null)
             {
                 request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
@@ -418,8 +408,6 @@
 
             request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
             string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            //string authToken = _context.Vtex.AdminUserAuthToken;
-            Console.WriteLine($"    authToken   = '{authToken}'    ");
             if (authToken != null)
             {
                 request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
@@ -429,7 +417,6 @@
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"SetOrderConfiguration [{response.StatusCode}] ");
             _context.Vtex.Logger.Info("SetOrderConfiguration", null, $"Request:\r{jsonSerializedOrderConfig}\rResponse: [{response.StatusCode}]\r{responseContent}");
 
             return response.IsSuccessStatusCode;

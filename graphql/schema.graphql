@@ -1,5 +1,6 @@
 type Query {
   conversionReport(startDate: String, endDate: String): ConversionReport
+  merchantDefinedFields: [String]
 }
 
 type Mutation {

@@ -38,6 +38,9 @@
       "name": "AcessaTodosPedidos"
     },
     {
+      "name": "read-write-apps-settings"
+    },
+    {
       "name": "outbound-access",
       "attrs": {
         "host": "{{account}}.vtexcommercestable.com.br",

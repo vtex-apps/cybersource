@@ -8,6 +8,7 @@ namespace Cybersource.Data
     public interface ICybersourceRepository
     {
         Task<MerchantSettings> GetMerchantSettings();
+        Task<bool> SetMerchantSettings(MerchantSettings merchantSettings);
 
         Task<PaymentData> GetPaymentData(string paymentIdentifier);
         Task SavePaymentData(string paymentIdentifier, PaymentData paymentData);
