@@ -38,7 +38,7 @@ namespace Cybersource.GraphQL
                     return conversionReport;
                 }
             );
-
+            
             FieldAsync<ListGraphType<StringGraphType>>(
                 "merchantDefinedFields",
                 resolve: async context =>
