@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.0] - 2022-03-10
+
 ### Changed
 
 - Added parameter for base64 key when generating signature
