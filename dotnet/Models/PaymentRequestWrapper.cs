@@ -1,8 +1,6 @@
-using Cybersource.Models;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 
 namespace Cybersource.Models
 {
@@ -56,7 +54,6 @@ namespace Cybersource.Models
 
         public List<string> ListProperties(object obj, string stem)
         {
-            Console.WriteLine(stem);
             if(!string.IsNullOrEmpty(stem))
             {
                 stem += ".";

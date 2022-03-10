@@ -1,18 +1,16 @@
-﻿using Cybersource.Data;
-using Cybersource.GraphQL.Types;
-using Cybersource.Models;
-using Cybersource.Services;
+﻿using Cybersource.Services;
 using GraphQL;
 using GraphQL.Types;
 using System;
-using System.Collections.Generic;
+using Cybersource.Models;
+using Cybersource.GraphQL.Types;
 
 namespace Cybersource.GraphQL
 {
     [GraphQLMetadata("Query")]
     public class Query : ObjectGraphType<object>
     {
-        public Query(ICybersourcePaymentService cybersourcePaymentService, ICybersourceRepository cybersourceRepository)
+        public Query(ICybersourcePaymentService cybersourcePaymentService)
         {
             Name = "Query";
 
@@ -36,15 +34,6 @@ namespace Cybersource.GraphQL
                     ConversionReportResponse conversionReport = await cybersourcePaymentService.ConversionDetailReport(startDate, endDate);
 
                     return conversionReport;
-                }
-            );
-            
-            FieldAsync<ListGraphType<StringGraphType>>(
-                "merchantDefinedFields",
-                resolve: async context =>
-                {
-                    PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(new CreatePaymentRequest());
-                    return requestWrapper.GetPropertyList();
                 }
             );
         }
