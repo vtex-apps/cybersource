@@ -48,9 +48,17 @@
               "target": "Package",
               "version": "[12.0.3, )"
             },
+            "System.Collections": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            },
             "Vtex.Api": {
               "target": "Package",
               "version": "[0.1.1, )"
+            },
+            "jose-jwt": {
+              "target": "Package",
+              "version": "[3.2.0, )"
             }
           },
           "imports": [

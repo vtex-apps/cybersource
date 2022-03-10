@@ -39,13 +39,11 @@
         /// <returns></returns>
         public async Task<IActionResult> CreatePayment()
         {
-            Console.WriteLine("     CreatePayment CreatePayment CreatePayment    ");
             CreatePaymentResponse paymentResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 _context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
-                //Console.WriteLine(bodyAsText);
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                 paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
             }
@@ -301,7 +299,6 @@
             }
 
             timer.Stop();
-            Console.WriteLine($"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
             _context.Vtex.Logger.Debug("TaxHandler", null, $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
 
             return Json(vtexTaxResponse);
@@ -411,14 +408,11 @@
                     caseManagementOrderStatus = (CaseManagementOrderStatus)serializer.Deserialize(reader);
                 };
 
-                Console.WriteLine($"DecisionManagerNotify {caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
                 result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
                 _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{result}\n{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
-                Console.WriteLine(result);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"DecisionManagerNotify Error: {ex.Message}");
                 _context.Vtex.Logger.Error("DecisionManagerNotify", null, bodyAsText, ex);
             }
 

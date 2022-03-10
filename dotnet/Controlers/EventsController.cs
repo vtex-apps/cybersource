@@ -18,11 +18,6 @@ namespace service.Controllers
             this._vtexApiService = vtexApiService ?? throw new ArgumentNullException(nameof(vtexApiService));
         }
 
-        public string OnAppsLinked(string account, string workspace)
-        {
-            return $"OnAppsLinked event detected for {account}/{workspace}";
-        }
-
         public void AllStates(string account, string workspace)
         {
             string bodyAsText = new System.IO.StreamReader(HttpContext.Request.Body).ReadToEndAsync().Result;
@@ -31,7 +26,7 @@ namespace service.Controllers
             bool success = _vtexApiService.ProcessNotification(allStatesNotification).Result;
             if (!success)
             {
-                _context.Vtex.Logger.Info("Order Broadcast", null, $"Failed to Process Notification {bodyAsText}");
+                _context.Vtex.Logger.Warn("Order Broadcast", null, $"Failed to Process Notification {bodyAsText}");
                 throw new Exception("Failed to Process Notification");
             }
         }

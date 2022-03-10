@@ -1,6 +1,5 @@
 ﻿using Cybersource.Data;
 using Cybersource.Models;
-using Cybersource.Services;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -211,7 +210,6 @@ namespace Cybersource.Services
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
-            //Console.WriteLine($"ListPickupPoints [{response.StatusCode}] {responseContent}");
             if (response.IsSuccessStatusCode)
             {
                 pickupPoints = JsonConvert.DeserializeObject<PickupPoints>(responseContent);
@@ -310,14 +308,10 @@ namespace Cybersource.Services
                     {
                         taxConfiguration = JsonConvert.DeserializeObject<VtexOrderformTaxConfiguration>(existingTaxConfig);
                     }
-                    else
-                    {
-                        Console.WriteLine($"Empty tax configuration.");
-                    }
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine($"Error getting existing config: '{ex.Message}'\n[{orderConfig["taxConfiguration"]}]");
+                    _context.Vtex.Logger.Error("RemoveConfiguration", null, "Error getting existing config", ex);
                 }
 
                 if (taxConfiguration != null && taxConfiguration.Url.Contains("cybersource"))
@@ -463,10 +457,10 @@ namespace Cybersource.Services
                         productName = productName,
                         unitPrice = (item.TargetPrice + (item.DiscountPrice / item.Quantity)).ToString("0.00"), // DiscountPrice is negative
                                                                                                                 //commodityCode = taxCode,
-                        shipFromCountry = this.GetCountryCode(vtexDock.PickupStoreInfo.Address.Country.Acronym),
-                        shipFromAdministrativeArea = vtexDock.PickupStoreInfo.Address.State,
-                        shipFromLocality = vtexDock.PickupStoreInfo.Address.City,
-                        shipFromPostalCode = vtexDock.PickupStoreInfo.Address.PostalCode
+                        shipFromCountry = this.GetCountryCode(vtexDock?.PickupStoreInfo?.Address?.Country?.Acronym),
+                        shipFromAdministrativeArea = vtexDock?.PickupStoreInfo?.Address?.State,
+                        shipFromLocality = vtexDock?.PickupStoreInfo?.Address?.City,
+                        shipFromPostalCode = vtexDock?.PickupStoreInfo?.Address?.PostalCode
                     };
 
                     cyberTaxRequest.orderInformation.lineItems.Add(lineItem);
@@ -494,19 +488,16 @@ namespace Cybersource.Services
                     }
                     else
                     {
-                        Console.WriteLine($"TAX RESPONSE {taxResponse.Status} {taxResponse.Reason} {taxResponse.Message}");
                         useFallbackRates = true;
                     }
                 }
                 else
                 {
-                    Console.WriteLine("TAX RESPONSE IS NULL!");
                     useFallbackRates = true;
                 }
 
                 if (useFallbackRates)
                 {
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!  FALBACK RATES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                     TaxFallbackResponse fallbackResponse = await this.GetFallbackRate(taxRequest.ShippingDestination.Country, taxRequest.ShippingDestination.PostalCode);
                     if (fallbackResponse != null)
                     {
@@ -632,23 +623,8 @@ namespace Cybersource.Services
                         case CybersourceConstants.VtexOrderStatus.Invoiced:
                             success = await this.ProcessInvoice(allStatesNotification.OrderId);
                             break;
-                            break;
-                        default:
-                            //await this.ProcessConversions();
-                            //_context.Vtex.Logger.Info("ProcessNotification", null, $"State {hookNotification.State} not implemeted.");
-                            break;
                     }
-                    break;
-                case CybersourceConstants.Domain.Marketplace:
-                    switch (allStatesNotification.CurrentState)
-                    {
-                        default:
-                            //_context.Vtex.Logger.Info("ProcessNotification", null, $"State {hookNotification.State} not implemeted.");
-                            break;
-                    }
-                    break;
-                default:
-                    //_context.Vtex.Logger.Info("ProcessNotification", null, $"Domain {hookNotification.Domain} not implemeted.");
+
                     break;
             }
 
@@ -830,7 +806,6 @@ namespace Cybersource.Services
                                         if (sendResponse != null)
                                         {
                                             results = ($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
-                                            Console.WriteLine($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
                                         }
                                         else
                                         {
@@ -865,7 +840,13 @@ namespace Cybersource.Services
 
         public string GetCountryCode(string country)
         {
-            return CybersourceConstants.CountryCodesMapping[country];
+            string countryCode = string.Empty;
+            if(!string.IsNullOrEmpty(country))
+            {
+                countryCode = CybersourceConstants.CountryCodesMapping[country];
+            }
+
+            return countryCode;
         }
 
         public async Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse)
@@ -1001,7 +982,6 @@ namespace Cybersource.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"PostCallbackResponse {callbackUrl} Error: {ex.Message} InnerException: {ex.InnerException} StackTrace: {ex.StackTrace}");
                     _context.Vtex.Logger.Error("PostCallbackResponse", null, $"{callbackUrl}\n{createPaymentResponse.PaymentId} {createPaymentResponse.Status}", ex);
                 }
             }
@@ -1037,14 +1017,10 @@ namespace Cybersource.Services
                 {
                     binLookup = JsonConvert.DeserializeObject<BinLookup>(responseContent);
                 }
-                else
-                {
-                    Console.WriteLine($"BinLookup [{response.StatusCode}] {responseContent}");
-                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"BinLookup Error: {ex.Message}");
+                _context.Vtex.Logger.Error("BinLookup", null, null, ex);
             }
 
             return binLookup;

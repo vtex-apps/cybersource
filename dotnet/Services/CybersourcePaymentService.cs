@@ -57,8 +57,6 @@ namespace Cybersource.Services
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
             if(paymentData != null && paymentData.CreatePaymentResponse != null)
             {
-                Console.WriteLine("Returning CreatePaymentResponse from storage.");
-                //_context.Vtex.Logger.Debug("CreatePayment", null, "Returning CreatePaymentResponse from storage.");
                 await _vtexApiService.ProcessConversions();
                 return paymentData.CreatePaymentResponse;
             }
@@ -181,7 +179,6 @@ namespace Cybersource.Services
             BinLookup binLookup = await _vtexApiService.BinLookup(createPaymentRequest.Card.Bin);
             if(binLookup != null)
             {
-                Console.WriteLine($"Bin lookup {binLookup.Bank.Name} {binLookup.Scheme} {binLookup.Type}");
                 if (Enum.TryParse(binLookup.Bank.Name, true, out cardType))
                 {
                     Console.WriteLine($"Set to {cardType} from Bank Name.");
@@ -205,7 +202,6 @@ namespace Cybersource.Services
                 cardType = this.FindType(createPaymentRequest.Card.Bin);
             }
 
-            Console.WriteLine($"    ------------------ Processor: {merchantSettings.Processor} [{cardType}] Debit? {isDebit} ------------------    ");
             switch (merchantSettings.Processor)
             {
                 case CybersourceConstants.Processors.Braspag:
@@ -381,16 +377,12 @@ namespace Cybersource.Services
                     }
                 }
             }
-            else
-            {
-                Console.WriteLine("!!!  FAILED TO GET ORDER GROUP   !!!");
-            }
 
             foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
                 string taxAmount = null;
                 string commodityCode = null;
-                VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => i.Id.Equals(vtexItem.Id));
+                VtexOrderItem vtexOrderItem = vtexOrderItems.Where(i => i.Id.Equals(vtexItem.Id)).FirstOrDefault();
                 if (vtexOrderItem != null)
                 {
                     long itemTax = 0L;
@@ -405,31 +397,27 @@ namespace Cybersource.Services
                             }
                             else
                             {
-                                itemTax += priceTag.Value / vtexOrderItem.Quantity;
+                                itemTax += priceTag.Value / (long)vtexOrderItem.Quantity;
                             }
                         }
                     }
 
                     taxAmount = ((decimal)itemTax / 100).ToString();
-                    //Console.WriteLine($"itemTax {itemTax} / 100 = taxAmount {taxAmount}");
                     commodityCode = vtexOrderItem.TaxCode;
                 }
-
-                decimal unitDiscount = vtexItem.Discount / vtexItem.Quantity;
 
                 LineItem lineItem = new LineItem
                 {
                     productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
-                    unitPrice = (vtexItem.Price + unitDiscount).ToString(),    // Discount is negative
+                    unitPrice = (vtexItem.Price - vtexItem.Discount).ToString(),
                     quantity = vtexItem.Quantity.ToString(),
-                    discountAmount = unitDiscount.ToString(),
+                    //discountAmount = vtexItem.Discount.ToString(),
                     taxAmount = taxAmount,
                     commodityCode = commodityCode
                 };
 
                 payment.orderInformation.lineItems.Add(lineItem);
-                Console.WriteLine($"lineItem [{lineItem.productSKU}] '{lineItem.productName}' ${lineItem.unitPrice} x{lineItem.quantity} -{lineItem.discountAmount}");
             }
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
@@ -842,7 +830,6 @@ namespace Cybersource.Services
         }
         #endregion OAuth
 
-        #region Helpers
         public async Task<bool> HealthCheck()
         {
             bool success = true;
@@ -1014,18 +1001,13 @@ namespace Cybersource.Services
 
         public object GetPropertyValue(object obj, string propertyName)
         {
-            //string retval = string.Empty;
             try
             {
-                //retval = cart.GetType().GetProperties()
-                //   .Single(pi => pi.Name == propertyName)
-                //   .GetValue(cart, null).ToString();
                 foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
                     obj = prop.GetValue(obj, null);
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Could not get value of '{propertyName}' {ex.Message}");
                 _context.Vtex.Logger.Error("GetPropertyValue", null, $"Could not get value of '{propertyName}'", ex);
             }
 
@@ -1035,111 +1017,108 @@ namespace Cybersource.Services
         private async Task<List<MerchantDefinedInformation>> GetMerchantDefinedInformation(MerchantSettings merchantSettings, PaymentRequestWrapper requestWrapper)
         {
             List<MerchantDefinedInformation> merchantDefinedInformationList = new List<MerchantDefinedInformation>();
-            if(merchantSettings.MerchantDefinedValues == null)
-            {
-                return merchantDefinedInformationList;
-            }
 
             string startCharacter = "{{";
             string endCharacter = "}}";
             string valueSeparator = "|";
             try
             {
-                foreach (KeyValuePair<int, string> merchantSetting in merchantSettings.MerchantDefinedValues)
+                if (merchantSettings.MerchantDefinedValues != null)
                 {
-                    string merchantDefinedValue = merchantSetting.Value;
-                    if (!string.IsNullOrEmpty(merchantDefinedValue))
+                    foreach (KeyValuePair<int, string> merchantSetting in merchantSettings.MerchantDefinedValues)
                     {
-                        if (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter))
+                        string merchantDefinedValue = merchantSetting.Value;
+                        if (!string.IsNullOrEmpty(merchantDefinedValue))
                         {
-                            int sanityCheck = 0; // prevent infinate loops jic
-                            do
+                            if (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter))
                             {
-                                int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
-                                string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
-                                string originalValueSubStr = valueSubStr;
-                                string propValue = string.Empty;
-                                if (!string.IsNullOrEmpty(valueSubStr))
+                                int sanityCheck = 0; // prevent infinate loops jic
+                                do
                                 {
-                                    if (valueSubStr.Contains(valueSeparator))
+                                    int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
+                                    string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
+                                    string originalValueSubStr = valueSubStr;
+                                    string propValue = string.Empty;
+                                    if (!string.IsNullOrEmpty(valueSubStr))
                                     {
-                                        string[] valueSubStrArr = valueSubStr.Split(valueSeparator);
-                                        valueSubStr = valueSubStrArr[0];
-                                        if (!string.IsNullOrEmpty(valueSubStr))
+                                        if (valueSubStr.Contains(valueSeparator))
+                                        {
+                                            string[] valueSubStrArr = valueSubStr.Split(valueSeparator);
+                                            valueSubStr = valueSubStrArr[0];
+                                            if (!string.IsNullOrEmpty(valueSubStr))
+                                            {
+                                                propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                            }
+
+                                            string operation = valueSubStrArr[1];
+                                            if (!string.IsNullOrEmpty(operation))
+                                            {
+                                                switch (operation.ToUpper())
+                                                {
+                                                    case "PAD":
+                                                        string[] paddArr = valueSubStrArr[2].Split(':');
+                                                        int totalLength = 0;
+                                                        if (int.TryParse(paddArr[0], out totalLength))
+                                                        {
+                                                            if (propValue.Length < totalLength)
+                                                            {
+                                                                char padChar = paddArr[1].ToCharArray().First();
+                                                                propValue = propValue.PadLeft(totalLength, padChar);
+                                                            }
+                                                            else if (propValue.Length > totalLength)
+                                                            {
+                                                                propValue = propValue.Substring(0, totalLength);
+                                                            }
+                                                        }
+
+                                                        break;
+                                                    case "TRIM":
+                                                        int trimLength = 0;
+                                                        if (int.TryParse(valueSubStrArr[2], out trimLength))
+                                                        {
+                                                            int currentLength = propValue.Length;
+                                                            int offset = Math.Max(0, currentLength - trimLength);
+                                                            propValue = propValue.Substring(offset);
+                                                        }
+
+                                                        break;
+                                                    case "DATE":
+                                                        DateTime dt = DateTime.Now;
+                                                        string dateFormat = valueSubStrArr[2];
+                                                        propValue = dt.ToString(dateFormat);
+                                                        break;
+                                                    default:
+                                                        _context.Vtex.Logger.Warn("GetMerchantDefinedInformation", null, $"Invalid operation '{operation}'");
+                                                        break;
+                                                }
+                                            }
+                                        }
+                                        else
                                         {
                                             propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
                                         }
-
-                                        string operation = valueSubStrArr[1];
-                                        if (!string.IsNullOrEmpty(operation))
-                                        {
-                                            switch (operation.ToUpper())
-                                            {
-                                                case "PAD":
-                                                    string[] paddArr = valueSubStrArr[2].Split(':');
-                                                    int totalLength = 0;
-                                                    if (int.TryParse(paddArr[0], out totalLength))
-                                                    {
-                                                        if (propValue.Length < totalLength)
-                                                        {
-                                                            char padChar = paddArr[1].ToCharArray().First();
-                                                            propValue = propValue.PadLeft(totalLength, padChar);
-                                                        }
-                                                        else if (propValue.Length > totalLength)
-                                                        {
-                                                            propValue = propValue.Substring(0, totalLength);
-                                                        }
-                                                    }
-
-                                                    break;
-                                                case "TRIM":
-                                                    int trimLength = 0;
-                                                    if (int.TryParse(valueSubStrArr[2], out trimLength))
-                                                    {
-                                                        int currentLength = propValue.Length;
-                                                        int offset = Math.Max(0, currentLength - trimLength);
-                                                        propValue = propValue.Substring(offset);
-                                                    }
-
-                                                    break;
-                                                case "DATE":
-                                                    DateTime dt = DateTime.Now;
-                                                    string dateFormat = valueSubStrArr[2];
-                                                    propValue = dt.ToString(dateFormat);
-                                                    break;
-                                                default:
-                                                    Console.WriteLine($"Invalid operation '{operation}'");
-                                                    _context.Vtex.Logger.Warn("GetMerchantDefinedInformation", null, $"Invalid operation '{operation}'");
-                                                    break;
-                                            }
-                                        }
                                     }
-                                    else
-                                    {
-                                        propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
-                                    }
+
+                                    merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{originalValueSubStr}{endCharacter}", propValue);
+                                    sanityCheck = sanityCheck + 1;
                                 }
-
-                                merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{originalValueSubStr}{endCharacter}", propValue);
-                                sanityCheck = sanityCheck + 1;
+                                while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
                             }
-                            while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
-                        }
 
-                        MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
-                        {
-                            key = merchantSetting.Key,
-                            value = merchantDefinedValue
-                        };
+                            MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                            {
+                                key = merchantSetting.Key,
+                                value = merchantDefinedValue
+                            };
 
-                        Console.WriteLine($"ADDING SETTING {merchantSetting.Key} : {merchantSetting.Value} = {merchantDefinedInformation.value}");
-                        try
-                        {
-                            merchantDefinedInformationList.Add(merchantDefinedInformation);
-                        }
-                        catch (Exception ex)
-                        {
-                            _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
+                            try
+                            {
+                                merchantDefinedInformationList.Add(merchantDefinedInformation);
+                            }
+                            catch (Exception ex)
+                            {
+                                _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
+                            }
                         }
                     }
                 }
@@ -1151,6 +1130,5 @@ namespace Cybersource.Services
 
             return merchantDefinedInformationList;
         }
-        #endregion
     }
 }
