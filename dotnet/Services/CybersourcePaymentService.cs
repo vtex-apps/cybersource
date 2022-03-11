@@ -181,11 +181,11 @@ namespace Cybersource.Services
             {
                 if (Enum.TryParse(binLookup.Bank.Name, true, out cardType))
                 {
-                    Console.WriteLine($"Set to {cardType} from Bank Name.");
+                    //Console.WriteLine($"Set to {cardType} from Bank Name.");
                 }
                 else if (Enum.TryParse(binLookup.Scheme, true, out cardType))
                 {
-                    Console.WriteLine($"Set to {cardType} from Scheme.");
+                    //Console.WriteLine($"Set to {cardType} from Scheme.");
                 }
                 else
                 {
