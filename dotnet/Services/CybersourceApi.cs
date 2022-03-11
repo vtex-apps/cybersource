@@ -366,11 +366,11 @@ namespace Cybersource.Services
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
 
-                _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n[{response.StatusCode}]\n{responseContent}");
+                _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{proxyTokenUrl}\n{sb}\n{jsonSerializedData}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, $"Error ", ex);
+                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, $"Error {proxyTokenUrl}", ex);
             }
 
             return sendResponse;
