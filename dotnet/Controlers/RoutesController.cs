@@ -275,16 +275,16 @@
                 if (!string.IsNullOrEmpty(bodyAsText))
                 {
                     VtexTaxRequest taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
-                    orderFormId = taxRequest.OrderFormId;
-                    totalItems = taxRequest.Items.Length.ToString();
-                    decimal total = taxRequest.Totals.Sum(t => t.Value);
                     if (taxRequest != null)
                     {
-                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{total}".GetHashCode();
+                        orderFormId = taxRequest.OrderFormId;
+                        totalItems = taxRequest.Items.Length.ToString();
+                        decimal total = taxRequest.Totals.Sum(t => t.Value);
+                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}".GetHashCode();
                         if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
                         {
                             fromCache = true;
-                            //_context.Vtex.Logger.Debug("CybersourceOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
+                            _context.Vtex.Logger.Debug("CybersourceOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
                         }
                         else
                         {
@@ -302,34 +302,6 @@
             _context.Vtex.Logger.Debug("TaxHandler", null, $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
 
             return Json(vtexTaxResponse);
-        }
-
-        public async Task<IActionResult> Authorize()
-        {
-            Response.Headers.Add("Cache-Control", "no-cache");
-            string url = await _cybersourcePaymentService.GetAuthUrl();
-            if (string.IsNullOrEmpty(url))
-            {
-                return Json("Error");
-            }
-            else
-            {
-                return Redirect(url);
-            }
-        }
-
-        public async Task<bool> SaveToken(bool isLive)
-        {
-            bool success = false;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
-            {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                CybersourceToken token = JsonConvert.DeserializeObject<CybersourceToken>(bodyAsText);
-
-                success = await _cybersourceRepository.SaveToken(token, isLive);
-            }
-
-            return success;
         }
 
         public async Task<IActionResult> ToggleTax(bool useCyberTax)

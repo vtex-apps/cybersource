@@ -37,15 +37,43 @@
     },
     "sendAntifraudPreAnalysisData": {
       "path": "/cybersource/payment-provider/pre-analysis",
-      "public": true
+      "public": true,
+      "access": "authorized",
+      "policies": [
+        {
+          "effect": "allow",
+          "actions": [ "post" ],
+          "principals": [
+            "vrn:apps:*:vtexus:*:app/vtex.cybersource-fraud@*"
+          ]
+        }
+      ]
     },
     "sendAntifraudData": {
       "path": "/cybersource/payment-provider/transactions",
-      "public": true
+      "public": true,
+      "policies": [
+        {
+          "effect": "allow",
+          "actions": [ "post" ],
+          "principals": [
+            "vrn:apps:*:vtexus:*:app/vtex.cybersource-fraud@*"
+          ]
+        }
+      ]
     },
     "getAntifraudStatus": {
       "path": "/cybersource/payment-provider/transactions/:transactionId",
-      "public": true
+      "public": true,
+      "policies": [
+        {
+          "effect": "allow",
+          "actions": [ "get" ],
+          "principals": [
+            "vrn:apps:*:vtexus:*:app/vtex.cybersource-fraud@*"
+          ]
+        }
+      ]
     },
     "conversionDetailReport": {
       "path": "/cybersource/reporting/conversion-details",
@@ -69,14 +97,6 @@
     },
     "cybersourceResponseToVtexResponse": {
       "path": "/cybersource/tax/test-tax",
-      "public": true
-    },
-    "authorize": {
-      "path": "/cybersource/oauth/authorize",
-      "public": true
-    },
-    "saveToken": {
-      "path": "/cybersource/set-token/:isLive",
       "public": true
     },
     "processConversions": {

@@ -438,7 +438,7 @@ namespace Cybersource.Services
                 {
                     //_context.Vtex.Logger.Debug("GetTaxes", null, $"Sku:{item.Sku} #{item.Quantity} x{item.UnitMultiplier}\n{item.ItemPrice} -{item.DiscountPrice} ={item.TargetPrice}");
                     string dockId = item.DockId;
-                    VtexDockResponse vtexDock = vtexDocks.Where(d => d.Id.Equals(dockId)).FirstOrDefault();
+                    VtexDockResponse vtexDock = vtexDocks.FirstOrDefault(d => d.Id.Equals(dockId));
 
                     string taxCode = "default";
                     string productName = string.Empty;
@@ -556,7 +556,7 @@ namespace Cybersource.Services
 
                             if (fallbackResponse.TaxShippingAlone || fallbackResponse.TaxShippingAndHandlingTogether)
                             {
-                                decimal shippingTotal = (decimal)taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
+                                decimal shippingTotal = taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
                                 vtexTaxes.Add(
                                 new VtexTax
                                 {
@@ -593,7 +593,7 @@ namespace Cybersource.Services
             PickupPoints pickupPoints = await this.ListPickupPoints();
             if (pickupPoints != null)
             {
-                List<string> nexusStates = new List<string>();
+                //List<string> nexusStates = new List<string>();
                 foreach (PickupPointItem pickupPoint in pickupPoints.Items)
                 {
                     if (pickupPoint != null && pickupPoint.Address != null && pickupPoint.Address.State != null && pickupPoint.Address.Country != null)
