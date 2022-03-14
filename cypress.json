@@ -1,0 +1,16 @@
+{
+  "baseUrl": "https://sandboxusdev.myvtex.com",
+  "chromeWebSecurity": false,
+  "video": true,
+  "videoCompression": false,
+  "videoUploadOnPasses": false,
+  "screenshotOnRunFailure": true,
+  "trashAssetsBeforeRuns": false,
+  "viewportWidth": 1440,
+  "viewportHeight": 1500,
+  "defaultCommandTimeout": 25000,
+  "requestTimeout": 25000,
+  "retries": 0,
+  "watchForFileChanges": false,
+  "pageLoadTimeout": 45000
+}
