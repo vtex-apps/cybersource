@@ -176,6 +176,8 @@ namespace Cybersource.Services
 
             string requestUri = $"https://{urlBase}{endpoint}";
 
+            proxyUrl = proxyUrl.Replace("https:", "http:", StringComparison.InvariantCultureIgnoreCase);
+
             try
             {
                 var request = new HttpRequestMessage
@@ -188,6 +190,8 @@ namespace Cybersource.Services
                 {
                     request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
                 }
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
 
                 string digest = string.Empty;
                 string signatureString = string.Empty;
@@ -208,7 +212,7 @@ namespace Cybersource.Services
                     else
                     {
                         _context.Vtex.Logger.Error("SendProxyRequest", null, $"Did not calculate digest!\n{jsonSerializedData}");
-                        Console.WriteLine("     Did not calculate digest!     ");
+                        return sendResponse;
                     }
 
                     request.Headers.Add($"{CybersourceConstants.PROXY_HEADER_PREFIX}Digest", digest); // Do not pass this header field for GET requests. It is a hash of the JSON payload made using a SHA-256 hashing algorithm.
@@ -336,7 +340,19 @@ namespace Cybersource.Services
         public async Task<SendResponse> SendProxyTokenRequest(ProxyTokenRequest proxyTokenRequest, string proxyTokenUrl)
         {
             SendResponse sendResponse = null;
+            string tokenName = string.Empty;
             string jsonSerializedData = JsonConvert.SerializeObject(proxyTokenRequest);
+
+            proxyTokenUrl = proxyTokenUrl.Replace("https:", "http:", StringComparison.InvariantCultureIgnoreCase);
+
+            try
+            {
+                tokenName = proxyTokenRequest.Tokens[0].Name;
+            }
+            catch(Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, $"Error getting token name", ex);
+            }
 
             try
             {
@@ -347,6 +363,15 @@ namespace Cybersource.Services
                 };
 
                 request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
+                }
 
                 var client = _clientFactory.CreateClient();
                 var response = await client.SendAsync(request);
@@ -370,7 +395,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, $"Error {proxyTokenUrl}", ex);
+                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, $"Error {proxyTokenUrl} {tokenName}", ex);
             }
 
             return sendResponse;
