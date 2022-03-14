@@ -57,11 +57,12 @@ namespace Cybersource.Services
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
             if(paymentData != null && paymentData.CreatePaymentResponse != null)
             {
+                _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)) });
                 await _vtexApiService.ProcessConversions();
                 return paymentData.CreatePaymentResponse;
             }
 
-            _context.Vtex.Logger.Debug("CreatePayment", null, JsonConvert.SerializeObject(createPaymentRequest));
+            _context.Vtex.Logger.Debug("CreatePayment", null, "Creating Payment", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)) });
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string merchantName = createPaymentRequest.MerchantName;
             string merchantTaxId = string.Empty;
@@ -426,7 +427,7 @@ namespace Cybersource.Services
                 createPaymentResponse = new CreatePaymentResponse();
                 createPaymentResponse.AuthorizationId = paymentsResponse.Id;
                 createPaymentResponse.Tid = paymentsResponse.Id;
-                createPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message != null ? paymentsResponse.Message : paymentsResponse.Status;
+                createPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message ?? paymentsResponse.Status;
                 createPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Reason : paymentsResponse.Status;
                 string paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                 // AUTHORIZED
