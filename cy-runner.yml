@@ -10,7 +10,7 @@ base:
     urlExternalSeller:
     vtexIdUrl: https://vtexid.vtex.com.br/api/vtexid/pub/authenticate/default
     deployCli:
-      enabled: false
+      enabled: true
       git: https://github.com/vtex/toolbelt.git
       branch: qe/cypress
   twilio:
