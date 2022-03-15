@@ -51,8 +51,7 @@ workspace:
     logOutput:
       enabled: false
   installApps:
-    []
-    # - vtex.cybersource
+    - vtex.cybersource
   removeApps: []
   wipe:
     enabled: false
