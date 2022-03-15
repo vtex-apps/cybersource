@@ -68,18 +68,6 @@
                 if (response.IsSuccessStatusCode)
                 {
                     merchantSettings = JsonConvert.DeserializeObject<MerchantSettings>(responseContent);
-                    /// TESTING
-                    //if (merchantSettings.MerchantDefinedValues == null)
-                    //{
-                    //    merchantSettings.MerchantDefinedValues = new Dictionary<int, string>();
-                    //    merchantSettings.MerchantDefinedValues.Add(1, "{{MerchantId}}");        // MID
-                    //    merchantSettings.MerchantDefinedValues.Add(2, "{{CompanyName}}");       // Order Type
-                    //    merchantSettings.MerchantDefinedValues.Add(3, "{{CompanyTaxId}}");      // CALL CENTER
-                    //    merchantSettings.MerchantDefinedValues.Add(4, "{{MiniCart.Buyer.LastName}},{{MiniCart.Buyer.FirstName}}");      // Customer Name
-                    //    merchantSettings.MerchantDefinedValues.Add(5, "{{TotalCartValue}}");    // Total Cart Amount
-                    //    //await this.SetMerchantSettings(merchantSettings);
-                    //}
-                    /// TESTING
                 }
             }
             catch(Exception ex)

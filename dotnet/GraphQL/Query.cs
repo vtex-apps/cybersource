@@ -36,6 +36,15 @@ namespace Cybersource.GraphQL
                     return conversionReport;
                 }
             );
+
+            FieldAsync<ListGraphType<StringGraphType>>(
+                "merchantDefinedFields",
+                resolve: async context =>
+                {
+                    PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(new CreatePaymentRequest());
+                    return requestWrapper.GetPropertyList();
+                }
+            );
         }
     }
 }
