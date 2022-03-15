@@ -2,8 +2,6 @@ name: '[QE] Cypress'
 
 on:
   push:
-    branches:
-      - qe/cypress
   workflow_dispatch:
     inputs:
       branch:
