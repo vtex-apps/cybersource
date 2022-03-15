@@ -1,7 +1,6 @@
 name: '[QE] Cypress'
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       branch:
