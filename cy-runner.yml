@@ -42,16 +42,17 @@ base:
   stateFiles: []
 
 workspace:
-  name: cybersource
+  name: master
   prefix: b2b
   runInDevMode: false
   runHeaded: false
   linkApp:
-    enabled: true
+    enabled: false
     logOutput:
       enabled: false
-  installApps: []
-#    - vtex.cybersource
+  installApps:
+    []
+    # - vtex.cybersource
   removeApps: []
   wipe:
     enabled: false

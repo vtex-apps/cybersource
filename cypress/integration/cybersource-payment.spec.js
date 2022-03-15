@@ -24,6 +24,9 @@ describe('Payment Testcase', () => {
   it('Complete the Payment', () => {
     cy.intercept('**/gatewayCallback/**').as('callback')
     cy.get(selectors.CreditCard).click()
+    cy.getIframeBody(selectors.PaymentMethodIFrame)
+      .find(selectors.CreditCardCode)
+      .should('be.visible')
     cy.getIframeBody(selectors.PaymentMethodIFrame).then($body => {
       if (!$body.find(selectors.CardExist).length) {
         // Credit cart not exist
@@ -46,7 +49,7 @@ describe('Payment Testcase', () => {
         .type('123')
       cy.get(selectors.BuyNowBtn).last().click()
       cy.wait('@callback')
-        .its('response.statusCode', { timeout: 10000 })
+        .its('response.statusCode', { timeout: 5000 })
         .should('eq', 204)
     })
   })
