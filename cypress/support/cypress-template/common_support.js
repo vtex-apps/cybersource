@@ -83,7 +83,7 @@ function fillAddress(postalCode) {
 
   // shipping preview should be visible
   cy.get(selectors.ShippingPreview).should('be.visible')
-  cy.get(selectors.ShipCountry, { timeout: 8000 })
+  cy.get(selectors.ShipCountry, { timeout: 5000 })
     .should('not.be.disabled')
     .select(country)
 
@@ -109,7 +109,11 @@ function fillAddress(postalCode) {
       shipByZipCode = false
     } else {
       cy.get(selectors.PostalCodeInput).should('be.visible').type(postalCode)
-      cy.get(selectors.CalculateBtn).should('be.visible').click()
+      cy.get('body').then($shipping => {
+        if ($shipping.find(selectors.CalculateBtn).length) {
+          cy.get(selectors.CalculateBtn).should('be.visible').click()
+        }
+      })
       cy.get(selectors.DeliveryAddressText).should('have.text', postalCode)
       cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
     }
