@@ -1,0 +1,59 @@
+name: '[QE] Cypress'
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test'
+        required: true
+        default: master
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  Cypress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Check Chrome version
+        run: chrome --version
+
+      - name: Checkout CyberSource
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Get cy-runner
+        run: git clone https://github.com/vtex-apps/cy-runner.git
+
+      - name: Link Cypress inside cy-runner
+        run: ln -s ../cypress
+        working-directory: ./cy-runner
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: '~/.cache/'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Cypress
+        run: yarn install --frozen-lockfile
+        working-directory: ./cy-runner
+
+      - name: Start Test
+        run: yarn cy-r
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VTEX_QE: ${{ secrets.VTEX_QE }}
+
+      - name: Save results
+        uses: actions/upload-artifact@master
+        if: always()
+        with:
+          name: logs
+          path: cy-runner/logs
