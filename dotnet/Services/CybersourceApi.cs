@@ -99,7 +99,7 @@ namespace Cybersource.Services
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
 
-                _context.Vtex.Logger.Debug("SendRequest", $"Production? {merchantSettings.IsLive}", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                //_context.Vtex.Logger.Debug("SendRequest", $"Production? {merchantSettings.IsLive}", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -154,7 +154,7 @@ namespace Cybersource.Services
                     Message = responseContent
                 };
 
-                _context.Vtex.Logger.Debug("SendReportRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
+                //_context.Vtex.Logger.Debug("SendReportRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -254,8 +254,7 @@ namespace Cybersource.Services
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
 
-                _context.Vtex.Logger.Debug("SendRequest", "Proxy", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
-                Console.WriteLine($"SendRequest: [{response.StatusCode}]\n{responseContent}     ");
+                //_context.Vtex.Logger.Debug("SendRequest", "Proxy", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -295,7 +294,7 @@ namespace Cybersource.Services
 
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
 
-            _context.Vtex.Logger.Debug("SendProxyDigestRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
+            //_context.Vtex.Logger.Debug("SendProxyDigestRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
 
             return sendResponse;
         }
@@ -332,7 +331,7 @@ namespace Cybersource.Services
 
             sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
 
-            _context.Vtex.Logger.Debug("SendProxySignatureRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
+            //_context.Vtex.Logger.Debug("SendProxySignatureRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
 
             return sendResponse;
         }
@@ -391,7 +390,7 @@ namespace Cybersource.Services
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
 
-                _context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{proxyTokenUrl}\n{sb}\n{jsonSerializedData}\n[{response.StatusCode}]\n{responseContent}");
+                //_context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{proxyTokenUrl}\n{sb}\n{jsonSerializedData}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -716,7 +715,7 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
-            _context.Vtex.Logger.Debug("GenerateSignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
+            //_context.Vtex.Logger.Debug("GenerateSignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
 
             return signatureHeaderValue.ToString();
         }
@@ -780,7 +779,7 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
-            _context.Vtex.Logger.Debug("GenerateProxySignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
+            //_context.Vtex.Logger.Debug("GenerateProxySignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
 
             return signatureHeaderValue.ToString();
         }

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Callback url
+- Merchant values
+- Item prices
 
 ## [1.1.7] - 2022-03-14
 
