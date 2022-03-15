@@ -1,4 +1,4 @@
-name: '[QE] Cypress'
+name: '[QE] Cypress Runner'
 
 on:
   workflow_dispatch:
@@ -45,10 +45,9 @@ jobs:
         run: yarn install --frozen-lockfile
         working-directory: ./cy-runner
 
-      - name: Start Test
+      - name: Cypress Runner
         run: yarn cy-r
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VTEX_QE: ${{ secrets.VTEX_QE }}
 
       - name: Save results
