@@ -952,6 +952,7 @@ namespace Cybersource.Services
 
             if (!string.IsNullOrEmpty(callbackUrl) && createPaymentResponse != null)
             {
+                callbackUrl = callbackUrl.Replace("https:", "http:", StringComparison.InvariantCultureIgnoreCase);
                 try
                 {
                     var jsonSerializedPaymentResponse = JsonConvert.SerializeObject(createPaymentResponse);
@@ -962,6 +963,7 @@ namespace Cybersource.Services
                         Content = new StringContent(jsonSerializedPaymentResponse, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
                     };
 
+                    request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
                     string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
                     if (authToken != null)
                     {
