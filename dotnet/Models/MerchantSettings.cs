@@ -35,7 +35,19 @@ namespace Cybersource.Models
         [JsonProperty("salesChannelExclude")]
         public string SalesChannelExclude { get; set; }
 
-        [JsonProperty("merchantDefinedValues")]
-        public Dictionary<int, string> MerchantDefinedValues { get; set; }
+        [JsonProperty("merchantDictionary")]
+        public List<MerchantDefinedValueSetting> MerchantDefinedValueSettings { get; set; }
+    }
+
+    public class MerchantDefinedValueSetting
+    {
+        [JsonProperty("userInput")]
+        public string UserInput { get; set; }
+
+        [JsonProperty("goodPortion")]
+        public string GoodPortion { get; set; }
+
+        [JsonProperty("isValid")]
+        public bool IsValid { get; set; }
     }
 }
