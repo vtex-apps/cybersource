@@ -109,12 +109,9 @@ function fillAddress(postalCode) {
       shipByZipCode = false
     } else {
       cy.get(selectors.PostalCodeInput).should('be.visible').type(postalCode)
-      cy.get('body').then($shipping => {
-        if ($shipping.find(selectors.CalculateBtn).length) {
-          cy.get(selectors.CalculateBtn).should('be.visible').click()
-        }
-      })
-      cy.get(selectors.DeliveryAddressText).should('have.text', postalCode)
+      cy.get(selectors.DeliveryAddressText)
+        .should('be.visible')
+        .should('have.text', postalCode)
       cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
     }
   })
