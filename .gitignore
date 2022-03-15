@@ -367,3 +367,10 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# Cypress env
+secrets.env.json
+cypress/fixtures
+cypress/screenshots
+cypress/videos
+cy-runner
