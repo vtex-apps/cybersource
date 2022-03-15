@@ -24,9 +24,7 @@ Cypress.Commands.add('setVtexItem', (vtexItem, vtexValue) => {
 
 // Get VTEX vars
 Cypress.Commands.add('getVtexItems', () => {
-  cy.readFile(vtexJson).then(items => {
-    return items
-  })
+  return cy.wrap(Cypress.env().base.vtex, { log: false })
 })
 
 // Run VTEX CLI commands

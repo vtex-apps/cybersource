@@ -336,13 +336,17 @@ export function testSetup(storeFrontCookie = true, stop = true) {
   before(() => {
     // Inject cookies
     cy.getVtexItems().then(vtex => {
-      cy.setCookie(vtex.COOKIE_NAME, vtex.API_COOKIE, {
+      cy.setCookie(vtex.authCookieName, vtex.adminAuthCookieValue, {
         log: false,
       })
       if (storeFrontCookie) {
-        cy.setCookie(`${vtex.COOKIE_NAME}_${vtex.ACCOUNT}`, vtex.ROBOT_COOKIE, {
-          log: false,
-        })
+        cy.setCookie(
+          `${vtex.authCookieName}_${vtex.account}`,
+          vtex.userAuthCookieValue,
+          {
+            log: false,
+          }
+        )
       }
     })
   })

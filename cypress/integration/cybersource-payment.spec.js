@@ -1,9 +1,9 @@
 import {
   testSetup,
   updateRetry,
-} from '../../support/cypress-template/common_support.js'
-import { PRODUCTS } from '../../support/cypress-template/sandbox_products.js'
-import selectors from '../../support/cypress-template/common_selectors.js'
+} from '../support/cypress-template/common_support.js'
+import { PRODUCTS } from '../support/cypress-template/sandbox_products.js'
+import selectors from '../support/cypress-template/common_selectors.js'
 
 describe('Payment Testcase', () => {
   testSetup()
