@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "eslint --ext js,jsx,ts,tsx .",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json}\"",
-    "cy-r": "cd cy-runner && mkdir logs && node cy-runner | tee logs/cy-runner.log"
+    "cy-r": "cd cy-runner && node cy-runner"
   },
   "husky": {
     "hooks": {
