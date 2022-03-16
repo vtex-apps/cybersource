@@ -65,46 +65,48 @@ describe('Payment Testcase', () => {
     })
   })
 
-  it('Verifying status & message in transaction/interaction API', () => {
-    cy.getVtexItems().then(vtex => {
-      cy.getOrderItems().then(item => {
-        cy.getAPI(
-          `${invoiceAPI(vtex.baseUrl)}/${item[orderEnv]}`,
-          VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
-        ).then(response => {
-          expect(response.status).to.equal(200)
-          const [{ transactionId }] = response.body.paymentData.transactions
-
+  it(
+    'Verifying status & message in transaction/interaction API',
+    updateRetry(3),
+    () => {
+      cy.getVtexItems().then(vtex => {
+        cy.getOrderItems().then(item => {
           cy.getAPI(
-            `${transactionAPI(vtex.baseUrl, transactionId)}/interactions`,
+            `${invoiceAPI(vtex.baseUrl)}/${item[orderEnv]}`,
             VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
-          ).then(interactionResponse => {
-            const index = interactionResponse.body.findIndex(
-              ob =>
-                ob.Status === expectedStatus &&
-                ob.Message.includes(expectedMessage)
-            )
+          ).then(response => {
+            expect(response.status).to.equal(200)
+            const [{ transactionId }] = response.body.paymentData.transactions
 
-            if (index) {
-              const jsonString =
-                interactionResponse.body[index].Message.split(': ')
+            cy.getAPI(
+              `${transactionAPI(vtex.baseUrl, transactionId)}/interactions`,
+              VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
+            ).then(interactionResponse => {
+              const index = interactionResponse.body.findIndex(
+                ob =>
+                  ob.Status === expectedStatus &&
+                  ob.Message.includes(expectedMessage)
+              )
 
-              if (jsonString) {
-                const json = JSON.parse(jsonString[1])
+              if (index >= 0) {
+                const jsonString =
+                  interactionResponse.body[index].Message.split(': ')
 
-                expect(json.status).to.match(/approved|undefined/)
-                expect(json.message).to.match(
-                  /AUTHORIZED|The order is marked for review by Decision Manager/
+                if (jsonString) {
+                  const json = JSON.parse(jsonString[1])
+
+                  expect(json.status).to.match(/approved|undefined/i)
+                  expect(json.message).to.match(/authorized|review/i)
+                }
+              } else {
+                throw new Error(
+                  `Unable to find expected Status: ${expectedStatus} and Message: ${expectedMessage} in transaction/interactions response`
                 )
               }
-            } else {
-              throw new Error(
-                `Unable to find expected Status: ${expectedStatus} and Message: ${expectedMessage} in response`
-              )
-            }
+            })
           })
         })
       })
-    })
-  })
+    }
+  )
 })
