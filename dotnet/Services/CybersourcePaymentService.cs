@@ -145,11 +145,6 @@ namespace Cybersource.Services
                     ipAddress = createPaymentRequest.IpAddress,
                     fingerprintSessionId = createPaymentRequest.DeviceFingerprint
                 },
-                //installmentInformation = new InstallmentInformation
-                //{
-                //    amount = createPaymentRequest.InstallmentsValue.ToString(),
-                //    totalCount = createPaymentRequest.Installments.ToString()
-                //},
                 buyerInformation = new BuyerInformation
                 {
                     personalIdentification = new List<PersonalIdentification>
@@ -346,24 +341,7 @@ namespace Cybersource.Services
                     break;
             }
 
-            //VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}-01");
             VtexOrder[] vtexOrders = await _vtexApiService.GetOrderGroup(createPaymentRequest.OrderId);
-            //VtexOrder vtexOrder = vtexOrders.FirstOrDefault();
-            //foreach (VtexOrderItem vtexItem in vtexOrder.Items)
-            //{
-            //    LineItem lineItem = new LineItem
-            //    {
-            //        productSKU = vtexItem.Id,
-            //        productName = vtexItem.Name,
-            //        unitPrice = vtexItem.SellingPrice.ToString(),
-            //        quantity = vtexItem.Quantity.ToString(),
-            //        taxAmount = (vtexItem.Tax / 100).ToString(),
-            //        commodityCode = vtexItem.TaxCode
-            //    };
-
-            //    payment.orderInformation.lineItems.Add(lineItem);
-            //}
-
             List<VtexOrderItem> vtexOrderItems = new List<VtexOrderItem>();
             if (vtexOrders != null)
             {
@@ -383,7 +361,7 @@ namespace Cybersource.Services
             {
                 string taxAmount = null;
                 string commodityCode = null;
-                VtexOrderItem vtexOrderItem = vtexOrderItems.Where(i => i.Id.Equals(vtexItem.Id)).FirstOrDefault();
+                VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => i.Id.Equals(vtexItem.Id));
                 if (vtexOrderItem != null)
                 {
                     long itemTax = 0L;
@@ -398,7 +376,7 @@ namespace Cybersource.Services
                             }
                             else
                             {
-                                itemTax += priceTag.Value / (long)vtexOrderItem.Quantity;
+                                itemTax += priceTag.Value / vtexOrderItem.Quantity;
                             }
                         }
                     }
@@ -411,9 +389,9 @@ namespace Cybersource.Services
                 {
                     productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
-                    unitPrice = (vtexItem.Price - vtexItem.Discount).ToString(),
+                    unitPrice = (vtexItem.Price + vtexItem.Discount).ToString(), // Discount is negative
                     quantity = vtexItem.Quantity.ToString(),
-                    //discountAmount = vtexItem.Discount.ToString(),
+                    discountAmount = vtexItem.Discount.ToString(),
                     taxAmount = taxAmount,
                     commodityCode = commodityCode
                 };
@@ -486,7 +464,7 @@ namespace Cybersource.Services
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
             }
 
-            _context.Vtex.Logger.Debug("createPaymentResponse", null, JsonConvert.SerializeObject(createPaymentResponse));
+            //_context.Vtex.Logger.Debug("createPaymentResponse", null, JsonConvert.SerializeObject(createPaymentResponse));
 
             return createPaymentResponse;
         }
@@ -1024,101 +1002,106 @@ namespace Cybersource.Services
             string valueSeparator = "|";
             try
             {
-                if (merchantSettings.MerchantDefinedValues != null)
+                if (merchantSettings.MerchantDefinedValueSettings != null)
                 {
-                    foreach (KeyValuePair<int, string> merchantSetting in merchantSettings.MerchantDefinedValues)
+                    int merchantDefinedValueKey = 0;
+                    foreach (MerchantDefinedValueSetting merchantDefinedValueSetting in merchantSettings.MerchantDefinedValueSettings)
                     {
-                        string merchantDefinedValue = merchantSetting.Value;
-                        if (!string.IsNullOrEmpty(merchantDefinedValue))
+                        merchantDefinedValueKey++;
+                        if (merchantDefinedValueSetting.IsValid)
                         {
-                            if (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter))
+                            string merchantDefinedValue = merchantDefinedValueSetting.UserInput; // merchantDefinedValueSetting.GoodPortion;
+                            if (!string.IsNullOrEmpty(merchantDefinedValue))
                             {
-                                int sanityCheck = 0; // prevent infinate loops jic
-                                do
+                                if (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter))
                                 {
-                                    int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
-                                    string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
-                                    string originalValueSubStr = valueSubStr;
-                                    string propValue = string.Empty;
-                                    if (!string.IsNullOrEmpty(valueSubStr))
+                                    int sanityCheck = 0; // prevent infinate loops jic
+                                    do
                                     {
-                                        if (valueSubStr.Contains(valueSeparator))
+                                        int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
+                                        string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
+                                        string originalValueSubStr = valueSubStr;
+                                        string propValue = string.Empty;
+                                        if (!string.IsNullOrEmpty(valueSubStr))
                                         {
-                                            string[] valueSubStrArr = valueSubStr.Split(valueSeparator);
-                                            valueSubStr = valueSubStrArr[0];
-                                            if (!string.IsNullOrEmpty(valueSubStr))
+                                            if (valueSubStr.Contains(valueSeparator))
+                                            {
+                                                string[] valueSubStrArr = valueSubStr.Split(valueSeparator);
+                                                valueSubStr = valueSubStrArr[0];
+                                                if (!string.IsNullOrEmpty(valueSubStr))
+                                                {
+                                                    propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                                }
+
+                                                string operation = valueSubStrArr[1];
+                                                if (!string.IsNullOrEmpty(operation))
+                                                {
+                                                    switch (operation.ToUpper())
+                                                    {
+                                                        case "PAD":
+                                                            string[] paddArr = valueSubStrArr[2].Split(':');
+                                                            int totalLength = 0;
+                                                            if (int.TryParse(paddArr[0], out totalLength))
+                                                            {
+                                                                if (propValue.Length < totalLength)
+                                                                {
+                                                                    char padChar = paddArr[1].ToCharArray().First();
+                                                                    propValue = propValue.PadLeft(totalLength, padChar);
+                                                                }
+                                                                else if (propValue.Length > totalLength)
+                                                                {
+                                                                    propValue = propValue.Substring(0, totalLength);
+                                                                }
+                                                            }
+
+                                                            break;
+                                                        case "TRIM":
+                                                            int trimLength = 0;
+                                                            if (int.TryParse(valueSubStrArr[2], out trimLength))
+                                                            {
+                                                                int currentLength = propValue.Length;
+                                                                int offset = Math.Max(0, currentLength - trimLength);
+                                                                propValue = propValue.Substring(offset);
+                                                            }
+
+                                                            break;
+                                                        case "DATE":
+                                                            DateTime dt = DateTime.Now;
+                                                            string dateFormat = valueSubStrArr[2];
+                                                            propValue = dt.ToString(dateFormat);
+                                                            break;
+                                                        default:
+                                                            _context.Vtex.Logger.Warn("GetMerchantDefinedInformation", null, $"Invalid operation '{operation}'");
+                                                            break;
+                                                    }
+                                                }
+                                            }
+                                            else
                                             {
                                                 propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
                                             }
-
-                                            string operation = valueSubStrArr[1];
-                                            if (!string.IsNullOrEmpty(operation))
-                                            {
-                                                switch (operation.ToUpper())
-                                                {
-                                                    case "PAD":
-                                                        string[] paddArr = valueSubStrArr[2].Split(':');
-                                                        int totalLength = 0;
-                                                        if (int.TryParse(paddArr[0], out totalLength))
-                                                        {
-                                                            if (propValue.Length < totalLength)
-                                                            {
-                                                                char padChar = paddArr[1].ToCharArray().First();
-                                                                propValue = propValue.PadLeft(totalLength, padChar);
-                                                            }
-                                                            else if (propValue.Length > totalLength)
-                                                            {
-                                                                propValue = propValue.Substring(0, totalLength);
-                                                            }
-                                                        }
-
-                                                        break;
-                                                    case "TRIM":
-                                                        int trimLength = 0;
-                                                        if (int.TryParse(valueSubStrArr[2], out trimLength))
-                                                        {
-                                                            int currentLength = propValue.Length;
-                                                            int offset = Math.Max(0, currentLength - trimLength);
-                                                            propValue = propValue.Substring(offset);
-                                                        }
-
-                                                        break;
-                                                    case "DATE":
-                                                        DateTime dt = DateTime.Now;
-                                                        string dateFormat = valueSubStrArr[2];
-                                                        propValue = dt.ToString(dateFormat);
-                                                        break;
-                                                    default:
-                                                        _context.Vtex.Logger.Warn("GetMerchantDefinedInformation", null, $"Invalid operation '{operation}'");
-                                                        break;
-                                                }
-                                            }
                                         }
-                                        else
-                                        {
-                                            propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
-                                        }
+
+                                        merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{originalValueSubStr}{endCharacter}", propValue);
+                                        sanityCheck = sanityCheck + 1;
                                     }
-
-                                    merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{originalValueSubStr}{endCharacter}", propValue);
-                                    sanityCheck = sanityCheck + 1;
+                                    while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
                                 }
-                                while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
-                            }
 
-                            MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
-                            {
-                                key = merchantSetting.Key,
-                                value = merchantDefinedValue
-                            };
+                                MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                                {
+                                    key = merchantDefinedValueKey,
+                                    value = merchantDefinedValue
+                                };
 
-                            try
-                            {
-                                merchantDefinedInformationList.Add(merchantDefinedInformation);
-                            }
-                            catch (Exception ex)
-                            {
-                                _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
+                                try
+                                {
+                                    merchantDefinedInformationList.Add(merchantDefinedInformation);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
+                                }
                             }
                         }
                     }

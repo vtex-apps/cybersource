@@ -1,9 +1,6 @@
 name: '[QE] Cypress Runner'
 
 on:
-  push:
-    branches:
-      - qe/cypress
   workflow_dispatch:
     inputs:
       branch:

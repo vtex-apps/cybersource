@@ -34,46 +34,6 @@ function setProductQuantity({ position, quantity }, subTotal, check = true) {
   }
 }
 
-function fillAddress(postalCode) {
-  const { fullAddress, country, deliveryScreenAddress } =
-    addressList[postalCode]
-
-  // shipping preview should be visible
-  cy.get(selectors.ShippingPreview).should('be.visible')
-  cy.get(selectors.ShipCountry, { timeout: 8000 })
-    .should('not.be.disabled')
-    .select(country)
-
-  cy.get('body').then($body => {
-    if ($body.find(selectors.ShipAddressQuery).length) {
-      // Type shipping address query
-      // Google autocompletion takes some seconds to show dropdown
-      // So, we use 500 seconds wait before and after typing of address
-      cy.get(selectors.ShipAddressQuery) // eslint-disable-line cypress/no-unnecessary-waiting
-        .should('not.be.disabled')
-        .focus()
-        .clear()
-        .click()
-        .wait(500)
-        .type(`${fullAddress}`, { delay: 80 })
-        .wait(500)
-        .type('{downarrow}{enter}')
-      cy.get(selectors.DeliveryAddressText).should(
-        'have.text',
-        deliveryScreenAddress
-      )
-      cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
-    } else {
-      cy.get(selectors.PostalCodeInput).should('be.visible').type(postalCode)
-      cy.get(selectors.CalculateBtn).should('be.visible').click()
-      cy.get(selectors.DeliveryAddressText).should('have.text', postalCode)
-      cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
-      cy.get(selectors.ShipStreet).type(deliveryScreenAddress)
-      cy.get(selectors.GotoPaymentBtn).should('be.visible').click()
-    }
-  })
-}
-
 // Add product to cart
 export function addProduct(searchKey, proceedtoCheckout = true) {
   // Add product to cart
@@ -116,8 +76,50 @@ export function closeCart() {
   cy.get(selectors.CloseCart).click()
 }
 
+function fillAddress(postalCode) {
+  let shipByZipCode = true
+  const { fullAddress, country, deliveryScreenAddress } =
+    addressList[postalCode]
+
+  // shipping preview should be visible
+  cy.get(selectors.ShippingPreview).should('be.visible')
+  cy.get(selectors.ShipCountry, { timeout: 5000 })
+    .should('not.be.disabled')
+    .select(country)
+
+  cy.get('body').then($body => {
+    if ($body.find(selectors.ShipAddressQuery).length) {
+      // Type shipping address query
+      // Google autocompletion takes some seconds to show dropdown
+      // So, we use 500 seconds wait before and after typing of address
+      cy.get(selectors.ShipAddressQuery) // eslint-disable-line cypress/no-unnecessary-waiting
+        .should('not.be.disabled')
+        .focus()
+        .clear()
+        .click()
+        .wait(500)
+        .type(`${fullAddress}`, { delay: 80 })
+        .wait(500)
+        .type('{downarrow}{enter}')
+      cy.get(selectors.DeliveryAddressText).should(
+        'have.text',
+        deliveryScreenAddress
+      )
+      cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
+      shipByZipCode = false
+    } else {
+      cy.get(selectors.PostalCodeInput).should('be.visible').type(postalCode)
+      cy.get(selectors.DeliveryAddressText)
+        .should('be.visible')
+        .should('have.text', postalCode)
+      cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
+    }
+  })
+
+  return cy.wrap(shipByZipCode)
+}
+
 function fillContactInfo() {
-  cy.wait('@v8')
   cy.get(selectors.QuantityBadge).should('be.visible')
   cy.get(selectors.SummaryCart).should('be.visible')
   cy.get(selectors.FirstName).type('Syed', {
@@ -138,22 +140,28 @@ function fillContactInfo() {
 
 export function updateShippingInformation(postalCode) {
   let newCustomer = false
+  const { deliveryScreenAddress } = addressList[postalCode]
 
   cy.get('body').then($body => {
     if ($body.find(selectors.ShippingCalculateLink).length) {
       // Contact information needs to be filled
       cy.get(selectors.ShippingCalculateLink).should('be.visible').click()
       newCustomer = true
+    } else if ($body.find(selectors.DeliveryAddress).length) {
+      cy.get(selectors.DeliveryAddress).should('be.visible').click()
     }
 
-    cy.get(selectors.DeliveryAddress).should('be.visible').click()
-
-    fillAddress(postalCode)
+    const shipByZipCode = fillAddress(postalCode)
 
     cy.intercept('https://rc.vtex.com/v8').as('v8')
 
     if (newCustomer) {
       fillContactInfo()
+    }
+
+    if (shipByZipCode) {
+      cy.get(selectors.ShipStreet).type(deliveryScreenAddress)
+      cy.get(selectors.GotoPaymentBtn).should('be.visible').click()
     }
   })
 }
@@ -250,10 +258,12 @@ export function logintoStore() {
     .should('have.contain', `Hello,`)
 }
 
-export function ordertheProduct(refundEnv = false, externalSeller = false) {
+export function net30Payment() {
   cy.promissoryPayment()
   cy.buyProduct()
+}
 
+export function saveOrderId(refundEnv = false, externalSeller = false) {
   // This page take longer time to load. So, wait for profile icon to visible then get orderid from url
   cy.get(selectors.Search, { timeout: 30000 })
   cy.url().then(url => {
