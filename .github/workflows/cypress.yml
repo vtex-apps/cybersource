@@ -54,5 +54,5 @@ jobs:
         uses: actions/upload-artifact@master
         if: always()
         with:
-          name: logs
+          name: cy-runner-logs
           path: cy-runner/logs
