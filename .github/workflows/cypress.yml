@@ -1,4 +1,4 @@
-name: '[QE] Cypress'
+name: '[QE] Cypress Runner'
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to test'
+        description: 'Choose another branch to test'
         required: true
         default: master
 
@@ -34,10 +34,6 @@ jobs:
       - name: Get cy-runner
         run: git clone https://github.com/vtex-apps/cy-runner.git
 
-      - name: Link Cypress inside cy-runner
-        run: ln -s ../cypress
-        working-directory: ./cy-runner
-
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -48,11 +44,11 @@ jobs:
         run: yarn install --frozen-lockfile
         working-directory: ./cy-runner
 
-      - name: Start Test
+      - name: Cypress Runner
         run: yarn cy-r
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VTEX_QE: ${{ secrets.VTEX_QE }}
+          NODE_NO_WARNINGS: 1
 
       - name: Save results
         uses: actions/upload-artifact@master
