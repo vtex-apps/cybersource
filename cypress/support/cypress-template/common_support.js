@@ -76,8 +76,7 @@ export function closeCart() {
   cy.get(selectors.CloseCart).click()
 }
 
-function fillAddress(postalCode) {
-  let shipByZipCode = true
+export function fillAddress(postalCode) {
   const { fullAddress, country, deliveryScreenAddress } =
     addressList[postalCode]
 
@@ -106,17 +105,18 @@ function fillAddress(postalCode) {
         deliveryScreenAddress
       )
       cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
-      shipByZipCode = false
-    } else {
-      cy.get(selectors.PostalCodeInput).should('be.visible').type(postalCode)
-      cy.get(selectors.DeliveryAddressText)
-        .should('be.visible')
-        .should('have.text', postalCode)
-      cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
-    }
-  })
 
-  return cy.wrap(shipByZipCode)
+      return cy.wrap(false)
+    }
+
+    cy.get(selectors.PostalCodeInput).should('be.visible').type(postalCode)
+    cy.get(selectors.DeliveryAddressText)
+      .should('be.visible')
+      .should('have.text', postalCode)
+    cy.get(selectors.ProceedtoPaymentBtn).should('be.visible').click()
+
+    return cy.wrap(true)
+  })
 }
 
 function fillContactInfo() {
@@ -151,18 +151,18 @@ export function updateShippingInformation(postalCode) {
       cy.get(selectors.DeliveryAddress).should('be.visible').click()
     }
 
-    const shipByZipCode = fillAddress(postalCode)
+    cy.fillAddress(postalCode).then(shipByZipCode => {
+      cy.intercept('https://rc.vtex.com/v8').as('v8')
 
-    cy.intercept('https://rc.vtex.com/v8').as('v8')
+      if (newCustomer) {
+        fillContactInfo()
+      }
 
-    if (newCustomer) {
-      fillContactInfo()
-    }
-
-    if (shipByZipCode) {
-      cy.get(selectors.ShipStreet).type(deliveryScreenAddress)
-      cy.get(selectors.GotoPaymentBtn).should('be.visible').click()
-    }
+      if (shipByZipCode) {
+        cy.get(selectors.ShipStreet).type(deliveryScreenAddress)
+        cy.get(selectors.GotoPaymentBtn).should('be.visible').click()
+      }
+    })
   })
 }
 

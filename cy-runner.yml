@@ -43,7 +43,7 @@ base:
 
 workspace:
   name: master
-  prefix: b2b
+  prefix: cybersource
   runInDevMode: false
   runHeaded: false
   linkApp:
