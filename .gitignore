@@ -374,3 +374,4 @@ cypress/fixtures
 cypress/screenshots
 cypress/videos
 cy-runner
+cypress/support/common

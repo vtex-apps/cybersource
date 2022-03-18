@@ -175,10 +175,12 @@
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
+                _context.Vtex.Logger.Warn("GetAntifraudData", null, $"Id '{id}' Not Found.");
                 return null;
             }
 
             SendAntifraudDataResponse antifraudDataResponse =  JsonConvert.DeserializeObject<SendAntifraudDataResponse>(responseContent);
+            _context.Vtex.Logger.Debug("GetAntifraudData", null, id, new[] { ("responseContent", responseContent) });
 
             return antifraudDataResponse;
         }

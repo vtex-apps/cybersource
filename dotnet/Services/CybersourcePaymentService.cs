@@ -389,7 +389,7 @@ namespace Cybersource.Services
                 {
                     productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
-                    unitPrice = (vtexItem.Price + vtexItem.Discount).ToString(), // Discount is negative
+                    unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)).ToString(), // Discount is negative
                     quantity = vtexItem.Quantity.ToString(),
                     discountAmount = vtexItem.Discount.ToString(),
                     taxAmount = taxAmount,

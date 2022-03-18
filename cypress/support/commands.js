@@ -1,5 +1,6 @@
 import {
   addProduct,
+  fillAddress,
   searchProduct,
   updateShippingInformation,
   getIframeBody,
@@ -9,3 +10,4 @@ Cypress.Commands.add('searchProduct', searchProduct)
 Cypress.Commands.add('addProduct', addProduct)
 Cypress.Commands.add('updateShippingInformation', updateShippingInformation)
 Cypress.Commands.add('getIframeBody', getIframeBody)
+Cypress.Commands.add('fillAddress', fillAddress)
