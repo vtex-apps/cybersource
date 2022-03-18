@@ -407,7 +407,7 @@ namespace Cybersource.Services
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-
+            
             if (response != null)
             {
                 if (response.Success)
@@ -423,6 +423,9 @@ namespace Cybersource.Services
             {
                 _context.Vtex.Logger.Error("ProcessPayment", null, "Null Response");
             }
+
+            //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new [] { ("Request", JsonConvert.SerializeObject(payments)), ("Response", JsonConvert.SerializeObject(paymentsResponse)) });
+            //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
 
             return paymentsResponse;
         }
