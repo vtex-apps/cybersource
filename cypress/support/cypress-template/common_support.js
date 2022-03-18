@@ -258,10 +258,12 @@ export function logintoStore() {
     .should('have.contain', `Hello,`)
 }
 
-export function ordertheProduct(refundEnv = false, externalSeller = false) {
+export function net30Payment() {
   cy.promissoryPayment()
   cy.buyProduct()
+}
 
+export function saveOrderId(refundEnv = false, externalSeller = false) {
   // This page take longer time to load. So, wait for profile icon to visible then get orderid from url
   cy.get(selectors.Search, { timeout: 30000 })
   cy.url().then(url => {

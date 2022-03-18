@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "eslint --ext js,jsx,ts,tsx .",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json}\"",
-    "cy-r": "cd cy-runner && node cy-runner"
+    "cy-r": "cd cy-runner && git pull && node cy-runner"
   },
   "husky": {
     "hooks": {
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@vtex/prettier-config": "^0.1.4",
-    "cypress": "^9.5.2",
+    "cypress": "^9.5.1",
     "eslint": "^7.32.0",
     "eslint-config-vtex": "^12.3.2",
     "eslint-config-vtex-react": "^6.3.2",
