@@ -122,7 +122,7 @@ namespace Cybersource.Models
         public bool IsDirectCategoryActive { get; set; }
 
         [JsonProperty("ProductGlobalCategoryId")]
-        public long ProductGlobalCategoryId { get; set; }
+        public string ProductGlobalCategoryId { get; set; }
 
         [JsonProperty("ProductCategories")]
         public object ProductCategories { get; set; }
@@ -131,7 +131,7 @@ namespace Cybersource.Models
         public object CommercialConditionId { get; set; }
 
         [JsonProperty("RewardValue")]
-        public long RewardValue { get; set; }
+        public string RewardValue { get; set; }
 
         [JsonProperty("AlternateIds")]
         public AlternateIds AlternateIds { get; set; }

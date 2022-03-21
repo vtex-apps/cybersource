@@ -199,12 +199,16 @@
         /// <returns></returns>
         public async Task<IActionResult> SendAntifraudData()
         {
-            SendAntifraudDataResponse sendAntifraudDataResponse = new SendAntifraudDataResponse { Status = CybersourceConstants.VtexAntifraudStatus.Received };
+            SendAntifraudDataResponse sendAntifraudDataResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
-                this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                sw.Stop();
+                _context.Vtex.Logger.Debug("SendAntifraudData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", JsonConvert.SerializeObject(sendAntifraudDataRequest)), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
             }
 
             return Json(sendAntifraudDataResponse);
@@ -219,9 +223,13 @@
             SendAntifraudDataResponse sendAntifraudDataResponse = new SendAntifraudDataResponse { Status = CybersourceConstants.VtexAntifraudStatus.Received };
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
-                this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                sw.Stop();
+                _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", JsonConvert.SerializeObject(sendAntifraudDataRequest)), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
             }
 
             return Json(sendAntifraudDataResponse);
@@ -234,7 +242,8 @@
         public async Task<IActionResult> GetAntifraudStatus(string transactionId)
         {
             SendAntifraudDataResponse getAntifraudStatusResponse = null;
-
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             getAntifraudStatusResponse = await this._cybersourcePaymentService.GetAntifraudStatus(transactionId);
             if (getAntifraudStatusResponse == null)
             {
@@ -245,6 +254,9 @@
                 };
             }
 
+            sw.Stop();
+            _context.Vtex.Logger.Debug("GetAntifraudStatus", transactionId, $"Returned {getAntifraudStatusResponse.Status} in {sw.Elapsed.TotalMilliseconds} ms ", new[] { ("getAntifraudStatusResponse", JsonConvert.SerializeObject(getAntifraudStatusResponse)) });
+
             return Json(getAntifraudStatusResponse);
         }
 
@@ -253,6 +265,7 @@
             string orderFormId = string.Empty;
             string totalItems = string.Empty;
             bool fromCache = false;
+            VtexTaxRequest taxRequest = new VtexTaxRequest();
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
                 ItemTaxResponse = new List<ItemTaxResponse>()
@@ -268,12 +281,12 @@
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 if (!string.IsNullOrEmpty(bodyAsText))
                 {
-                    VtexTaxRequest taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
+                    taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
                     VtexTaxRequest taxRequestOriginal = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
                     if (taxRequest != null)
                     {
                         orderFormId = taxRequest.OrderFormId;
-                        totalItems = taxRequest.Items.Length.ToString();
+                        totalItems = taxRequest.Items.Sum(i => i.Quantity).ToString();
                         decimal total = taxRequest.Totals.Sum(t => t.Value);
                         int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}{DateTime.Now.Minute}".GetHashCode();
                         if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
@@ -294,7 +307,7 @@
             }
 
             timer.Stop();
-            _context.Vtex.Logger.Debug("TaxHandler", null, $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}");
+            _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequest)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
 
             return Json(vtexTaxResponse);
         }
