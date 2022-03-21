@@ -120,6 +120,7 @@
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
+                _context.Vtex.Logger.Warn("GetPaymentData", null, $"Payment Id '{paymentIdentifier}' Not Found.");
                 return null;
             }
 
@@ -209,7 +210,10 @@
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                _context.Vtex.Logger.Error("SaveAntifraudData", null, "Did not save Antifraud Data.", null, new[] { ("Id", id), ("AntifraudDataResponse", jsonSerializedCreatePaymentRequest) });
+            }
         }
 
         public async Task<bool> CacheTaxResponse(VtexTaxResponse vtexTaxResponse, int cacheKey)

@@ -387,22 +387,22 @@ namespace Cybersource.Services
             //_context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
 
             // Combine skus
-            //Dictionary<string, Item> itemDictionary = new Dictionary<string, Item>();
-            //foreach (Item requestItem in taxRequest.Items)
-            //{
-            //    if (itemDictionary.ContainsKey(requestItem.Sku))
-            //    {
-            //        itemDictionary[requestItem.Sku].DiscountPrice += requestItem.DiscountPrice;
-            //        itemDictionary[requestItem.Sku].ItemPrice += requestItem.ItemPrice;
-            //        itemDictionary[requestItem.Sku].Quantity += requestItem.Quantity;
-            //    }
-            //    else
-            //    {
-            //        itemDictionary.Add(requestItem.Sku, requestItem);
-            //    }
-            //}
+            Dictionary<string, Item> itemDictionary = new Dictionary<string, Item>();
+            foreach (Item requestItem in taxRequest.Items)
+            {
+                if (itemDictionary.ContainsKey(requestItem.Sku))
+                {
+                    itemDictionary[requestItem.Sku].DiscountPrice += requestItem.DiscountPrice;
+                    itemDictionary[requestItem.Sku].ItemPrice += requestItem.ItemPrice;
+                    itemDictionary[requestItem.Sku].Quantity += requestItem.Quantity;
+                }
+                else
+                {
+                    itemDictionary.Add(requestItem.Sku, requestItem);
+                }
+            }
 
-            //taxRequest.Items = itemDictionary.Values.ToArray();
+            taxRequest.Items = itemDictionary.Values.ToArray();
 
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
@@ -503,6 +503,8 @@ namespace Cybersource.Services
                     if (taxResponse.Status.Equals("COMPLETED"))
                     {
                         vtexTaxResponse = await this.CybersourceResponseToVtexResponse(taxResponse);
+                        string splitSkus = taxRequest.Items.Length.Equals(taxRequestOriginal.Items.Length) ? "Skus were not combined" : $"Skus combined. {taxRequestOriginal.Items.Length} line items combined to {taxRequest.Items.Length}";
+                        _context.Vtex.Logger.Debug("GetTaxes", "CalculateTaxes", splitSkus, new[] { ("cyberTaxRequest", JsonConvert.SerializeObject(cyberTaxRequest)), ("taxResponse", JsonConvert.SerializeObject(taxResponse)), ("vtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
                     }
                     else
                     {
