@@ -35,7 +35,7 @@ function setProductQuantity({ position, quantity }, subTotal, check = true) {
 }
 
 // Add product to cart
-export function addProduct(searchKey, proceedtoCheckout = true) {
+export function addProduct(searchKey, { proceedtoCheckout = true }) {
   // Add product to cart
   cy.get(selectors.searchResult).should('have.text', searchKey.toLowerCase())
   cy.get(selectors.ProductAnchorElement)
@@ -263,7 +263,10 @@ export function net30Payment() {
   cy.buyProduct()
 }
 
-export function saveOrderId(refundEnv = false, externalSeller = false) {
+export function orderAndSaveProductId(
+  refundEnv = false,
+  externalSeller = false
+) {
   // This page take longer time to load. So, wait for profile icon to visible then get orderid from url
   cy.get(selectors.Search, { timeout: 30000 })
   cy.url().then(url => {

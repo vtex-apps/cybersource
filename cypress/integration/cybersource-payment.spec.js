@@ -1,7 +1,7 @@
 import {
   testSetup,
   updateRetry,
-  saveOrderId,
+  orderAndSaveProductId,
 } from '../support/cypress-template/common_support.js'
 import { PRODUCTS } from '../support/cypress-template/sandbox_products.js'
 import selectors from '../support/cypress-template/common_selectors.js'
@@ -23,12 +23,12 @@ describe('Payment Testcase', () => {
     // Search the product
     cy.searchProduct(product)
     // Add product to cart
-    cy.addProduct(product, true)
+    cy.addProduct(product, { proceedtoCheckout: true })
   })
 
   it('Updating Shipping Information', updateRetry(3), () => {
     // Update Shipping Section
-    cy.updateShippingInformation('33180', true)
+    cy.updateShippingInformation('33180')
   })
 
   it('Completing the Payment & save OrderId', () => {
@@ -61,7 +61,7 @@ describe('Payment Testcase', () => {
       cy.wait('@callback')
         .its('response.statusCode', { timeout: 5000 })
         .should('eq', 204)
-      saveOrderId(orderEnv)
+      orderAndSaveProductId(orderEnv)
     })
   })
 
