@@ -288,7 +288,8 @@
                         orderFormId = taxRequest.OrderFormId;
                         totalItems = taxRequest.Items.Sum(i => i.Quantity).ToString();
                         decimal total = taxRequest.Totals.Sum(t => t.Value);
-                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}{DateTime.Now.Minute}".GetHashCode();
+                        int timeIndex = DateTime.Now.Minute / 10;
+                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}{timeIndex}".GetHashCode();
                         if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
                         {
                             fromCache = true;
@@ -300,6 +301,11 @@
                             if (vtexTaxResponse != null)
                             {
                                 await _cybersourceRepository.SetCache(cacheKey, vtexTaxResponse);
+                            }
+                            else
+                            {
+                                vtexTaxResponse = await _vtexApiService.GetFallbackTaxes(taxRequestOriginal);
+                                _context.Vtex.Logger.Error("TaxHandler", "Fallback", "Using Fallback Rates", null, new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
                             }
                         }
                     }

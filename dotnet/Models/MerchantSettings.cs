@@ -35,6 +35,10 @@ namespace Cybersource.Models
         [JsonProperty("salesChannelExclude")]
         public string SalesChannelExclude { get; set; }
 
+        [JsonProperty("nexusRegions")]
+        public string NexusRegions { get; set; }
+
+        // Merchant Defined Fields
         [JsonProperty("merchantDictionary")]
         public List<MerchantDefinedValueSetting> MerchantDefinedValueSettings { get; set; }
     }

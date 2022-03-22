@@ -382,6 +382,86 @@ namespace Cybersource.Services
             return fallbackResponse;
         }
 
+        public async Task<VtexTaxResponse> GetFallbackTaxes(VtexTaxRequest taxRequest)
+        {
+            VtexTaxResponse vtexTaxResponse = null;
+            TaxFallbackResponse fallbackResponse = await this.GetFallbackRate(taxRequest.ShippingDestination.Country, taxRequest.ShippingDestination.PostalCode);
+            if (fallbackResponse != null)
+            {
+                vtexTaxResponse = new VtexTaxResponse
+                {
+                    Hooks = new Hook[] { },
+                    ItemTaxResponse = new List<ItemTaxResponse>()
+                };
+
+                long totalQuantity = taxRequest.Items.Sum(i => i.Quantity);
+                for (int i = 0; i < taxRequest.Items.Length; i++)
+                {
+                    Item item = taxRequest.Items[i];
+                    double itemTaxPercentOfWhole = (double)item.Quantity / totalQuantity;
+                    ItemTaxResponse itemTaxResponse = new ItemTaxResponse
+                    {
+                        Id = item.Id
+                    };
+
+                    List<VtexTax> vtexTaxes = new List<VtexTax>();
+                    if (fallbackResponse.StateSalesTax > 0)
+                    {
+                        vtexTaxes.Add(
+                            new VtexTax
+                            {
+                                Description = "",
+                                Name = $"STATE TAX: {fallbackResponse.StateAbbrev}",
+                                Value = item.ItemPrice * fallbackResponse.StateSalesTax
+                            }
+                         );
+                    }
+
+                    if (fallbackResponse.CountySalesTax > 0)
+                    {
+                        vtexTaxes.Add(
+                        new VtexTax
+                        {
+                            Description = "",
+                            Name = $"COUNTY TAX: {fallbackResponse.CountyName}",
+                            Value = item.ItemPrice * fallbackResponse.CountySalesTax
+                        }
+                     );
+                    }
+
+                    if (fallbackResponse.CitySalesTax > 0)
+                    {
+                        vtexTaxes.Add(
+                        new VtexTax
+                        {
+                            Description = "",
+                            Name = $"CITY TAX: {fallbackResponse.CityName}",
+                            Value = item.ItemPrice * fallbackResponse.CitySalesTax
+                        }
+                     );
+                    }
+
+                    if (fallbackResponse.TaxShippingAlone || fallbackResponse.TaxShippingAndHandlingTogether)
+                    {
+                        decimal shippingTotal = taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
+                        vtexTaxes.Add(
+                        new VtexTax
+                        {
+                            Description = "",
+                            Name = $"TAX: (SHIPPING)",
+                            Value = (decimal)Math.Round((double)shippingTotal * (double)fallbackResponse.TotalSalesTax * itemTaxPercentOfWhole, 2, MidpointRounding.ToEven)
+                        }
+                      );
+                    }
+
+                    itemTaxResponse.Taxes = vtexTaxes.ToArray();
+                    vtexTaxResponse.ItemTaxResponse.Add(itemTaxResponse);
+                }
+            }
+
+            return vtexTaxResponse;
+        }
+
         public async Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest, VtexTaxRequest taxRequestOriginal)
         {
             //_context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
@@ -409,7 +489,6 @@ namespace Cybersource.Services
                 ItemTaxResponse = new List<ItemTaxResponse>()
             };
 
-            bool useFallbackRates = false;
             bool inNexus = await this.InNexus(taxRequest.ShippingDestination.State, taxRequest.ShippingDestination.Country);
             if (inNexus)
             {
@@ -508,89 +587,14 @@ namespace Cybersource.Services
                     }
                     else
                     {
-                        useFallbackRates = true;
+                        _context.Vtex.Logger.Error("GetTaxes", "CalculateTaxes", $"Tax Response Status = '{taxResponse.Status}'", null, new[] { ("cyberTaxRequest", JsonConvert.SerializeObject(cyberTaxRequest)), ("taxResponse", JsonConvert.SerializeObject(taxResponse)) });
+                        return null;
                     }
                 }
                 else
                 {
-                    useFallbackRates = true;
-                }
-
-                if (useFallbackRates)
-                {
-                    TaxFallbackResponse fallbackResponse = await this.GetFallbackRate(taxRequest.ShippingDestination.Country, taxRequest.ShippingDestination.PostalCode);
-                    if (fallbackResponse != null)
-                    {
-                        vtexTaxResponse = new VtexTaxResponse
-                        {
-                            Hooks = new Hook[] { },
-                            ItemTaxResponse = new List<ItemTaxResponse>()
-                        };
-
-                        long totalQuantity = taxRequest.Items.Sum(i => i.Quantity);
-                        for (int i = 0; i < taxRequest.Items.Length; i++)
-                        {
-                            Item item = taxRequest.Items[i];
-                            double itemTaxPercentOfWhole = (double)item.Quantity / totalQuantity;
-                            ItemTaxResponse itemTaxResponse = new ItemTaxResponse
-                            {
-                                Id = item.Id
-                            };
-
-                            List<VtexTax> vtexTaxes = new List<VtexTax>();
-                            if (fallbackResponse.StateSalesTax > 0)
-                            {
-                                vtexTaxes.Add(
-                                    new VtexTax
-                                    {
-                                        Description = "",
-                                        Name = $"STATE TAX: {fallbackResponse.StateAbbrev}",
-                                        Value = item.ItemPrice * fallbackResponse.StateSalesTax
-                                    }
-                                 );
-                            }
-
-                            if (fallbackResponse.CountySalesTax > 0)
-                            {
-                                vtexTaxes.Add(
-                                new VtexTax
-                                {
-                                    Description = "",
-                                    Name = $"COUNTY TAX: {fallbackResponse.CountyName}",
-                                    Value = item.ItemPrice * fallbackResponse.CountySalesTax
-                                }
-                             );
-                            }
-
-                            if (fallbackResponse.CitySalesTax > 0)
-                            {
-                                vtexTaxes.Add(
-                                new VtexTax
-                                {
-                                    Description = "",
-                                    Name = $"CITY TAX: {fallbackResponse.CityName}",
-                                    Value = item.ItemPrice * fallbackResponse.CitySalesTax
-                                }
-                             );
-                            }
-
-                            if (fallbackResponse.TaxShippingAlone || fallbackResponse.TaxShippingAndHandlingTogether)
-                            {
-                                decimal shippingTotal = taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
-                                vtexTaxes.Add(
-                                new VtexTax
-                                {
-                                    Description = "",
-                                    Name = $"TAX: (SHIPPING)",
-                                    Value = (decimal)Math.Round((double)shippingTotal * (double)fallbackResponse.TotalSalesTax * itemTaxPercentOfWhole, 2, MidpointRounding.ToEven)
-                                }
-                              );
-                            }
-
-                            itemTaxResponse.Taxes = vtexTaxes.ToArray();
-                            vtexTaxResponse.ItemTaxResponse.Add(itemTaxResponse);
-                        }
-                    }
+                    _context.Vtex.Logger.Error("GetTaxes", "CalculateTaxes", "Tax Response is Null.", null, new[] { ("cyberTaxRequest", JsonConvert.SerializeObject(cyberTaxRequest)) });
+                    return null;
                 }
 
                 //_context.Vtex.Logger.Debug("vtexTaxResponse", null, JsonConvert.SerializeObject(vtexTaxResponse));
@@ -698,8 +702,8 @@ namespace Cybersource.Services
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error splitting line items: '{ex.Message}'");
-                    return null;
                     _context.Vtex.Logger.Error("TaxjarResponseToVtexResponse", "Splitting", $"Error splitting line items", ex);
+                    return null;
                 }
             }
             else
@@ -713,31 +717,55 @@ namespace Cybersource.Services
         public async Task<bool> InNexus(string state, string country)
         {
             bool inNexus = false;
+            bool usedMerchantSettings = false;
             if (country.Length > 2)
             {
                 country = this.GetCountryCode(country);
             }
 
-
-            PickupPoints pickupPoints = await this.ListPickupPoints();
-            if (pickupPoints != null)
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            if(merchantSettings != null && !string.IsNullOrWhiteSpace(merchantSettings.NexusRegions))
             {
-                //List<string> nexusStates = new List<string>();
-                foreach (PickupPointItem pickupPoint in pickupPoints.Items)
+                usedMerchantSettings = true;
+                string[] arrCountry = merchantSettings.NexusRegions.Split(':');
+                foreach(string stateList in arrCountry)
                 {
-                    if (pickupPoint != null && 
-                        pickupPoint.Address != null && 
-                        pickupPoint.Address.State != null && 
-                        pickupPoint.Address.Country != null && 
-                        pickupPoint.Address.State.Equals(state) && 
-                        this.GetCountryCode(pickupPoint.Address.Country.Acronym).Equals(country))
+                    string[] countryWithStates = stateList.Split('=');
+                    string tmpCountry = countryWithStates[0];
+                    if(tmpCountry.Equals(country))
                     {
-                        inNexus = true;
-                        break;
+                        string[] stateArr = countryWithStates[1].Split(',');
+                        if(stateArr.Contains(state))
+                        {
+                            inNexus = true;
+                            break;
+                        }
                     }
-                    else
+                }
+            }
+
+            if (!usedMerchantSettings)
+            {
+                PickupPoints pickupPoints = await this.ListPickupPoints();
+                if (pickupPoints != null)
+                {
+                    //List<string> nexusStates = new List<string>();
+                    foreach (PickupPointItem pickupPoint in pickupPoints.Items)
                     {
-                        Console.WriteLine($"{pickupPoint.Name} not InNexus");
+                        if (pickupPoint != null &&
+                            pickupPoint.Address != null &&
+                            pickupPoint.Address.State != null &&
+                            pickupPoint.Address.Country != null &&
+                            pickupPoint.Address.State.Equals(state) &&
+                            this.GetCountryCode(pickupPoint.Address.Country.Acronym).Equals(country))
+                        {
+                            inNexus = true;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{pickupPoint.Name} not InNexus");
+                        }
                     }
                 }
             }
