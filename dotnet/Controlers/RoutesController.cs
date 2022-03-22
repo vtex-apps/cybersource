@@ -208,7 +208,7 @@
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
                 sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
                 sw.Stop();
-                _context.Vtex.Logger.Debug("SendAntifraudData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", JsonConvert.SerializeObject(sendAntifraudDataRequest)), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                _context.Vtex.Logger.Debug("SendAntifraudData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
             }
 
             return Json(sendAntifraudDataResponse);
@@ -229,7 +229,7 @@
                 SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
                 sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
                 sw.Stop();
-                _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", JsonConvert.SerializeObject(sendAntifraudDataRequest)), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
             }
 
             return Json(sendAntifraudDataResponse);
@@ -288,8 +288,7 @@
                         orderFormId = taxRequest.OrderFormId;
                         totalItems = taxRequest.Items.Sum(i => i.Quantity).ToString();
                         decimal total = taxRequest.Totals.Sum(t => t.Value);
-                        int timeIndex = DateTime.Now.Minute / 10;
-                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}{timeIndex}".GetHashCode();
+                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}".GetHashCode();
                         if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
                         {
                             fromCache = true;
