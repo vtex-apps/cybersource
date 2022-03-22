@@ -607,8 +607,8 @@ namespace Cybersource.Services
                 {
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = sendAntifraudDataRequest.Id,
-                        comments = sendAntifraudDataRequest.Reference,
+                        code = sendAntifraudDataRequest.Reference,
+                        comments = sendAntifraudDataRequest.Id,
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
                         applicationUser = _context.Vtex.App.Vendor
@@ -663,6 +663,31 @@ namespace Cybersource.Services
                     payment.orderInformation.lineItems.Add(lineItem);
                 };
 
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(sendAntifraudDataRequest);
+                requestWrapper.MerchantId = merchantSettings.MerchantId;
+                string merchantName = string.Empty;
+                string merchantTaxId = string.Empty;
+                if (sendAntifraudDataRequest.MerchantSettings != null)
+                {
+                    foreach (MerchantSetting merchantSetting in sendAntifraudDataRequest.MerchantSettings)
+                    {
+                        switch (merchantSetting.Name)
+                        {
+                            case "Company Name":
+                                merchantName = merchantSetting.Value;
+                                break;
+                            case "Company Tax Id":
+                                merchantTaxId = merchantSetting.Value;
+                                break;
+                        }
+                    }
+                }
+
+                requestWrapper.CompanyName = merchantName;
+                requestWrapper.CompanyTaxId = merchantTaxId;
+                payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
+
                 PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
 
                 sendAntifraudDataResponse = new SendAntifraudDataResponse
@@ -680,10 +705,10 @@ namespace Cybersource.Services
                 switch (paymentsResponse.Status)
                 {
                     case "ACCEPTED":
-                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
-                        break;
                     case "PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                        break;
                     case "INVALID_REQUEST":
                     case "CHALLENGE":
                         sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;

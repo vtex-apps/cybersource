@@ -14,7 +14,7 @@ namespace Cybersource.Models
         public string Reference { get; set; }
 
         [JsonProperty("value")]
-        public long Value { get; set; }
+        public decimal Value { get; set; }
 
         [JsonProperty("ip")]
         public string Ip { get; set; }
@@ -36,6 +36,9 @@ namespace Cybersource.Models
 
         [JsonProperty("transactionStartDate")]
         public DateTimeOffset TransactionStartDate { get; set; }
+
+        [JsonProperty("merchantSettings")]
+        public List<MerchantSetting> MerchantSettings { get; set; }
     }
 
     public class AntifraudMiniCart
@@ -50,7 +53,7 @@ namespace Cybersource.Models
         public List<AntifraudItem> Items { get; set; }
 
         [JsonProperty("taxValue")]
-        public double TaxValue { get; set; }
+        public decimal TaxValue { get; set; }
 
         [JsonProperty("listRegistry")]
         public ListRegistry ListRegistry { get; set; }
@@ -155,7 +158,7 @@ namespace Cybersource.Models
     public class AntifraudShipping
     {
         [JsonProperty("value")]
-        public double Value { get; set; }
+        public decimal Value { get; set; }
 
         [JsonProperty("estimatedDate")]
         public DateTimeOffset EstimatedDate { get; set; }
