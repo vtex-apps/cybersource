@@ -1,13 +1,15 @@
 import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
-import { invoiceAPI, transactionAPI } from '../support/common/apis.js'
-import { VTEX_AUTH_HEADER } from '../support/common/constants.js'
 import {
   singleProduct,
   requestRefund,
 } from '../support/sandbox_outputvalidation.js'
-import { getTestVariables, orderAndSaveProductId } from '../support/utils.js'
-import { verifyAntiFraud } from '../support/testcase.js'
+import { getTestVariables } from '../support/utils.js'
+import {
+  completePayment,
+  verifyStatusInInteractionAPI,
+  verifyAntiFraud,
+} from '../support/testcase.js'
 
 describe('Single Product Testcase', () => {
   testSetup()
@@ -15,9 +17,7 @@ describe('Single Product Testcase', () => {
   const { prefix, productName, tax, totalAmount, postalCode } = singleProduct
 
   const { transactionIdEnv } = getTestVariables(prefix)
-
-  const expectedStatus = 'Payment Started'
-  const expectedMessage = 'Authorization response parsed'
+  const orderIdEnv = requestRefund.fullRefundEnv
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
@@ -45,86 +45,9 @@ describe('Single Product Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  it('Completing the Payment & save OrderId', () => {
-    cy.intercept('**/gatewayCallback/**').as('callback')
-    cy.get(selectors.CreditCard).click()
-    cy.getIframeBody(selectors.PaymentMethodIFrame)
-      .find(selectors.CreditCardCode)
-      .should('be.visible')
-    cy.getIframeBody(selectors.PaymentMethodIFrame).then($body => {
-      if (!$body.find(selectors.CardExist).length) {
-        // Credit cart not exist
-        cy.getIframeBody(selectors.PaymentMethodIFrame)
-          .find(selectors.CreditCardNumber)
-          .type('5555 5555 5555 4444')
-        cy.getIframeBody(selectors.PaymentMethodIFrame)
-          .find(selectors.CreditCardHolderName)
-          .type('Syed')
-        cy.getIframeBody(selectors.PaymentMethodIFrame)
-          .find(selectors.CreditCardExpirationMonth)
-          .select('01')
-        cy.getIframeBody(selectors.PaymentMethodIFrame)
-          .find(selectors.CreditCardExpirationYear)
-          .select('30')
-      }
+  completePayment(prefix, orderIdEnv)
 
-      cy.getIframeBody(selectors.PaymentMethodIFrame)
-        .find(selectors.CreditCardCode)
-        .type('123')
-      cy.get(selectors.BuyNowBtn).last().click()
-      cy.wait('@callback')
-        .its('response.statusCode', { timeout: 5000 })
-        .should('eq', 204)
-      orderAndSaveProductId(requestRefund.fullRefundEnv)
-    })
-  })
-
-  it(
-    'Verifying status & message in transaction/interaction API',
-    updateRetry(3),
-    () => {
-      cy.getVtexItems().then(vtex => {
-        cy.getOrderItems().then(item => {
-          cy.getAPI(
-            `${invoiceAPI(vtex.baseUrl)}/${item[requestRefund.fullRefundEnv]}`,
-            VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
-          ).then(response => {
-            expect(response.status).to.equal(200)
-            const [{ transactionId }] = response.body.paymentData.transactions
-
-            cy.setOrderItem(transactionIdEnv, transactionId)
-            cy.getAPI(
-              `${transactionAPI(vtex.baseUrl)}/${transactionId}/interactions`,
-              VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
-            ).then(interactionResponse => {
-              expect(response.status).to.equal(200)
-              const index = interactionResponse.body.findIndex(
-                ob =>
-                  ob.Status === expectedStatus &&
-                  ob.Message.includes(expectedMessage)
-              )
-
-              if (index >= 0) {
-                const jsonString =
-                  interactionResponse.body[index].Message.split(': ')
-
-                if (jsonString) {
-                  const json = JSON.parse(jsonString[1])
-
-                  expect(json.status).to.match(/approved|undefined/i)
-                  expect(json.message).to.match(/authorized|review/i)
-                }
-              } else {
-                throw new Error(
-                  `Unable to find expected Status: ${expectedStatus} and Message: ${expectedMessage} in transaction/interactions response`
-                )
-              }
-            })
-          })
-        })
-      })
-    }
-  )
+  verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
 
   verifyAntiFraud(prefix, transactionIdEnv)
 })

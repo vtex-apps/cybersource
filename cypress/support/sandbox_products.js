@@ -3,5 +3,5 @@ export const PRODUCTS = {
   shoesv3: 'forum low shoes v3',
   indigotshirt: 'adidas women indigo',
   pinktshirt: 'adidas women pink',
-  invicta: 'invicta 3 slot'
+  invicta: 'invicta 3 slot',
 }
