@@ -8,6 +8,7 @@ import {
   verifyFreeProduct,
   verifyTaxAndTotal,
   closeCart,
+  verifyTotal
 } from './cypress-template/common_support.js'
 import {
   VTEX_AUTH_HEADER,
@@ -23,6 +24,8 @@ Cypress.Commands.add('updateProductQuantity', updateProductQuantity)
 Cypress.Commands.add('verifyFreeProduct', verifyFreeProduct)
 Cypress.Commands.add('verifyTaxAndTotal', verifyTaxAndTotal)
 Cypress.Commands.add('closeCart', closeCart)
+Cypress.Commands.add('verifyTotal', verifyTotal)
+
 // Order Tax API Test Case
 Cypress.Commands.add('orderTaxApi', (requestPayload, tax) => {
   cy.getVtexItems().then(vtex => {
