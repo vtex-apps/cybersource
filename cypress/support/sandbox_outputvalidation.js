@@ -38,6 +38,20 @@ export default {
     product1Price: '95.50',
     product2Price: '100.00',
   },
+  discountShipping: {
+    prefix: 'discountShipping',
+    postalCode: '90290',
+    totalAmount: '$ 109.50',
+    tax: '$ 3.82',
+    discount:'$ -19.77',
+    subTotal: '$ 59.31',
+    productQuantity: '1',
+    totalWithoutTax: '$ 59.31',
+    productPrice: '100.00',
+    shippingLabel: 'Free',
+    productName: PRODUCTS.invicta,
+    env: 'discountShippingOrder',
+  },
   requestRefund: {
     // orderId variable name for getFullRefundTotal
     fullRefundEnv: 'order1',
