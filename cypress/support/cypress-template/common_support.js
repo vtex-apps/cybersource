@@ -53,11 +53,11 @@ export function addProduct(searchKey, { proceedtoCheckout = true }) {
       // Make sure remove button is visible
       cy.get(selectors.RemoveProduct).should('be.visible')
       if (proceedtoCheckout) {
-        cy.intercept('**/orderForm/**').as('orderForm')
-        // Click Proceed to Checkout button
-        cy.get(selectors.ProceedtoCheckout).should('be.visible').click()
-        cy.wait('@orderForm')
-        cy.get(selectors.CartTimeline).should('be.visible')
+      // Click Proceed to Checkout button
+      cy.get(selectors.ProceedtoCheckout).should('be.visible').click()
+      cy.get(selectors.CartTimeline, { timeout: 30000 })
+        .should('be.visible')
+        .click()
       } else {
         // Close Cart
         cy.closeCart()
@@ -182,6 +182,18 @@ export function updateProductQuantity(
     // Set First product quantity and verify subtotal
     setProductQuantity({ position: 1, quantity }, product.subTotal)
   }
+}
+
+export function verifyFreeProduct(){
+  cy.get('span[class="new-product-price"]').first().should('have.text', 'Free');
+}
+
+export function verifyTaxAndTotal(product){
+  cy.get(selectors.TaxClass).should('have.text', product.tax);
+  cy.get('body').then($body => {
+    if ($body.find(selectors.Discounts).length) {
+      cy.get(selectors.Discounts).should('have.text', product.discount);
+    }})
 }
 
 // LoginAsAdmin via API

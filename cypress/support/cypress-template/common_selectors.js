@@ -116,7 +116,7 @@ export default {
   // *************Summary Section Constants starts here************ //
   QuantityBadge: '.quantity.badge',
   SummaryCart: 'div[class*=summary-cart] .product-name',
-  Discounts: 'tr.Discounts',
+  Discounts: '.cart-template > .summary-template-holder > div > .totalizers > div table tr.Discounts > td.monetary',
   ProceedtoPaymentBtn: 'a[id=cart-to-orderform]',
   ShippingAmtLabel:
     'td[data-i18n="totalizers.Shipping"] ~ td[data-bind="text: valueLabel"]',
@@ -133,7 +133,7 @@ export default {
   SubmitExemption: 'input[class*=tax-exemption__button]',
   VatInput: '[name=vat-number__input]',
   SubmitVat: 'input[class*=vat-number__button]',
-  TaxClass: '.CustomTax',
+  TaxClass: '.cart-template > .summary-template-holder > div > .totalizers > div table tr.CustomTax--total > td.monetary',
   Net90PaymentBtn: 'a[data-name=Net90]',
   Net90Label: '.payment-description',
   PromissoryPayment: '[data-name=Promissory]',

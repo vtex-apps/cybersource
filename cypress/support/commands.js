@@ -4,6 +4,10 @@ import {
   searchProduct,
   updateShippingInformation,
   getIframeBody,
+  updateProductQuantity,
+  verifyFreeProduct,
+  verifyTaxAndTotal,
+  closeCart,
 } from './cypress-template/common_support.js'
 import {
   VTEX_AUTH_HEADER,
@@ -15,7 +19,10 @@ Cypress.Commands.add('addProduct', addProduct)
 Cypress.Commands.add('updateShippingInformation', updateShippingInformation)
 Cypress.Commands.add('getIframeBody', getIframeBody)
 Cypress.Commands.add('fillAddress', fillAddress)
-
+Cypress.Commands.add('updateProductQuantity', updateProductQuantity)
+Cypress.Commands.add('verifyFreeProduct', verifyFreeProduct)
+Cypress.Commands.add('verifyTaxAndTotal', verifyTaxAndTotal)
+Cypress.Commands.add('closeCart', closeCart)
 // Order Tax API Test Case
 Cypress.Commands.add('orderTaxApi', (requestPayload, tax) => {
   cy.getVtexItems().then(vtex => {
