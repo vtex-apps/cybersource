@@ -38,20 +38,6 @@ export default {
     product1Price: '95.50',
     product2Price: '100.00',
   },
-  discountShipping: {
-    prefix: 'discountShipping',
-    postalCode: '90290',
-    totalAmount: '$ 109.50',
-    tax: '$ 3.82',
-    discount:'$ -19.77',
-    subTotal: '$ 59.31',
-    productQuantity: '1',
-    totalWithoutTax: '$ 59.31',
-    productPrice: '100.00',
-    shippingLabel: 'Free',
-    productName: PRODUCTS.invicta,
-    env: 'discountShippingOrder',
-  },
   requestRefund: {
     // orderId variable name for getFullRefundTotal
     fullRefundEnv: 'order1',
@@ -60,5 +46,16 @@ export default {
     getFullRefundTotal: 108500,
     getPartialRefundTotal: 108500,
     subTotal: '$ 1,080.00',
+  },
+  discountProduct: {
+    prefix: 'discountProduct',
+    postalCode: '33180',
+    totalAmount: '$ 88.26',
+    tax: '$ 5.77',
+    subTotal: '$ 74.99',
+    productQuantity: '1',
+    productPrice: '74.99',
+    productName: PRODUCTS.testproduct3,
+    env: 'discountProductEnv',
   },
 }
