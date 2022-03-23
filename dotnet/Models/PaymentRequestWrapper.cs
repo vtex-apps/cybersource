@@ -85,6 +85,8 @@ namespace Cybersource.Models
                 ShippingValue = sendAntifraudDataRequest.MiniCart.Shipping.Value,
                 TaxValue = sendAntifraudDataRequest.MiniCart.TaxValue
             };
+
+            this.TotalCartValue = (double)sendAntifraudDataRequest.Value;
         }
 
         public List<string> ListProperties()
