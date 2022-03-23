@@ -1,34 +1,48 @@
+import { testSetup, updateRetry } from '../support/common/support.js'
+import selectors from '../support/common/selectors.js'
+import { invoiceAPI, transactionAPI } from '../support/common/apis.js'
+import { VTEX_AUTH_HEADER } from '../support/common/constants.js'
 import {
-  testSetup,
-  updateRetry,
-  orderAndSaveProductId,
-} from '../support/cypress-template/common_support.js'
-import { PRODUCTS } from '../support/cypress-template/sandbox_products.js'
-import selectors from '../support/cypress-template/common_selectors.js'
-import {
-  invoiceAPI,
-  transactionAPI,
-} from '../support/cypress-template/common_apis.js'
-import { VTEX_AUTH_HEADER } from '../support/cypress-template/common_constants.js'
+  singleProduct,
+  requestRefund,
+} from '../support/sandbox_outputvalidation.js'
+import { getTestVariables, orderAndSaveProductId } from '../support/utils.js'
+import { verifyAntiFraud } from '../support/testcase.js'
 
-describe('Payment Testcase', () => {
+describe('Single Product Testcase', () => {
   testSetup()
 
-  const orderEnv = 'order1'
-  const product = PRODUCTS.shoesv5
+  const { prefix, productName, tax, totalAmount, postalCode } = singleProduct
+
+  const { transactionIdEnv } = getTestVariables(prefix)
+
   const expectedStatus = 'Payment Started'
   const expectedMessage = 'Authorization response parsed'
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
-    cy.searchProduct(product)
+    cy.searchProduct(productName)
     // Add product to cart
-    cy.addProduct(product, { proceedtoCheckout: true })
+    cy.addProduct(productName, { proceedtoCheckout: true })
+  })
+
+  it('Updating product quantity to 2', updateRetry(3), () => {
+    // Update Product quantity to 2
+    cy.updateProductQuantity(singleProduct, {
+      quantity: '2',
+    })
   })
 
   it('Updating Shipping Information', updateRetry(3), () => {
     // Update Shipping Section
-    cy.updateShippingInformation('33180')
+    cy.updateShippingInformation({ postalCode })
+  })
+
+  it('Verifying tax and total amounts for a product with quantity 2', () => {
+    // Verify Tax
+    cy.get(selectors.TaxAmtLabel).last().should('have.text', tax)
+    // Verify Total
+    cy.verifyTotal(totalAmount)
   })
 
   it('Completing the Payment & save OrderId', () => {
@@ -61,7 +75,7 @@ describe('Payment Testcase', () => {
       cy.wait('@callback')
         .its('response.statusCode', { timeout: 5000 })
         .should('eq', 204)
-      orderAndSaveProductId(orderEnv)
+      orderAndSaveProductId(requestRefund.fullRefundEnv)
     })
   })
 
@@ -72,16 +86,18 @@ describe('Payment Testcase', () => {
       cy.getVtexItems().then(vtex => {
         cy.getOrderItems().then(item => {
           cy.getAPI(
-            `${invoiceAPI(vtex.baseUrl)}/${item[orderEnv]}`,
+            `${invoiceAPI(vtex.baseUrl)}/${item[requestRefund.fullRefundEnv]}`,
             VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
           ).then(response => {
             expect(response.status).to.equal(200)
             const [{ transactionId }] = response.body.paymentData.transactions
 
+            cy.setOrderItem(transactionIdEnv, transactionId)
             cy.getAPI(
-              `${transactionAPI(vtex.baseUrl, transactionId)}/interactions`,
+              `${transactionAPI(vtex.baseUrl)}/${transactionId}/interactions`,
               VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
             ).then(interactionResponse => {
+              expect(response.status).to.equal(200)
               const index = interactionResponse.body.findIndex(
                 ob =>
                   ob.Status === expectedStatus &&
@@ -109,4 +125,6 @@ describe('Payment Testcase', () => {
       })
     }
   )
+
+  verifyAntiFraud(prefix, transactionIdEnv)
 })
