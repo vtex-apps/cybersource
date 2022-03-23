@@ -158,7 +158,15 @@ namespace Cybersource.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    vtexOrders = JsonConvert.DeserializeObject<VtexOrder[]>(responseContent);
+                    VtexOrderList vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(responseContent);
+                    string lookupOrderId = vtexOrderList.List.First().OrderId;
+                    int charLocation = lookupOrderId.IndexOf("-", StringComparison.Ordinal);
+                    if (charLocation > 0)
+                    {
+                        lookupOrderId = lookupOrderId.Substring(0, charLocation);
+                    }
+
+                    vtexOrders = await this.GetOrderGroup(lookupOrderId);
                 }
                 else
                 {
