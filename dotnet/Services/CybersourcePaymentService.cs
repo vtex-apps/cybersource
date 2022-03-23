@@ -91,7 +91,7 @@ namespace Cybersource.Services
                 },
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = createPaymentRequest.OrderId,
+                    code = createPaymentRequest.Reference, // Was OrderId - using Reference to have a consistent number with Fraud
                     //transactionId = createPaymentRequest.TransactionId,
                     applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                     applicationVersion = _context.Vtex.App.Version,
@@ -734,7 +734,7 @@ namespace Cybersource.Services
 
                 sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
 
-                _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
+                await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
             }
             else
             {
