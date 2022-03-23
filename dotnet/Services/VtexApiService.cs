@@ -134,13 +134,51 @@ namespace Cybersource.Services
         public async Task<VtexOrder[]> LookupOrders(string orderId)
         {
             VtexOrder[] vtexOrders = null;
+            try
+            {
+                VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
+                string lookupOrderId = vtexOrderList.List.First().OrderId;
+                int charLocation = lookupOrderId.IndexOf("-", StringComparison.Ordinal);
+                if (charLocation > 0)
+                {
+                    lookupOrderId = lookupOrderId.Substring(0, charLocation);
+                }
 
+                vtexOrders = await this.GetOrderGroup(lookupOrderId);
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("LookupOrders", null, $"Order# {orderId} Error", ex);
+            }
+
+            return vtexOrders;
+        }
+
+        public async Task<string> GetSequence(string orderId)
+        {
+            string sequence = orderId; // default to original value
+            try
+            {
+                VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
+                sequence = vtexOrderList.List.First().Sequence;
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("LookupOrders", null, $"Order# {orderId} Error", ex);
+            }
+
+            return sequence;
+        }
+
+        public async Task<VtexOrderList> SearchOrders(string query)
+        {
+            VtexOrderList vtexOrderList = null;
             try
             {
                 var request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Get,
-                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?q={orderId}")
+                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?q={query}")
                 };
 
                 request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
@@ -158,27 +196,19 @@ namespace Cybersource.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    VtexOrderList vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(responseContent);
-                    string lookupOrderId = vtexOrderList.List.First().OrderId;
-                    int charLocation = lookupOrderId.IndexOf("-", StringComparison.Ordinal);
-                    if (charLocation > 0)
-                    {
-                        lookupOrderId = lookupOrderId.Substring(0, charLocation);
-                    }
-
-                    vtexOrders = await this.GetOrderGroup(lookupOrderId);
+                    vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(responseContent);
                 }
                 else
                 {
-                    _context.Vtex.Logger.Info("LookupOrders", null, $"Order# {orderId} [{response.StatusCode}] '{responseContent}'");
+                    _context.Vtex.Logger.Info("SearchOrders", null, $"Query:{query} [{response.StatusCode}] '{responseContent}'");
                 }
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("LookupOrders", null, $"Order# {orderId} Error", ex);
+                _context.Vtex.Logger.Error("SearchOrders", null, $"Query:{query} Error", ex);
             }
 
-            return vtexOrders;
+            return vtexOrderList;
         }
 
         public async Task<VtexDockResponse[]> ListVtexDocks()

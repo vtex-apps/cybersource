@@ -477,7 +477,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = cancelPaymentRequest.PaymentId,
+                    code = await _vtexApiService.GetSequence(cancelPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -514,7 +514,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = paymentData.OrderId, //capturePaymentRequest.PaymentId,
+                    code = await _vtexApiService.GetSequence(paymentData.OrderId), //capturePaymentRequest.PaymentId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -563,7 +563,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = refundPaymentRequest.PaymentId,
+                    code = await _vtexApiService.GetSequence(refundPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
