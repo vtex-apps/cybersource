@@ -29,7 +29,7 @@ namespace Cybersource.Models
         public string OrderId { get; set; }
 
         [JsonProperty("creationDate")]
-        public DateTimeOffset CreationDate { get; set; }
+        public string CreationDate { get; set; }
 
         [JsonProperty("clientName")]
         public string ClientName { get; set; }
@@ -74,13 +74,13 @@ namespace Cybersource.Models
         public string LastMessageUnread { get; set; }
 
         [JsonProperty("ShippingEstimatedDate")]
-        public DateTimeOffset ShippingEstimatedDate { get; set; }
+        public string ShippingEstimatedDate { get; set; }
 
         [JsonProperty("ShippingEstimatedDateMax")]
-        public DateTimeOffset ShippingEstimatedDateMax { get; set; }
+        public string ShippingEstimatedDateMax { get; set; }
 
         [JsonProperty("ShippingEstimatedDateMin")]
-        public DateTimeOffset ShippingEstimatedDateMin { get; set; }
+        public string ShippingEstimatedDateMin { get; set; }
 
         [JsonProperty("orderIsComplete")]
         public bool OrderIsComplete { get; set; }
@@ -92,7 +92,7 @@ namespace Cybersource.Models
         public object ListType { get; set; }
 
         [JsonProperty("authorizedDate")]
-        public DateTimeOffset AuthorizedDate { get; set; }
+        public string AuthorizedDate { get; set; }
 
         [JsonProperty("callCenterOperatorName")]
         public string CallCenterOperatorName { get; set; }
@@ -113,7 +113,7 @@ namespace Cybersource.Models
         public object InvoiceInput { get; set; }
 
         [JsonProperty("lastChange")]
-        public DateTimeOffset LastChange { get; set; }
+        public string LastChange { get; set; }
 
         [JsonProperty("isAllDelivered")]
         public bool IsAllDelivered { get; set; }
@@ -128,10 +128,10 @@ namespace Cybersource.Models
         public string OrderFormId { get; set; }
 
         [JsonProperty("paymentApprovedDate")]
-        public DateTimeOffset PaymentApprovedDate { get; set; }
+        public string PaymentApprovedDate { get; set; }
 
         [JsonProperty("readyForHandlingDate")]
-        public DateTimeOffset ReadyForHandlingDate { get; set; }
+        public string ReadyForHandlingDate { get; set; }
 
         [JsonProperty("deliveryDates")]
         public object DeliveryDates { get; set; }
