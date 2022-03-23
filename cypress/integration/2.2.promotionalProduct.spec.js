@@ -3,8 +3,8 @@ import {
     updateRetry,
     orderAndSaveProductId,
   } from '../support/cypress-template/common_support.js'
-  import { promotionProduct } from '../support/sandbox.outputValidation'
-  import { PRODUCTS } from '../support/cypress-template/sandbox_products.js'
+  import { promotionProduct } from '../support/sandbox_outputvalidation'
+  import { PRODUCTS } from '../support/sandbox_products.js'
   import selectors from '../support/cypress-template/common_selectors.js'
   import {
     invoiceAPI,
