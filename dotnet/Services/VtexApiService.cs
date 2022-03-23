@@ -131,6 +131,48 @@ namespace Cybersource.Services
             return vtexOrders;
         }
 
+        public async Task<VtexOrder[]> LookupOrders(string orderId)
+        {
+            VtexOrder[] vtexOrders = null;
+
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?q={orderId}")
+                };
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    vtexOrders = JsonConvert.DeserializeObject<VtexOrder[]>(responseContent);
+                }
+                else
+                {
+                    _context.Vtex.Logger.Info("LookupOrders", null, $"Order# {orderId} [{response.StatusCode}] '{responseContent}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("LookupOrders", null, $"Order# {orderId} Error", ex);
+            }
+
+            return vtexOrders;
+        }
+
         public async Task<VtexDockResponse[]> ListVtexDocks()
         {
             VtexDockResponse[] listVtexDocks = null;
@@ -930,7 +972,7 @@ namespace Cybersource.Services
         public async Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments)
         {
             string results = string.Empty;
-            VtexOrder[] vtexOrders = await this.GetOrderGroup(merchantReferenceNumber);
+            VtexOrder[] vtexOrders = await this.LookupOrders(merchantReferenceNumber);
             if (vtexOrders != null)
             {
                 foreach (VtexOrder vtexOrder in vtexOrders)

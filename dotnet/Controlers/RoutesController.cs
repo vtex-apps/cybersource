@@ -379,10 +379,8 @@
         {
             string result = string.Empty;
             string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-            _context.Vtex.Logger.Debug("DecisionManagerNotify", "1", bodyAsText);
             bodyAsText = HttpUtility.UrlDecode(bodyAsText);
             bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
-            _context.Vtex.Logger.Debug("DecisionManagerNotify", "2", bodyAsText);
             try
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(CaseManagementOrderStatus));
@@ -394,7 +392,7 @@
                 };
 
                 result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
-                _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{result}\n{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision} ");
+                _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) } );
             }
             catch (Exception ex)
             {

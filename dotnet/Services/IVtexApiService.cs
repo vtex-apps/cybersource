@@ -21,6 +21,7 @@ namespace Cybersource.Services
         Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments);
         Task<VtexOrder> GetOrderInformation(string orderId);
         Task<VtexOrder[]> GetOrderGroup(string orderId);
+        Task<VtexOrder[]> LookupOrders(string orderId);
 
         Task<BinLookup> BinLookup(string bin);
     }
