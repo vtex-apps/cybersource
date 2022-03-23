@@ -1,12 +1,9 @@
-import {
-  testSetup,
-  updateRetry,
-} from '../support/cypress-template/common_support.js'
+import { testSetup, updateRetry } from '../support/common/support.js'
 import {
   multiProduct,
   requestRefund,
 } from '../support/sandbox_outputvalidation.js'
-import selectors from '../support/cypress-template/common_selectors.js'
+import selectors from '../support/common/selectors.js'
 import {
   completePayment,
   verifyStatusInInteractionAPI,
