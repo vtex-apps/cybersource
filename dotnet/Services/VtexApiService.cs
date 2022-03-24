@@ -170,6 +170,27 @@ namespace Cybersource.Services
             return sequence;
         }
 
+        public async Task<string> GetOrderId(string reference)
+        {
+            string orderId = reference; // default to original value
+            try
+            {
+                VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
+                orderId = vtexOrderList.List.First().OrderId;
+                int charLocation = orderId.IndexOf("-", StringComparison.Ordinal);
+                if (charLocation > 0)
+                {
+                    orderId = orderId.Substring(0, charLocation);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetOrderId", null, $"Reference# {reference} Error", ex);
+            }
+
+            return orderId;
+        }
+
         public async Task<VtexOrderList> SearchOrders(string query)
         {
             VtexOrderList vtexOrderList = null;
