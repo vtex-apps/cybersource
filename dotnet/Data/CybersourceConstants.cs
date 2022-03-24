@@ -41,6 +41,7 @@ namespace Cybersource.Data
         public const string RISK = "/risk/v1/";
         public const string TAX = "/vas/v2/";
         public const string REPORTING = "/reporting/v3/";
+        public const string TRANSACTIONS = "/tss/v2/";
 
         public static class CybersourceDecision
         {

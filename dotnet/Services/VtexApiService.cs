@@ -1081,6 +1081,12 @@ namespace Cybersource.Services
                                     results = ($"{merchantReferenceNumber} - {newDecision} No Update.");
                                 }
                             }
+                            else if (paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Approved))
+                            {
+                                // Cancel order
+                                SendResponse sendResponse = await this.CancelOrder(vtexOrder.OrderId, comments);
+                                results = ($"{merchantReferenceNumber} - {newDecision} canceled? {sendResponse.Success}");
+                            }
                         }
                         else
                         {
@@ -1241,6 +1247,53 @@ namespace Cybersource.Services
                 {
                     _context.Vtex.Logger.Error("PostCallbackResponse", null, $"{callbackUrl}\n{createPaymentResponse.PaymentId} {createPaymentResponse.Status}", ex);
                 }
+            }
+
+            return sendResponse;
+        }
+
+        public async Task<SendResponse> CancelOrder(string orderId, string reason)
+        {
+            // POST https://apiexamples.vtexcommercestable.com.br/api/oms/pvt/orders/{orderId}/cancel
+            SendResponse sendResponse = null;
+
+            try
+            {
+                CancelOrderRequest cancelOrderRequest = new CancelOrderRequest
+                {
+                    Reason = reason
+                };
+
+                string jsonSerializedData = JsonConvert.SerializeObject(cancelOrderRequest);
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders/{orderId}/cancel"),
+                    Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
+                };
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                sendResponse = new SendResponse
+                {
+                    Message = responseContent,
+                    StatusCode = response.StatusCode.ToString(),
+                    Success = response.IsSuccessStatusCode
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CancelOrder", null, $"{orderId}", ex);
             }
 
             return sendResponse;
