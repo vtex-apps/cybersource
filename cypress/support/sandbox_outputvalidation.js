@@ -39,7 +39,7 @@ export default {
 
   discountShipping: {
     prefix: 'discountShipping',
-    postalCode: '90290',
+    postalCode: '14589',
     totalAmount: '$ 58.36',
     tax: '$ 3.82',
     discount: '$ -19.77',
