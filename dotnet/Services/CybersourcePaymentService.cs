@@ -91,7 +91,7 @@ namespace Cybersource.Services
                 },
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = createPaymentRequest.Reference, // Was OrderId - using Reference to have a consistent number with Fraud
+                    code = createPaymentRequest.OrderId, // Use Reference to have a consistent number with Fraud?
                     //transactionId = createPaymentRequest.TransactionId,
                     applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                     applicationVersion = _context.Vtex.App.Version,
@@ -219,7 +219,7 @@ namespace Cybersource.Services
                         {
                             capture = "true",
                             commerceIndicator = CybersourceConstants.INSTALLMENT,
-                            reconciliationId = ""
+                            reconciliationId = createPaymentRequest.PaymentId
                         };
 
                         payment.installmentInformation = new InstallmentInformation
@@ -298,7 +298,7 @@ namespace Cybersource.Services
                     {
                         capture = "true",
                         commerceIndicator = CybersourceConstants.INSTALLMENT,
-                        reconciliationId = ""
+                        reconciliationId = createPaymentRequest.PaymentId
                     };
 
                     payment.installmentInformation = new InstallmentInformation
@@ -320,7 +320,7 @@ namespace Cybersource.Services
                     {
                         capture = "true",
                         commerceIndicator = createPaymentRequest.Installments > 1 ? CybersourceConstants.INSTALLMENT : CybersourceConstants.INTERNET,
-                        reconciliationId = ""
+                        reconciliationId = createPaymentRequest.PaymentId
                     };
 
                     payment.installmentInformation = new InstallmentInformation
@@ -477,7 +477,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = await _vtexApiService.GetSequence(cancelPaymentRequest.PaymentId),
+                    code = await _vtexApiService.GetOrderId(cancelPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -514,7 +514,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = await _vtexApiService.GetSequence(paymentData.OrderId), //capturePaymentRequest.PaymentId,
+                    code = await _vtexApiService.GetOrderId(paymentData.OrderId), //capturePaymentRequest.PaymentId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -563,7 +563,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = await _vtexApiService.GetSequence(refundPaymentRequest.PaymentId),
+                    code = await _vtexApiService.GetOrderId(refundPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor

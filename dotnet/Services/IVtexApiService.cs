@@ -23,6 +23,7 @@ namespace Cybersource.Services
         Task<VtexOrder[]> GetOrderGroup(string orderId);
         Task<VtexOrder[]> LookupOrders(string orderId);
         Task<string> GetSequence(string orderId);
+        Task<string> GetOrderId(string reference);
 
         Task<BinLookup> BinLookup(string bin);
     }
