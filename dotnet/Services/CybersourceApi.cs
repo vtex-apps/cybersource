@@ -649,6 +649,19 @@ namespace Cybersource.Services
 
             return retval;
         }
+
+        public async Task<RetrieveTransaction> RetrieveTransaction(string transactionId)
+        {
+            RetrieveTransaction retrieveTransaction = null;
+            string endpoint = $"{CybersourceConstants.TRANSACTIONS}transactions/{transactionId}";
+            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+            if (response != null)
+            {
+                retrieveTransaction = JsonConvert.DeserializeObject<RetrieveTransaction>(response.Message);
+            }
+
+            return retrieveTransaction;
+        }
         #endregion Reporting
 
         #region Authorization Header functions

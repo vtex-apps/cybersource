@@ -420,13 +420,43 @@ namespace Cybersource.Services
                 {
                     case "AUTHORIZED":
                     case "PARTIAL_AUTHORIZED":
-                        paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
+                        // Check for pre-auth fraud status
+                        SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
+                        if(antifraudDataResponse != null)
+                        {
+                            switch (antifraudDataResponse.Status)
+                            {
+                                case "ACCEPTED":
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                                    break;
+                                case "PENDING_REVIEW":
+                                case "PENDING_AUTHENTICATION":
+                                case "INVALID_REQUEST":
+                                case "CHALLENGE":
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                                    createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
+                                    break;
+                                case "REJECTED":
+                                case "DECLINED":
+                                case "AUTHENTICATION_FAILED":
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
+                                    break;
+                                default:
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
+                        }
                         break;
                     case "AUTHORIZED_PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
                     case "PENDING_REVIEW":
                     case "INVALID_REQUEST":
                         paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
+                        createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
                         break;
                     case "DECLINED":
                     case "AUTHORIZED_RISK_DECLINED":
@@ -707,7 +737,7 @@ namespace Cybersource.Services
                     case "ACCEPTED":
                     case "PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
-                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;   // Set Review to Arroved otherwise auth will not be called
                         break;
                     case "INVALID_REQUEST":
                     case "CHALLENGE":
@@ -721,7 +751,7 @@ namespace Cybersource.Services
                     default:
                         sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
                         break;
-                };
+                }
 
                 string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
                 Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);

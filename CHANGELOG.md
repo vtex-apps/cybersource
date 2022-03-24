@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Check fraud status when setting auth result
+
 ## [1.1.18] - 2022-03-24
 
 ### Changed
