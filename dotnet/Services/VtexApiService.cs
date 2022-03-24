@@ -1030,7 +1030,7 @@ namespace Cybersource.Services
 
         public async Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments)
         {
-            string results = string.Empty;
+            StringBuilder results = new StringBuilder();
             VtexOrder[] vtexOrders = await this.LookupOrders(merchantReferenceNumber);
             if (vtexOrders != null)
             {
@@ -1068,43 +1068,43 @@ namespace Cybersource.Services
                                         SendResponse sendResponse = await this.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
                                         if (sendResponse != null)
                                         {
-                                            results = ($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
+                                            results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} updated? {sendResponse.Success}");
                                         }
                                         else
                                         {
-                                            results = ($"{merchantReferenceNumber} - {newDecision} Null response.");
+                                            results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} Null response.");
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    results = ($"{merchantReferenceNumber} - {newDecision} No Update.");
+                                    results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} No Update.");
                                 }
                             }
-                            else if (paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Approved))
+                            else if (paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Approved) && newDecision.Equals(CybersourceConstants.CybersourceDecision.Reject))
                             {
                                 // Cancel order
                                 SendResponse sendResponse = await this.CancelOrder(vtexOrder.OrderId, comments);
-                                results = ($"{merchantReferenceNumber} - {newDecision} canceled? {sendResponse.Success}");
+                                results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} canceled? {sendResponse.Success}");
                             }
                         }
                         else
                         {
-                            results = ($"{merchantReferenceNumber} - {newDecision} No Payment Data.");
+                            results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} No Payment Data.");
                         }
                     }
                     else
                     {
-                        results = ($"{merchantReferenceNumber} - {newDecision} No Order Data.");
+                        results.AppendLine($"{merchantReferenceNumber} - {newDecision} No Order Data.");
                     }
                 }
             }
             else
             {
-                results = ($"{merchantReferenceNumber} - {newDecision} Failed to load Order Group.");
+                results.AppendLine($"{merchantReferenceNumber} - {newDecision} Failed to load Order Group.");
             }
 
-            return results;
+            return results.ToString();
         }
 
         public string GetCountryCode(string country)
