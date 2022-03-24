@@ -1,8 +1,9 @@
 export const PRODUCTS = {
-  shoesv5: 'forum low shoes v5', // used in singleProduct
-  shoesv3: 'forum low shoes v3', // used in singleProduct, multiProduct
+  hat: 'really hat', // used in singleProduct,multiProduct
+  shoesv5: 'forum low shoes v5',
+  shoesv3: 'forum low shoes v3',
   indigotshirt: 'adidas women indigo',
   pinktshirt: 'adidas women pink',
   invicta: 'invicta 3 slot', // used in promotionProduct
-  testproduct3: 'test product 3', // used in discount Product
+  testproduct3: 'test product 3', // used in discount Product and multiproduct
 }

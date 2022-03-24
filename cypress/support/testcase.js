@@ -3,14 +3,22 @@ import { updateRetry } from './common/support.js'
 import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
 import { orderAndSaveProductId } from './utils.js'
+import { externalSeller } from './sandbox_outputvalidation.js'
 
 export function completePayment(prefix, orderIdEnv) {
   it(`In ${prefix} - Completing the Payment & save OrderId`, () => {
     cy.intercept('**/gatewayCallback/**').as('callback')
-    cy.get(selectors.CreditCard).click()
+
+    cy.get('body').then($body => {
+      if ($body.find(selectors.CreditCard).length) {
+        cy.get(selectors.CreditCard).click()
+      }
+    })
+
     cy.getIframeBody(selectors.PaymentMethodIFrame)
       .find(selectors.CreditCardCode)
       .should('be.visible')
+
     cy.getIframeBody(selectors.PaymentMethodIFrame).then($body => {
       if (!$body.find(selectors.CardExist).length) {
         // Credit cart not exist
@@ -28,6 +36,9 @@ export function completePayment(prefix, orderIdEnv) {
           .select('30')
       }
 
+      cy.getIframeBody(selectors.PaymentMethodIFrame)
+        .find('.SavedCard span[class*=Master]')
+        .click()
       cy.getIframeBody(selectors.PaymentMethodIFrame)
         .find(selectors.CreditCardCode)
         .type('123')
@@ -105,6 +116,7 @@ export function verifyAntiFraud(prefix, transactionIdEnv) {
           VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
         ).then(response => {
           expect(response.status).to.equal(200)
+          expect(response.body.tid).not.to.be.null
           expect(response.body.status).to.match(/approved|undefined|denied/i)
         })
       })
@@ -136,6 +148,29 @@ export function verifyCyberSourceAPI(prefix, transactionIdEnv, fn = null) {
             fn && fn()
           })
         })
+      })
+    })
+  })
+}
+
+export function sendInvoiceTestCase(total, orderIdEnv) {
+  it.only('Send Invoice', () => {
+    cy.getOrderItems().then(item => {
+      cy.sendInvoiceAPI(
+        {
+          invoiceNumber: '54321',
+          invoiceValue: total
+            .replace('$ ', '')
+            .replace(/\./, '')
+            .replace(/,/, ''),
+          invoiceUrl: null,
+          issuanceDate: new Date(),
+          invoiceKey: null,
+        },
+        item[orderIdEnv],
+        orderIdEnv === externalSeller.externalSaleEnv
+      ).then(response => {
+        expect(response.status).to.equal(200)
       })
     })
   })

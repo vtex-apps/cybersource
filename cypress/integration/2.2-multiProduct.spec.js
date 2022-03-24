@@ -8,6 +8,7 @@ import {
   completePayment,
   verifyStatusInInteractionAPI,
   verifyAntiFraud,
+  sendInvoiceTestCase,
 } from '../support/testcase.js'
 import { getTestVariables } from '../support/utils.js'
 
@@ -55,4 +56,6 @@ describe('Multi Product Testcase', () => {
   verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
 
   verifyAntiFraud(prefix, transactionIdEnv)
+
+  sendInvoiceTestCase(totalAmount, orderIdEnv)
 })
