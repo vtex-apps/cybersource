@@ -681,6 +681,7 @@ namespace Cybersource.Services
             string json = JsonConvert.SerializeObject(cybersourceBinLookupRequest);
             string endpoint = $"{CybersourceConstants.TRANSACTIONS}binlookup";
             SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            _context.Vtex.Logger.Debug("BinLookup", null, null, new[] { ("Bin", cardNumber), ("response", JsonConvert.SerializeObject(response)) });
             if (response != null)
             {
                 cybersourceBinLookupResponse = JsonConvert.DeserializeObject<CybersourceBinLookupResponse>(response.Message);
