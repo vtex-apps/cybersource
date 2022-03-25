@@ -24,6 +24,8 @@ base:
     enabled: false
     channel: some-channel
   cypress:
+    devMode: true
+    runHeaded: false
     enabled: false
     projectId: xyza
     video: true
@@ -44,8 +46,6 @@ base:
 workspace:
   name: master
   prefix: cybersource
-  runInDevMode: false
-  runHeaded: false
   linkApp:
     enabled: false
     logOutput:
