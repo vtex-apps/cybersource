@@ -11,6 +11,7 @@ import {
   verifyAntiFraud,
   verifyCyberSourceAPI,
   sendInvoiceTestCase,
+  invoiceAPITestCase,
 } from '../support/testcase.js'
 
 describe('Single Product Testcase', () => {
@@ -48,6 +49,8 @@ describe('Single Product Testcase', () => {
   })
 
   completePayment(prefix, orderIdEnv)
+
+  invoiceAPITestCase(singleProduct, orderIdEnv)
 
   verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
 

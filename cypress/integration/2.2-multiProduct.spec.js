@@ -10,6 +10,7 @@ import {
   verifyAntiFraud,
   sendInvoiceTestCase,
   verifyCyberSourceAPI,
+  invoiceAPITestCase,
 } from '../support/testcase.js'
 import { getTestVariables } from '../support/utils.js'
 
@@ -53,6 +54,8 @@ describe('Multi Product Testcase', () => {
   })
 
   completePayment(prefix, orderIdEnv)
+
+  invoiceAPITestCase(multiProduct, orderIdEnv)
 
   verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
 

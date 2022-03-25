@@ -196,3 +196,47 @@ export function sendInvoiceTestCase(total, orderIdEnv) {
     })
   })
 }
+
+export function invoiceAPITestCase(
+  product,
+  orderIdEnv,
+  externalSellerTestCase = false
+) {
+  let tax
+
+  it('Invoice API should have expected tax', updateRetry(2), () => {
+    if (externalSellerTestCase) {
+      if (externalSeller.directSaleEnv === orderIdEnv) {
+        tax = externalSeller.directSaleTax
+      } else {
+        tax = externalSeller.externalSellerTax
+      }
+    }
+    // If this is not externalSellerTestCase then it is for refund test case
+    else {
+      tax = product.tax
+    }
+
+    cy.getVtexItems().then(vtex => {
+      cy.getOrderItems().then(item => {
+        cy.getAPI(
+          `${
+            orderIdEnv === externalSeller.externalSaleEnv
+              ? invoiceAPI(vtex.urlExternalSeller)
+              : invoiceAPI(vtex.baseUrl)
+          }/${item[orderIdEnv]}`,
+          VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
+        ).then(response => {
+          expect(response.status).to.equal(200)
+          const taxesArray = response.body.totals.filter(
+            el => el.id === 'CustomTax'
+          )
+
+          expect(
+            taxesArray.reduce((n, { value }) => n + value / 100, 0).toFixed(2)
+          ).to.eq(parseFloat(tax.replace('$ ', '')).toFixed(2))
+        })
+      })
+    })
+  })
+}

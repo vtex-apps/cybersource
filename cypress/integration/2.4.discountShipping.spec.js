@@ -7,6 +7,7 @@ import {
   verifyAntiFraud,
   verifyStatusInInteractionAPI,
   verifyCyberSourceAPI,
+  invoiceAPITestCase,
 } from '../support/testcase.js'
 
 describe('Discount Shipping Testcase', () => {
@@ -42,6 +43,8 @@ describe('Discount Shipping Testcase', () => {
   })
 
   completePayment(prefix, env)
+
+  invoiceAPITestCase(discountShipping, env)
 
   verifyStatusInInteractionAPI(prefix, env, transactionIdEnv)
 

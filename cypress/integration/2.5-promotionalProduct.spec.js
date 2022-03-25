@@ -7,6 +7,7 @@ import {
   verifyCyberSourceAPI,
   verifyStatusInInteractionAPI,
   verifyAntiFraud,
+  invoiceAPITestCase,
 } from '../support/testcase.js'
 
 describe('Promotional Product Testcase', () => {
@@ -26,7 +27,9 @@ describe('Promotional Product Testcase', () => {
 
   it('Updating product quantity to 2', updateRetry(3), () => {
     // Update Product quantity to 2
-    cy.updateProductQuantity(promotionProduct, { quantity: '2' })
+    cy.updateProductQuantity(promotionProduct, {
+      quantity: '2',
+    })
   })
 
   it('Updating Shipping Information', updateRetry(3), () => {
@@ -51,6 +54,8 @@ describe('Promotional Product Testcase', () => {
   })
 
   completePayment(prefix, env)
+
+  invoiceAPITestCase(promotionProduct, env)
 
   verifyStatusInInteractionAPI(prefix, env, transactionIdEnv)
 
