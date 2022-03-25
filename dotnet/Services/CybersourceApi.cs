@@ -664,6 +664,31 @@ namespace Cybersource.Services
         }
         #endregion Reporting
 
+        public async Task<CybersourceBinLookupResponse> BinLookup(string cardNumber)
+        {
+            CybersourceBinLookupResponse cybersourceBinLookupResponse = null;
+            CybersourceBinLookupRequest cybersourceBinLookupRequest = new CybersourceBinLookupRequest
+            {
+                PaymentInformation = new BinLookupPaymentInformation
+                {
+                    Card = new BinLookupCard
+                    {
+                        Number = cardNumber
+                    }
+                }
+            };
+
+            string json = JsonConvert.SerializeObject(cybersourceBinLookupRequest);
+            string endpoint = $"{CybersourceConstants.TRANSACTIONS}binlookup";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                cybersourceBinLookupResponse = JsonConvert.DeserializeObject<CybersourceBinLookupResponse>(response.Message);
+            }
+
+            return cybersourceBinLookupResponse;
+        }
+
         #region Authorization Header functions
         private async Task<string> GenerateDigest(string jsonPayload)
         {

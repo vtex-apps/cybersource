@@ -38,7 +38,7 @@ namespace Cybersource.Models
         public DockPickupStoreInfo PickupStoreInfo { get; set; }
     }
 
-    public partial class DockAddress
+    public class DockAddress
     {
         [JsonProperty("postalCode")]
         public string PostalCode { get; set; }
@@ -71,7 +71,7 @@ namespace Cybersource.Models
         public object Location { get; set; }
     }
 
-    public partial class DockCountry
+    public class DockCountry
     {
         [JsonProperty("acronym")]
         public string Acronym { get; set; }
@@ -80,7 +80,7 @@ namespace Cybersource.Models
         public string Name { get; set; }
     }
 
-    public partial class DeliveryFromStoreInfo
+    public class DeliveryFromStoreInfo
     {
         [JsonProperty("isActice")]
         public bool IsActice { get; set; }

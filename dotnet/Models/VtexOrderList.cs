@@ -197,7 +197,7 @@ namespace Cybersource.Models
         public Facets Facets { get; set; }
     }
 
-    public partial class Facets
+    public class Facets
     {
     }
 }
