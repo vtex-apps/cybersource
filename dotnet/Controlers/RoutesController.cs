@@ -44,8 +44,15 @@
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 //_context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
-                CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
-                paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                try
+                {
+                    CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
+                    paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                }
+                catch(Exception ex)
+                {
+                    _context.Vtex.Logger.Error("CreatePayment", null, "Payment Error", ex, new[] { ("body", bodyAsText) });
+                }
             }
 
             Response.Headers.Add("Cache-Control", "private");

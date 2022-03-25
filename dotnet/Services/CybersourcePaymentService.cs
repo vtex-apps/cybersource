@@ -86,7 +86,7 @@ namespace Cybersource.Services
             string cardType = string.Empty;
             bool isDebit = false;
             CybersourceBinLookupResponse cybersourceBinLookup = await _cybersourceApi.BinLookup(createPaymentRequest.Card.Bin);
-            if (cybersourceBinLookup != null)
+            if (cybersourceBinLookup != null && cybersourceBinLookup.PaymentAccountInformation != null && cybersourceBinLookup.PaymentAccountInformation.Card != null)
             {
                 cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
                 if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
