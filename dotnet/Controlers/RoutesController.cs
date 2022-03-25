@@ -378,25 +378,39 @@
         public async Task<IActionResult> DecisionManagerNotify()
         {
             string result = string.Empty;
-            string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-            bodyAsText = HttpUtility.UrlDecode(bodyAsText);
-            bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
             try
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(CaseManagementOrderStatus));
-                CaseManagementOrderStatus caseManagementOrderStatus;
-
-                using (TextReader reader = new StringReader(bodyAsText))
+                string bodyAsTextRaw = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                try
                 {
-                    caseManagementOrderStatus = (CaseManagementOrderStatus)serializer.Deserialize(reader);
-                };
+                    string bodyAsText = HttpUtility.UrlDecode(bodyAsTextRaw);
+                    bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
+                    try
+                    {
+                        XmlSerializer serializer = new XmlSerializer(typeof(CaseManagementOrderStatus));
+                        CaseManagementOrderStatus caseManagementOrderStatus;
 
-                result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
-                _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) } );
+                        using (TextReader reader = new StringReader(bodyAsText))
+                        {
+                            caseManagementOrderStatus = (CaseManagementOrderStatus)serializer.Deserialize(reader);
+                        }
+
+                        result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
+                        _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) });
+                    }
+                    catch (Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error serializing request body", ex, new[] { ("body", bodyAsText) });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error decoding request body", ex, new[] { ("body", bodyAsTextRaw) });
+                }
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("DecisionManagerNotify", null, bodyAsText, ex);
+                _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error reading request body", ex);
             }
 
             return Ok();

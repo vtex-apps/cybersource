@@ -103,7 +103,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex);
+                _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex, new [] { ("method", method.ToString()), ("endpoint", endpoint), ("jsonSerializedData", jsonSerializedData) });
             }
 
             return sendResponse;
