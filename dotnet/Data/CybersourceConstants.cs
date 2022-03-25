@@ -42,6 +42,7 @@ namespace Cybersource.Data
         public const string TAX = "/vas/v2/";
         public const string REPORTING = "/reporting/v3/";
         public const string TRANSACTIONS = "/tss/v2/";
+        public const string BIN = "/bin/v1/";
 
         public static class CybersourceDecision
         {

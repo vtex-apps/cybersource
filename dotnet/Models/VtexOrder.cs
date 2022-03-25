@@ -1288,7 +1288,7 @@ namespace Cybersource.Models
         public long UnitMultiplier { get; set; }
     }
 
-    public partial class Receipt
+    public class Receipt
     {
         [JsonProperty("date")]
         public DateTimeOffset Date { get; set; }

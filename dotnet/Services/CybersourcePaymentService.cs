@@ -82,6 +82,24 @@ namespace Cybersource.Services
                 }
             }
 
+            CybersourceConstants.CardType cardBrandName = CybersourceConstants.CardType.Unknown;
+            string cardType = string.Empty;
+            bool isDebit = false;
+            CybersourceBinLookupResponse cybersourceBinLookup = await _cybersourceApi.BinLookup(createPaymentRequest.Card.Bin);
+            if (cybersourceBinLookup != null)
+            {
+                cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
+                if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
+                {
+                    cardBrandName = this.FindType(createPaymentRequest.Card.Bin);
+                }
+            }
+            else
+            {
+                cardType = this.GetCardType(createPaymentRequest.PaymentMethod);
+                cardBrandName = this.FindType(createPaymentRequest.Card.Bin);
+            }
+
             Payments payment = new Payments
             {
                 merchantInformation = new MerchantInformation
@@ -105,7 +123,7 @@ namespace Cybersource.Services
                         securityCode = createPaymentRequest.Card.CscToken ?? createPaymentRequest.Card.Csc,
                         expirationMonth = createPaymentRequest.Card.Expiration.Month,
                         expirationYear = createPaymentRequest.Card.Expiration.Year,
-                        type = GetCardType(createPaymentRequest.PaymentMethod)
+                        type = cardType
                     }
                 },
                 orderInformation = new OrderInformation
@@ -169,34 +187,6 @@ namespace Cybersource.Services
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
             decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
-            //CybersourceConstants.CardType cardType = this.FindType(createPaymentRequest.Card.Bin);
-            CybersourceConstants.CardType cardType = CybersourceConstants.CardType.Unknown;
-            bool isDebit = false;
-            BinLookup binLookup = await _vtexApiService.BinLookup(createPaymentRequest.Card.Bin);
-            if(binLookup != null)
-            {
-                if (Enum.TryParse(binLookup.Bank.Name, true, out cardType))
-                {
-                    //Console.WriteLine($"Set to {cardType} from Bank Name.");
-                }
-                else if (Enum.TryParse(binLookup.Scheme, true, out cardType))
-                {
-                    //Console.WriteLine($"Set to {cardType} from Scheme.");
-                }
-                else
-                {
-                    cardType = this.FindType(createPaymentRequest.Card.Bin);
-                }
-
-                if (binLookup.Type != null)
-                {
-                    isDebit = binLookup.Type.Equals("debit", StringComparison.OrdinalIgnoreCase);
-                }
-            }
-            else
-            {
-                cardType = this.FindType(createPaymentRequest.Card.Bin);
-            }
 
             switch (merchantSettings.Processor)
             {
@@ -239,7 +229,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.VPC:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
                     {
-                        if (cardType.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
+                        if (cardBrandName.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
                         {
                             payment.processingInformation = new ProcessingInformation
                             {
@@ -257,7 +247,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.Izipay:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Peru))
                     {
-                        if (cardType.Equals(CybersourceConstants.CardType.Visa) || cardType.Equals(CybersourceConstants.CardType.MasterCard))
+                        if (cardBrandName.Equals(CybersourceConstants.CardType.Visa) || cardBrandName.Equals(CybersourceConstants.CardType.MasterCard))
                         {
                             plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
                             payment.issuerInformation = new IssuerInformation
