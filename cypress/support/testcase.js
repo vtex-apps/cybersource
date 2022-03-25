@@ -1,4 +1,4 @@
-import { VTEX_AUTH_HEADER, FAIL_ON_STATUS_CODE } from './common/constants.js'
+import { VTEX_AUTH_HEADER } from './common/constants.js'
 import { updateRetry } from './common/support.js'
 import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
@@ -107,7 +107,11 @@ export function verifyStatusInInteractionAPI(
   )
 }
 
-export function verifyAntiFraud(prefix, transactionIdEnv) {
+export function verifyAntiFraud({
+  prefix,
+  transactionIdEnv,
+  paymentTransactionIdEnv,
+}) {
   it(`In ${prefix} - Verifying AntiFraud status`, () => {
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(order => {
@@ -116,7 +120,7 @@ export function verifyAntiFraud(prefix, transactionIdEnv) {
           VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
         ).then(response => {
           expect(response.status).to.equal(200)
-          expect(response.body.tid).not.to.be.null
+          expect(response.body.tid).to.equal(order[paymentTransactionIdEnv])
           expect(response.body.status).to.match(/approved|undefined|denied/i)
         })
       })
@@ -124,29 +128,46 @@ export function verifyAntiFraud(prefix, transactionIdEnv) {
   })
 }
 
-export function verifyCyberSourceAPI(prefix, transactionIdEnv, fn = null) {
-  it.only(`In ${prefix} - Verifying cybersource API status`, () => {
-    cy.getVtexItems().then(vtex => {
-      cy.getOrderItems().then(order => {
-        cy.getAPI(
-          `${transactionAPI(vtex.baseUrl)}/${order[transactionIdEnv]}/payments`,
-          VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
-        ).then(response => {
-          expect(response.status).to.equal(200)
-          cy.log(response.body[0].tid)
-          cy.request({
-            url: `${vtex.cybersourceapi}/6476351198506781104003`,
-            headers: {
-              signature: vtex.signature,
-              'v-c-merchant-id': vtex.merchantId,
-              'v-c-date': new Date().toUTCString(),
-            },
-            ...FAIL_ON_STATUS_CODE,
-          }).then(resp => {
-            cy.log(resp)
-            expect(resp.status).to.equal(200)
-            fn && fn()
+export function verifyRefundTid({ prefix, paymentTransactionIdEnv }) {
+  it(
+    `In ${prefix} - Verifying refundtid is created in cybersource API`,
+    { retries: 3 },
+    () => {
+      cy.getVtexItems().then(vtex => {
+        cy.getOrderItems().then(order => {
+          cy.task('cybersourceAPI', {
+            vtex,
+            tid: order[paymentTransactionIdEnv],
+          }).then(({ status, data }) => {
+            expect(status).to.equal(200)
+            expect(data._links.relatedTransactions).to.have.lengthOf(2)
           })
+        })
+      })
+    }
+  )
+}
+
+export function verifyCyberSourceAPI({
+  prefix,
+  transactionIdEnv,
+  paymentTransactionIdEnv,
+}) {
+  it(`In ${prefix} - Verifying cybersource API`, () => {
+    cy.getVtexItems().then(vtex => {
+      cy.getOrderItems().then(item => {
+        cy.getAPI(
+          `${transactionAPI(vtex.baseUrl)}/${item[transactionIdEnv]}/payments`,
+          VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
+        ).then(paymentResponse => {
+          cy.setOrderItem(paymentTransactionIdEnv, paymentResponse.body[0].tid)
+
+          cy.task('cybersourceAPI', {
+            vtex,
+            tid: paymentResponse.body[0].tid,
+          })
+            .its('status')
+            .should('equal', 200)
         })
       })
     })
@@ -154,7 +175,7 @@ export function verifyCyberSourceAPI(prefix, transactionIdEnv, fn = null) {
 }
 
 export function sendInvoiceTestCase(total, orderIdEnv) {
-  it.only('Send Invoice', () => {
+  it('Send Invoice', () => {
     cy.getOrderItems().then(item => {
       cy.sendInvoiceAPI(
         {

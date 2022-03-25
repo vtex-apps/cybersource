@@ -39,16 +39,15 @@ export default {
 
   discountShipping: {
     prefix: 'discountShipping',
-    postalCode: '14589',
-    totalAmount: '$ 58.36',
-    tax: '$ 3.82',
-    discount: '$ -19.77',
-    subTotal: '$ 59.31',
+    postalCode: '33180',
+    totalAmount: '$ 75.81',
+    tax: '$ 4.96',
+    subTotal: '$ 70.85',
     productQuantity: '1',
-    totalWithoutTax: '$ 59.31',
-    productPrice: '19.77',
+    totalWithoutTax: '$ 70.85',
+    productPrice: '70.85',
     shippingLabel: 'Free',
-    productName: PRODUCTS.invicta,
+    productName: PRODUCTS.invictawatch,
     env: 'discountShippingOrder',
   },
   promotionProduct: {
@@ -87,8 +86,7 @@ export default {
     fullRefundEnv: 'order1',
     // orderId variable name for getPartialRefund
     partialRefundEnv: 'order2',
-    getFullRefundTotal: 108500,
-    getPartialRefundTotal: 108500,
-    subTotal: '$ 1,080.00',
+    getFullRefundTotal: 10165,
+    getPartialRefundTotal: 10165,
   },
 }

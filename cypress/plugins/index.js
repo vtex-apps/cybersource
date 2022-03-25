@@ -17,7 +17,23 @@
  * @type {Cypress.PluginConfig}
  */
 // eslint-disable-next-line no-unused-vars
-module.exports = (on, config) => {
+
+const { retrieveTransactions } = require('../support/cybersourceApi.js')
+
+module.exports = (on, _) => {
   // `on` is used to hook into various events Cypress emits
   // `config` is the resolved Cypress config
+  on('task', {
+    cybersourceAPI: ({ vtex, tid }) => {
+      return new Promise((resolve, reject) => {
+        retrieveTransactions(vtex, tid, (error, data, response) => {
+          if (error) {
+            reject(error)
+          }
+
+          resolve({ status: response.status, data })
+        })
+      })
+    },
+  })
 }

@@ -9,6 +9,7 @@ import {
   completePayment,
   verifyStatusInInteractionAPI,
   verifyAntiFraud,
+  verifyCyberSourceAPI,
   sendInvoiceTestCase,
 } from '../support/testcase.js'
 
@@ -17,7 +18,7 @@ describe('Single Product Testcase', () => {
 
   const { prefix, productName, tax, totalAmount, postalCode } = singleProduct
 
-  const { transactionIdEnv } = getTestVariables(prefix)
+  const { paymentTransactionIdEnv, transactionIdEnv } = getTestVariables(prefix)
   const orderIdEnv = requestRefund.fullRefundEnv
 
   it('Adding Product to Cart', updateRetry(3), () => {
@@ -50,7 +51,9 @@ describe('Single Product Testcase', () => {
 
   verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
 
-  verifyAntiFraud(prefix, transactionIdEnv)
-
   sendInvoiceTestCase(totalAmount, orderIdEnv)
+
+  verifyCyberSourceAPI({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+
+  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
 })

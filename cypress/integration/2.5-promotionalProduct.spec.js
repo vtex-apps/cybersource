@@ -4,6 +4,7 @@ import { promotionProduct } from '../support/sandbox_outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
 import {
   completePayment,
+  verifyCyberSourceAPI,
   verifyStatusInInteractionAPI,
   verifyAntiFraud,
 } from '../support/testcase.js'
@@ -14,7 +15,7 @@ describe('Promotional Product Testcase', () => {
   const { prefix, productName, tax, totalAmount, env, postalCode } =
     promotionProduct
 
-  const { transactionIdEnv } = getTestVariables(prefix)
+  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
@@ -53,5 +54,7 @@ describe('Promotional Product Testcase', () => {
 
   verifyStatusInInteractionAPI(prefix, env, transactionIdEnv)
 
-  verifyAntiFraud(prefix, transactionIdEnv)
+  verifyCyberSourceAPI({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+
+  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
 })

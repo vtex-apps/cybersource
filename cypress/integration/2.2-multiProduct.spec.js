@@ -9,6 +9,7 @@ import {
   verifyStatusInInteractionAPI,
   verifyAntiFraud,
   sendInvoiceTestCase,
+  verifyCyberSourceAPI,
 } from '../support/testcase.js'
 import { getTestVariables } from '../support/utils.js'
 
@@ -18,7 +19,7 @@ describe('Multi Product Testcase', () => {
   const { prefix, product1Name, product2Name, tax, totalAmount, postalCode } =
     multiProduct
 
-  const { transactionIdEnv } = getTestVariables(prefix)
+  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
   const orderIdEnv = requestRefund.partialRefundEnv
 
   it('Adding Product to Cart', updateRetry(3), () => {
@@ -55,7 +56,9 @@ describe('Multi Product Testcase', () => {
 
   verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
 
-  verifyAntiFraud(prefix, transactionIdEnv)
-
   sendInvoiceTestCase(totalAmount, orderIdEnv)
+
+  verifyCyberSourceAPI({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+
+  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
 })
