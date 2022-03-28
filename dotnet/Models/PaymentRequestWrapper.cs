@@ -36,6 +36,59 @@ namespace Cybersource.Models
             this.MiniCart = createPaymentRequest.MiniCart;
         }
 
+        public PaymentRequestWrapper(SendAntifraudDataRequest sendAntifraudDataRequest)
+        {
+            this.Currency = sendAntifraudDataRequest.Payments[0].CurrencyIso4217;
+            this.Card = new VtexCard { Bin = sendAntifraudDataRequest.Payments[0].Details.Bin };
+            this.DeviceFingerprint = sendAntifraudDataRequest.DeviceFingerprint;
+            this.Installments = (int)sendAntifraudDataRequest.Payments[0].Installments;
+            this.IpAddress = sendAntifraudDataRequest.Ip;
+            this.PaymentMethod = sendAntifraudDataRequest.Payments[0].Method;
+            this.Reference = sendAntifraudDataRequest.Reference;
+            this.TransactionId = sendAntifraudDataRequest.Id;
+            this.Value = sendAntifraudDataRequest.Value;
+            this.MiniCart = new MiniCart
+            {
+                Buyer = new Buyer
+                {
+                    Document = sendAntifraudDataRequest.MiniCart.Buyer.Document,
+                    Email = sendAntifraudDataRequest.MiniCart.Buyer.Email,
+                    DocumentType = sendAntifraudDataRequest.MiniCart.Buyer.DocumentType,
+                    FirstName = sendAntifraudDataRequest.MiniCart.Buyer.FirstName,
+                    Id = sendAntifraudDataRequest.MiniCart.Buyer.Id,
+                    LastName = sendAntifraudDataRequest.MiniCart.Buyer.LastName,
+                    Phone = sendAntifraudDataRequest.MiniCart.Buyer.Phone,
+                },
+                BillingAddress = new VtexBillingAddress
+                {
+                    City = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
+                    Complement = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
+                    Country = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
+                    Neighborhood = sendAntifraudDataRequest.MiniCart.Buyer.Address.Neighborhood,
+                    Number = sendAntifraudDataRequest.MiniCart.Buyer.Address.Number,
+                    PostalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
+                    State = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
+                    Street = sendAntifraudDataRequest.MiniCart.Buyer.Address.Street
+                },
+                ShippingAddress = new VtexShippingAddress
+                {
+                    City = sendAntifraudDataRequest.MiniCart.Shipping.Address.City,
+                    Complement = sendAntifraudDataRequest.MiniCart.Shipping.Address.Complement,
+                    Country = sendAntifraudDataRequest.MiniCart.Shipping.Address.Country,
+                    Neighborhood = sendAntifraudDataRequest.MiniCart.Shipping.Address.Neighborhood,
+                    Number = sendAntifraudDataRequest.MiniCart.Shipping.Address.Number,
+                    PostalCode = sendAntifraudDataRequest.MiniCart.Shipping.Address.PostalCode,
+                    State = sendAntifraudDataRequest.MiniCart.Shipping.Address.State,
+                    Street = sendAntifraudDataRequest.MiniCart.Shipping.Address.Street
+                },
+                Items = new List<VtexItem>(),
+                ShippingValue = sendAntifraudDataRequest.MiniCart.Shipping.Value,
+                TaxValue = sendAntifraudDataRequest.MiniCart.TaxValue
+            };
+
+            this.TotalCartValue = (double)sendAntifraudDataRequest.Value;
+        }
+
         public List<string> ListProperties()
         {
             List<string> list = new List<string>();

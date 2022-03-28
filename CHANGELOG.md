@@ -6,6 +6,80 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.24] - 2022-03-25
+
+## [1.1.23] - 2022-03-25
+
+## [1.1.22] - 2022-03-25
+
+### Added
+
+- BIN lookup
+
+## [1.1.21] - 2022-03-25
+
+### Added
+
+- error logging
+
+## [1.1.20] - 2022-03-24
+
+## [1.1.19] - 2022-03-24
+
+### Changed
+
+- Check fraud status when setting auth result
+
+## [1.1.18] - 2022-03-24
+
+### Changed
+
+- Use OrderId as reference number
+
+## [1.1.17] - 2022-03-23
+
+### Changed
+
+- Look up sequence number
+
+## [1.1.16] - 2022-03-23
+
+## [1.1.15] - 2022-03-23
+
+### Changed
+
+- Changed OrderId to Reference for payment to be consistent with Fraud 
+
+## [1.1.14] - 2022-03-23
+
+### Changed
+
+- Antifraud changes
+
+## [1.1.13] - 2022-03-22
+
+### Changed
+
+- Antifraud changes
+
+## [1.1.12] - 2022-03-22
+
+### Changed
+
+- Testing, Debug
+
+## [1.1.11] - 2022-03-21
+
+### Changed
+
+- Testing, Debug
+
+## [1.1.10] - 2022-03-18
+
+### Changed
+
+- Testing, Debug
+
 ## [1.1.9] - 2022-03-15
 
 ## [1.1.8] - 2022-03-14

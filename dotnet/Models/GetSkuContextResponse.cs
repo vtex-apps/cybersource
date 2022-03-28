@@ -122,7 +122,7 @@ namespace Cybersource.Models
         public bool IsDirectCategoryActive { get; set; }
 
         [JsonProperty("ProductGlobalCategoryId")]
-        public long ProductGlobalCategoryId { get; set; }
+        public string ProductGlobalCategoryId { get; set; }
 
         [JsonProperty("ProductCategories")]
         public object ProductCategories { get; set; }
@@ -131,7 +131,7 @@ namespace Cybersource.Models
         public object CommercialConditionId { get; set; }
 
         [JsonProperty("RewardValue")]
-        public long RewardValue { get; set; }
+        public string RewardValue { get; set; }
 
         [JsonProperty("AlternateIds")]
         public AlternateIds AlternateIds { get; set; }
@@ -173,13 +173,13 @@ namespace Cybersource.Models
         public long ProductFinalScore { get; set; }
     }
 
-    public partial class AlternateIds
+    public class AlternateIds
     {
         [JsonProperty("RefId")]
         public string RefId { get; set; }
     }
 
-    public partial class Dimension
+    public class Dimension
     {
         [JsonProperty("cubicweight")]
         public long Cubicweight { get; set; }
@@ -197,7 +197,7 @@ namespace Cybersource.Models
         public long Width { get; set; }
     }
 
-    public partial class Image
+    public class Image
     {
         [JsonProperty("ImageUrl")]
         public Uri ImageUrl { get; set; }
@@ -209,7 +209,7 @@ namespace Cybersource.Models
         public long FileId { get; set; }
     }
 
-    public partial class PositionsInClusters
+    public class PositionsInClusters
     {
     }
 
@@ -237,7 +237,7 @@ namespace Cybersource.Models
         public string FieldGroupName { get; set; }
     }
 
-    public partial class RealDimension
+    public class RealDimension
     {
         [JsonProperty("realCubicWeight")]
         public long RealCubicWeight { get; set; }
@@ -255,7 +255,7 @@ namespace Cybersource.Models
         public long RealWidth { get; set; }
     }
 
-    public partial class SkuSeller
+    public class SkuSeller
     {
         [JsonProperty("SellerId")]
         public string SellerId { get; set; }

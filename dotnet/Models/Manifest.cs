@@ -14,7 +14,7 @@ namespace Cybersource.Models
         public List<CustomField> CustomFields { get; set; }
     }
 
-    public partial class CustomField
+    public class CustomField
     {
         [JsonProperty("name")]
         public string Name { get; set; }
@@ -26,7 +26,7 @@ namespace Cybersource.Models
         public List<Option> Options { get; set; }
     }
 
-    public partial class Option
+    public class Option
     {
         [JsonProperty("text")]
         public string Text { get; set; }
@@ -35,7 +35,7 @@ namespace Cybersource.Models
         public string Value { get; set; }
     }
 
-    public partial class PaymentMethod
+    public class PaymentMethod
     {
         [JsonProperty("name")]
         public string Name { get; set; }

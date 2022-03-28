@@ -131,6 +131,107 @@ namespace Cybersource.Services
             return vtexOrders;
         }
 
+        public async Task<VtexOrder[]> LookupOrders(string orderId)
+        {
+            VtexOrder[] vtexOrders = null;
+            try
+            {
+                VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
+                string lookupOrderId = vtexOrderList.List.First().OrderId;
+                int charLocation = lookupOrderId.IndexOf("-", StringComparison.Ordinal);
+                if (charLocation > 0)
+                {
+                    lookupOrderId = lookupOrderId.Substring(0, charLocation);
+                }
+
+                vtexOrders = await this.GetOrderGroup(lookupOrderId);
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("LookupOrders", null, $"Order# {orderId} Error", ex);
+            }
+
+            return vtexOrders;
+        }
+
+        public async Task<string> GetSequence(string orderId)
+        {
+            string sequence = orderId; // default to original value
+            try
+            {
+                VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
+                sequence = vtexOrderList.List.First().Sequence;
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("LookupOrders", null, $"Order# {orderId} Error", ex);
+            }
+
+            return sequence;
+        }
+
+        public async Task<string> GetOrderId(string reference)
+        {
+            string orderId = reference; // default to original value
+            try
+            {
+                VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
+                orderId = vtexOrderList.List.First().OrderId;
+                int charLocation = orderId.IndexOf("-", StringComparison.Ordinal);
+                if (charLocation > 0)
+                {
+                    orderId = orderId.Substring(0, charLocation);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetOrderId", null, $"Reference# {reference} Error", ex);
+            }
+
+            return orderId;
+        }
+
+        public async Task<VtexOrderList> SearchOrders(string query)
+        {
+            VtexOrderList vtexOrderList = null;
+            try
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?q={query}")
+                };
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
+                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(responseContent);
+                }
+                else
+                {
+                    _context.Vtex.Logger.Info("SearchOrders", null, $"Query:{query} [{response.StatusCode}] '{responseContent}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SearchOrders", null, $"Query:{query} Error", ex);
+            }
+
+            return vtexOrderList;
+        }
+
         public async Task<VtexDockResponse[]> ListVtexDocks()
         {
             VtexDockResponse[] listVtexDocks = null;
@@ -382,16 +483,113 @@ namespace Cybersource.Services
             return fallbackResponse;
         }
 
-        public async Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest)
+        public async Task<VtexTaxResponse> GetFallbackTaxes(VtexTaxRequest taxRequest)
         {
-            _context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
+            VtexTaxResponse vtexTaxResponse = null;
+            TaxFallbackResponse fallbackResponse = await this.GetFallbackRate(taxRequest.ShippingDestination.Country, taxRequest.ShippingDestination.PostalCode);
+            if (fallbackResponse != null)
+            {
+                vtexTaxResponse = new VtexTaxResponse
+                {
+                    Hooks = new Hook[] { },
+                    ItemTaxResponse = new List<ItemTaxResponse>()
+                };
+
+                long totalQuantity = taxRequest.Items.Sum(i => i.Quantity);
+                for (int i = 0; i < taxRequest.Items.Length; i++)
+                {
+                    Item item = taxRequest.Items[i];
+                    double itemTaxPercentOfWhole = (double)item.Quantity / totalQuantity;
+                    ItemTaxResponse itemTaxResponse = new ItemTaxResponse
+                    {
+                        Id = item.Id
+                    };
+
+                    List<VtexTax> vtexTaxes = new List<VtexTax>();
+                    if (fallbackResponse.StateSalesTax > 0)
+                    {
+                        vtexTaxes.Add(
+                            new VtexTax
+                            {
+                                Description = "",
+                                Name = $"STATE TAX: {fallbackResponse.StateAbbrev}",
+                                Value = item.ItemPrice * fallbackResponse.StateSalesTax
+                            }
+                         );
+                    }
+
+                    if (fallbackResponse.CountySalesTax > 0)
+                    {
+                        vtexTaxes.Add(
+                        new VtexTax
+                        {
+                            Description = "",
+                            Name = $"COUNTY TAX: {fallbackResponse.CountyName}",
+                            Value = item.ItemPrice * fallbackResponse.CountySalesTax
+                        }
+                     );
+                    }
+
+                    if (fallbackResponse.CitySalesTax > 0)
+                    {
+                        vtexTaxes.Add(
+                        new VtexTax
+                        {
+                            Description = "",
+                            Name = $"CITY TAX: {fallbackResponse.CityName}",
+                            Value = item.ItemPrice * fallbackResponse.CitySalesTax
+                        }
+                     );
+                    }
+
+                    if (fallbackResponse.TaxShippingAlone || fallbackResponse.TaxShippingAndHandlingTogether)
+                    {
+                        decimal shippingTotal = taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
+                        vtexTaxes.Add(
+                        new VtexTax
+                        {
+                            Description = "",
+                            Name = $"TAX: (SHIPPING)",
+                            Value = (decimal)Math.Round((double)shippingTotal * (double)fallbackResponse.TotalSalesTax * itemTaxPercentOfWhole, 2, MidpointRounding.ToEven)
+                        }
+                      );
+                    }
+
+                    itemTaxResponse.Taxes = vtexTaxes.ToArray();
+                    vtexTaxResponse.ItemTaxResponse.Add(itemTaxResponse);
+                }
+            }
+
+            return vtexTaxResponse;
+        }
+
+        public async Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest, VtexTaxRequest taxRequestOriginal)
+        {
+            //_context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
+
+            // Combine skus
+            Dictionary<string, Item> itemDictionary = new Dictionary<string, Item>();
+            foreach (Item requestItem in taxRequest.Items)
+            {
+                if (itemDictionary.ContainsKey(requestItem.Sku))
+                {
+                    itemDictionary[requestItem.Sku].DiscountPrice += requestItem.DiscountPrice;
+                    itemDictionary[requestItem.Sku].ItemPrice += requestItem.ItemPrice;
+                    itemDictionary[requestItem.Sku].Quantity += requestItem.Quantity;
+                }
+                else
+                {
+                    itemDictionary.Add(requestItem.Sku, requestItem);
+                }
+            }
+
+            taxRequest.Items = itemDictionary.Values.ToArray();
 
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
                 ItemTaxResponse = new List<ItemTaxResponse>()
             };
 
-            bool useFallbackRates = false;
             bool inNexus = await this.InNexus(taxRequest.ShippingDestination.State, taxRequest.ShippingDestination.Country);
             if (inNexus)
             {
@@ -485,92 +683,128 @@ namespace Cybersource.Services
                     if (taxResponse.Status.Equals("COMPLETED"))
                     {
                         vtexTaxResponse = await this.CybersourceResponseToVtexResponse(taxResponse);
+                        string splitSkus = taxRequest.Items.Length.Equals(taxRequestOriginal.Items.Length) ? "Skus were not combined" : $"Skus combined. {taxRequestOriginal.Items.Length} line items combined to {taxRequest.Items.Length}";
+                        _context.Vtex.Logger.Debug("GetTaxes", "CalculateTaxes", splitSkus, new[] { ("cyberTaxRequest", JsonConvert.SerializeObject(cyberTaxRequest)), ("taxResponse", JsonConvert.SerializeObject(taxResponse)), ("vtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
                     }
                     else
                     {
-                        useFallbackRates = true;
+                        _context.Vtex.Logger.Error("GetTaxes", "CalculateTaxes", $"Tax Response Status = '{taxResponse.Status}'", null, new[] { ("cyberTaxRequest", JsonConvert.SerializeObject(cyberTaxRequest)), ("taxResponse", JsonConvert.SerializeObject(taxResponse)) });
+                        return null;
                     }
                 }
                 else
                 {
-                    useFallbackRates = true;
+                    _context.Vtex.Logger.Error("GetTaxes", "CalculateTaxes", "Tax Response is Null.", null, new[] { ("cyberTaxRequest", JsonConvert.SerializeObject(cyberTaxRequest)) });
+                    return null;
                 }
 
-                if (useFallbackRates)
+                //_context.Vtex.Logger.Debug("vtexTaxResponse", null, JsonConvert.SerializeObject(vtexTaxResponse));
+
+                // Split response items to match request
+                try
                 {
-                    TaxFallbackResponse fallbackResponse = await this.GetFallbackRate(taxRequest.ShippingDestination.Country, taxRequest.ShippingDestination.PostalCode);
-                    if (fallbackResponse != null)
+                    // Split out skus to match request
+                    if (taxRequest.Items.Length != taxRequestOriginal.Items.Length)
                     {
-                        vtexTaxResponse = new VtexTaxResponse
+                        Console.WriteLine($"taxRequest.Items.Length {taxRequest.Items.Length} != taxRequestOriginal.Items.Length {taxRequestOriginal.Items.Length}");
+                        Console.WriteLine($"vtexTaxResponse.ItemTaxResponse.Count = {vtexTaxResponse.ItemTaxResponse.Count}");
+                        ItemTaxResponse[] itemTaxResponses = new ItemTaxResponse[taxRequestOriginal.Items.Length];
+                        int responseId = 0;
+                        decimal totalSplitAllocatedTax = 0m;
+                        Dictionary<string, long> qntyAllocatedPerSku = new Dictionary<string, long>();
+                        foreach (Item requestItem in taxRequestOriginal.Items)
                         {
-                            Hooks = new Hook[] { },
-                            ItemTaxResponse = new List<ItemTaxResponse>()
-                        };
-
-                        long totalQuantity = taxRequest.Items.Sum(i => i.Quantity);
-                        for (int i = 0; i < taxRequest.Items.Length; i++)
-                        {
-                            Item item = taxRequest.Items[i];
-                            double itemTaxPercentOfWhole = (double)item.Quantity / totalQuantity;
-                            ItemTaxResponse itemTaxResponse = new ItemTaxResponse
+                            Item trItem = taxRequest.Items.FirstOrDefault(i => i.Sku.Equals(requestItem.Sku));
+                            Console.WriteLine($"trItem: {trItem.Id} sku [{requestItem.Sku}] id: {requestItem.Id}");
+                            string taxResponseIndexId = trItem.Id;
+                            if (requestItem.Quantity == trItem.Quantity)
                             {
-                                Id = item.Id
-                            };
+                                itemTaxResponses[responseId] = vtexTaxResponse.ItemTaxResponse.FirstOrDefault(t => t.Id.Equals(taxResponseIndexId));
+                                if(itemTaxResponses[responseId] == null)
+                                {
+                                    Console.WriteLine($"responseId {responseId} == NULL!!! taxResponseIndexId [{taxResponseIndexId}]");
+                                    return null;
+                                }
 
-                            List<VtexTax> vtexTaxes = new List<VtexTax>();
-                            if (fallbackResponse.StateSalesTax > 0)
+                                //Console.WriteLine($"ADDING {responseId} == ");
+                            }
+                            else
                             {
-                                vtexTaxes.Add(
-                                    new VtexTax
+                                decimal percentOfTotal = 0m;
+                                if (trItem.ItemPrice + trItem.DiscountPrice > 0)
+                                {
+                                    percentOfTotal = (requestItem.ItemPrice + requestItem.DiscountPrice) / (trItem.ItemPrice + trItem.DiscountPrice);
+                                }
+
+                                ItemTaxResponse itemTaxResponse = vtexTaxResponse.ItemTaxResponse.FirstOrDefault(t => t.Id.Equals(taxResponseIndexId));
+                                ItemTaxResponse itemTaxResponseSplit = new ItemTaxResponse
+                                {
+                                    Id = responseId.ToString(),
+                                    Taxes = new VtexTax[itemTaxResponse.Taxes.Length]
+                                };
+
+                                long taxObjIndex = 0;
+                                foreach (VtexTax taxObj in itemTaxResponse.Taxes)
+                                {
+                                    itemTaxResponseSplit.Taxes[taxObjIndex] = new VtexTax
                                     {
-                                        Description = "",
-                                        Name = $"STATE TAX: {fallbackResponse.StateAbbrev}",
-                                        Value = item.ItemPrice * fallbackResponse.StateSalesTax
+                                        Description = taxObj.Description,
+                                        Name = taxObj.Name,
+                                        Value = Math.Round(taxObj.Value * percentOfTotal, 2, MidpointRounding.ToEven)
+                                    };
+
+                                    taxObjIndex++;
+                                }
+
+                                itemTaxResponses[responseId] = itemTaxResponseSplit;
+                                Console.WriteLine($"ADDING {responseId} != ");
+                                totalSplitAllocatedTax += itemTaxResponseSplit.Taxes.Sum(i => i.Value);
+
+                                if (qntyAllocatedPerSku.ContainsKey(requestItem.Sku))
+                                {
+                                    qntyAllocatedPerSku[requestItem.Sku] += requestItem.Quantity;
+                                }
+                                else
+                                {
+                                    qntyAllocatedPerSku.Add(requestItem.Sku, requestItem.Quantity);
+                                }
+
+                                if (qntyAllocatedPerSku[requestItem.Sku] == trItem.Quantity)
+                                {
+                                    decimal totalTaxToAllocate = itemTaxResponse.Taxes.Sum(i => i.Value);
+                                    if (totalSplitAllocatedTax != totalTaxToAllocate)
+                                    {
+                                        decimal adjustmentAmount = Math.Round((totalTaxToAllocate - totalSplitAllocatedTax), 2, MidpointRounding.ToEven);
+                                        itemTaxResponses[responseId].Taxes.First().Value += adjustmentAmount;
+                                        _context.Vtex.Logger.Warn("GetTaxes", null, $"Applying adjustment to id [{taxResponseIndexId}]: {totalTaxToAllocate} - {totalSplitAllocatedTax} = {adjustmentAmount}");
                                     }
-                                 );
-                            }
 
-                            if (fallbackResponse.CountySalesTax > 0)
-                            {
-                                vtexTaxes.Add(
-                                new VtexTax
-                                {
-                                    Description = "",
-                                    Name = $"COUNTY TAX: {fallbackResponse.CountyName}",
-                                    Value = item.ItemPrice * fallbackResponse.CountySalesTax
+                                    totalSplitAllocatedTax = 0m;
                                 }
-                             );
                             }
 
-                            if (fallbackResponse.CitySalesTax > 0)
+                            responseId++;
+                        }
+
+                        //vtexTaxResponse.ItemTaxResponse = itemTaxResponses.ToList();
+                        foreach(ItemTaxResponse taxResp in itemTaxResponses)
+                        {
+                            if(taxResp == null)
                             {
-                                vtexTaxes.Add(
-                                new VtexTax
-                                {
-                                    Description = "",
-                                    Name = $"CITY TAX: {fallbackResponse.CityName}",
-                                    Value = item.ItemPrice * fallbackResponse.CitySalesTax
-                                }
-                             );
+                                Console.WriteLine($" taxResp IS NULL!!!");
                             }
 
-                            if (fallbackResponse.TaxShippingAlone || fallbackResponse.TaxShippingAndHandlingTogether)
-                            {
-                                decimal shippingTotal = taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
-                                vtexTaxes.Add(
-                                new VtexTax
-                                {
-                                    Description = "",
-                                    Name = $"TAX: (SHIPPING)",
-                                    Value = (decimal)Math.Round((double)shippingTotal * (double)fallbackResponse.TotalSalesTax * itemTaxPercentOfWhole, 2, MidpointRounding.ToEven)
-                                }
-                              );
-                            }
-
-                            itemTaxResponse.Taxes = vtexTaxes.ToArray();
-                            vtexTaxResponse.ItemTaxResponse.Add(itemTaxResponse);
+                            Console.WriteLine($"Adding taxResp {taxResp.Id}");
+                            vtexTaxResponse.ItemTaxResponse.Add(taxResp);
+                            Console.WriteLine($"Added taxResp {taxResp.Id}");
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error splitting line items: '{ex.Message}'");
+                    _context.Vtex.Logger.Error("TaxjarResponseToVtexResponse", "Splitting", $"Error splitting line items", ex);
+                    return null;
                 }
             }
             else
@@ -584,24 +818,54 @@ namespace Cybersource.Services
         public async Task<bool> InNexus(string state, string country)
         {
             bool inNexus = false;
+            bool usedMerchantSettings = false;
             if (country.Length > 2)
             {
                 country = this.GetCountryCode(country);
             }
 
-
-            PickupPoints pickupPoints = await this.ListPickupPoints();
-            if (pickupPoints != null)
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            if(merchantSettings != null && !string.IsNullOrWhiteSpace(merchantSettings.NexusRegions))
             {
-                //List<string> nexusStates = new List<string>();
-                foreach (PickupPointItem pickupPoint in pickupPoints.Items)
+                usedMerchantSettings = true;
+                string[] arrCountry = merchantSettings.NexusRegions.Split(':');
+                foreach(string stateList in arrCountry)
                 {
-                    if (pickupPoint != null && pickupPoint.Address != null && pickupPoint.Address.State != null && pickupPoint.Address.Country != null)
+                    string[] countryWithStates = stateList.Split('=');
+                    string tmpCountry = countryWithStates[0];
+                    if(tmpCountry.Equals(country))
                     {
-                        if (pickupPoint.Address.State.Equals(state) && this.GetCountryCode(pickupPoint.Address.Country.Acronym).Equals(country))
+                        string[] stateArr = countryWithStates[1].Split(',');
+                        if(stateArr.Contains(state))
                         {
                             inNexus = true;
                             break;
+                        }
+                    }
+                }
+            }
+
+            if (!usedMerchantSettings)
+            {
+                PickupPoints pickupPoints = await this.ListPickupPoints();
+                if (pickupPoints != null)
+                {
+                    //List<string> nexusStates = new List<string>();
+                    foreach (PickupPointItem pickupPoint in pickupPoints.Items)
+                    {
+                        if (pickupPoint != null &&
+                            pickupPoint.Address != null &&
+                            pickupPoint.Address.State != null &&
+                            pickupPoint.Address.Country != null &&
+                            pickupPoint.Address.State.Equals(state) &&
+                            this.GetCountryCode(pickupPoint.Address.Country.Acronym).Equals(country))
+                        {
+                            inNexus = true;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{pickupPoint.Name} not InNexus");
                         }
                     }
                 }
@@ -613,7 +877,6 @@ namespace Cybersource.Services
         public async Task<bool> ProcessNotification(AllStatesNotification allStatesNotification)
         {
             bool success = true;
-            VtexOrder vtexOrder = null;
 
             switch (allStatesNotification.Domain)
             {
@@ -767,8 +1030,8 @@ namespace Cybersource.Services
 
         public async Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments)
         {
-            string results = string.Empty;
-            VtexOrder[] vtexOrders = await this.GetOrderGroup(merchantReferenceNumber);
+            StringBuilder results = new StringBuilder();
+            VtexOrder[] vtexOrders = await this.LookupOrders(merchantReferenceNumber);
             if (vtexOrders != null)
             {
                 foreach (VtexOrder vtexOrder in vtexOrders)
@@ -805,37 +1068,43 @@ namespace Cybersource.Services
                                         SendResponse sendResponse = await this.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
                                         if (sendResponse != null)
                                         {
-                                            results = ($"{merchantReferenceNumber} - {newDecision} updated? {sendResponse.Success}");
+                                            results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} updated? {sendResponse.Success}");
                                         }
                                         else
                                         {
-                                            results = ($"{merchantReferenceNumber} - {newDecision} Null response.");
+                                            results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} Null response.");
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    results = ($"{merchantReferenceNumber} - {newDecision} No Update.");
+                                    results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} No Update.");
                                 }
+                            }
+                            else if (paymentData.CreatePaymentResponse.Status.Equals(CybersourceConstants.VtexAuthStatus.Approved) && newDecision.Equals(CybersourceConstants.CybersourceDecision.Reject))
+                            {
+                                // Cancel order
+                                SendResponse sendResponse = await this.CancelOrder(vtexOrder.OrderId, comments);
+                                results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} canceled? {sendResponse.Success}");
                             }
                         }
                         else
                         {
-                            results = ($"{merchantReferenceNumber} - {newDecision} No Payment Data.");
+                            results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} No Payment Data.");
                         }
                     }
                     else
                     {
-                        results = ($"{merchantReferenceNumber} - {newDecision} No Order Data.");
+                        results.AppendLine($"{merchantReferenceNumber} - {newDecision} No Order Data.");
                     }
                 }
             }
             else
             {
-                results = ($"{merchantReferenceNumber} - {newDecision} Failed to load Order Group.");
+                results.AppendLine($"{merchantReferenceNumber} - {newDecision} Failed to load Order Group.");
             }
 
-            return results;
+            return results.ToString();
         }
 
         public string GetCountryCode(string country)
@@ -877,7 +1146,6 @@ namespace Cybersource.Services
 
             // The last item is shipping
             LineItem shippingTaxes = taxResponse.OrderInformation.lineItems.Last();
-
             for (int i = 0; i < taxResponse.OrderInformation.lineItems.Count-1; i++)
             {
                 LineItem lineItem = taxResponse.OrderInformation.lineItems[i];
@@ -905,25 +1173,18 @@ namespace Cybersource.Services
 
                     double shippingAmountThisJurisdiction = 0;
                     string shippingThisJurisdiction = shippingTaxes.taxDetails.Where(t => t.type.Equals(jurisdiction.type, StringComparison.OrdinalIgnoreCase)).Select(t => t.amount).FirstOrDefault();
-                    if (shippingThisJurisdiction != null)
+                    if (shippingThisJurisdiction != null && double.TryParse(shippingThisJurisdiction, out shippingAmountThisJurisdiction) && shippingAmountThisJurisdiction > 0)
                     {
-                        if (double.TryParse(shippingThisJurisdiction, out shippingAmountThisJurisdiction))
-                        {
-                            if(shippingAmountThisJurisdiction > 0)
+                        decimal itemShippingTax = (decimal)Math.Round(shippingAmountThisJurisdiction * itemTaxPercentOfWhole, 2, MidpointRounding.ToEven);
+                        vtexTaxes.Add(
+                            new VtexTax
                             {
-                                decimal itemShippingTax = (decimal)Math.Round(shippingAmountThisJurisdiction * itemTaxPercentOfWhole, 2, MidpointRounding.ToEven);
-                                vtexTaxes.Add(
-                                    new VtexTax
-                                    {
-                                        Description = "",
-                                        Name = $"{jurisdiction.taxName} (SHIPPING)",
-                                        Value = itemShippingTax
-                                    }
-                                 );
+                                Description = "",
+                                Name = $"{jurisdiction.taxName} (SHIPPING)",
+                                Value = itemShippingTax
                             }
-                        }
+                         );
                     }
-
                 }
 
                 itemTaxResponse.Taxes = vtexTaxes.ToArray();
@@ -938,10 +1199,10 @@ namespace Cybersource.Services
                 int lastItemIndex = vtexTaxResponse.ItemTaxResponse.Count - 1;
                 int lastTaxIndex = vtexTaxResponse.ItemTaxResponse[lastItemIndex].Taxes.Length - 1;
                 vtexTaxResponse.ItemTaxResponse[lastItemIndex].Taxes[lastTaxIndex].Value += adjustmentAmount;
-                _context.Vtex.Logger.Info("CybersourceResponseToVtexResponse", null, $"Applying adjustment: {totalOrderTax} - {totalResponseTax} = {adjustmentAmount}");
+                //_context.Vtex.Logger.Info("CybersourceResponseToVtexResponse", null, $"Applying adjustment: {totalOrderTax} - {totalResponseTax} = {adjustmentAmount}");
             }
 
-            _context.Vtex.Logger.Info("CybersourceResponseToVtexResponse", null, $"Request: {JsonConvert.SerializeObject(taxResponse)}\nResponse: {JsonConvert.SerializeObject(vtexTaxResponse)}");
+            //_context.Vtex.Logger.Info("CybersourceResponseToVtexResponse", null, $"Request: {JsonConvert.SerializeObject(taxResponse)}\nResponse: {JsonConvert.SerializeObject(vtexTaxResponse)}");
 
             return vtexTaxResponse;
         }
@@ -986,6 +1247,53 @@ namespace Cybersource.Services
                 {
                     _context.Vtex.Logger.Error("PostCallbackResponse", null, $"{callbackUrl}\n{createPaymentResponse.PaymentId} {createPaymentResponse.Status}", ex);
                 }
+            }
+
+            return sendResponse;
+        }
+
+        public async Task<SendResponse> CancelOrder(string orderId, string reason)
+        {
+            // POST https://apiexamples.vtexcommercestable.com.br/api/oms/pvt/orders/{orderId}/cancel
+            SendResponse sendResponse = null;
+
+            try
+            {
+                CancelOrderRequest cancelOrderRequest = new CancelOrderRequest
+                {
+                    Reason = reason
+                };
+
+                string jsonSerializedData = JsonConvert.SerializeObject(cancelOrderRequest);
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders/{orderId}/cancel"),
+                    Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
+                };
+
+                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                sendResponse = new SendResponse
+                {
+                    Message = responseContent,
+                    StatusCode = response.StatusCode.ToString(),
+                    Success = response.IsSuccessStatusCode
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CancelOrder", null, $"{orderId}", ex);
             }
 
             return sendResponse;

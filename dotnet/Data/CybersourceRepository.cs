@@ -120,6 +120,7 @@
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
+                _context.Vtex.Logger.Warn("GetPaymentData", null, $"Payment Id '{paymentIdentifier}' Not Found.");
                 return null;
             }
 
@@ -175,10 +176,12 @@
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
+                _context.Vtex.Logger.Warn("GetAntifraudData", null, $"Id '{id}' Not Found.");
                 return null;
             }
 
             SendAntifraudDataResponse antifraudDataResponse =  JsonConvert.DeserializeObject<SendAntifraudDataResponse>(responseContent);
+            _context.Vtex.Logger.Debug("GetAntifraudData", null, id, new[] { ("responseContent", responseContent) });
 
             return antifraudDataResponse;
         }
@@ -207,17 +210,24 @@
             var client = _clientFactory.CreateClient();
             var response = await client.SendAsync(request);
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                _context.Vtex.Logger.Error("SaveAntifraudData", null, "Did not save Antifraud Data.", null, new[] { ("Id", id), ("AntifraudDataResponse", jsonSerializedCreatePaymentRequest) });
+            }
+            else
+            {
+                _context.Vtex.Logger.Debug("SaveAntifraudData", null, "Saved Antifraud Data.", new[] { ("Id", id), ("AntifraudDataResponse", jsonSerializedCreatePaymentRequest) });
+            }
         }
 
         public async Task<bool> CacheTaxResponse(VtexTaxResponse vtexTaxResponse, int cacheKey)
         {
-            var jsonSerializedProducReviews = JsonConvert.SerializeObject(vtexTaxResponse);
+            var jsonSerializedTaxResponse = JsonConvert.SerializeObject(vtexTaxResponse);
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Put,
                 RequestUri = new Uri($"http://infra.io.vtex.com/vbase/v2/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/buckets/{this._applicationName}/{CybersourceConstants.CACHE_BUCKET}/files/{cacheKey}"),
-                Content = new StringContent(jsonSerializedProducReviews, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
+                Content = new StringContent(jsonSerializedTaxResponse, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
             };
 
             string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
@@ -342,7 +352,7 @@
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Post,
-                RequestUri = new Uri($"https://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/configuration/orderForm"),
+                RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/configuration/orderForm"),
                 Content = new StringContent(jsonSerializedOrderConfig, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
             };
 

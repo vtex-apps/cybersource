@@ -103,7 +103,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex);
+                _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex, new [] { ("method", method.ToString()), ("endpoint", endpoint), ("jsonSerializedData", jsonSerializedData) });
             }
 
             return sendResponse;
@@ -407,7 +407,7 @@ namespace Cybersource.Services
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-
+            
             if (response != null)
             {
                 if (response.Success)
@@ -423,6 +423,9 @@ namespace Cybersource.Services
             {
                 _context.Vtex.Logger.Error("ProcessPayment", null, "Null Response");
             }
+
+            //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new [] { ("Request", JsonConvert.SerializeObject(payments)), ("Response", JsonConvert.SerializeObject(paymentsResponse)) });
+            //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
 
             return paymentsResponse;
         }
@@ -646,7 +649,46 @@ namespace Cybersource.Services
 
             return retval;
         }
+
+        public async Task<RetrieveTransaction> RetrieveTransaction(string transactionId)
+        {
+            RetrieveTransaction retrieveTransaction = null;
+            string endpoint = $"{CybersourceConstants.TRANSACTIONS}transactions/{transactionId}";
+            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+            if (response != null)
+            {
+                retrieveTransaction = JsonConvert.DeserializeObject<RetrieveTransaction>(response.Message);
+            }
+
+            return retrieveTransaction;
+        }
         #endregion Reporting
+
+        public async Task<CybersourceBinLookupResponse> BinLookup(string cardNumber)
+        {
+            CybersourceBinLookupResponse cybersourceBinLookupResponse = null;
+            CybersourceBinLookupRequest cybersourceBinLookupRequest = new CybersourceBinLookupRequest
+            {
+                PaymentInformation = new BinLookupPaymentInformation
+                {
+                    Card = new BinLookupCard
+                    {
+                        Number = cardNumber
+                    }
+                }
+            };
+
+            string json = JsonConvert.SerializeObject(cybersourceBinLookupRequest);
+            string endpoint = $"{CybersourceConstants.BIN}binlookup";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            _context.Vtex.Logger.Debug("BinLookup", null, null, new[] { ("Bin", cardNumber), ("request", json), ("response", JsonConvert.SerializeObject(response)) });
+            if (response != null)
+            {
+                cybersourceBinLookupResponse = JsonConvert.DeserializeObject<CybersourceBinLookupResponse>(response.Message);
+            }
+
+            return cybersourceBinLookupResponse;
+        }
 
         #region Authorization Header functions
         private async Task<string> GenerateDigest(string jsonPayload)

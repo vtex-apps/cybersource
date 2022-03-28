@@ -57,7 +57,7 @@ namespace Cybersource.Services
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
             if(paymentData != null && paymentData.CreatePaymentResponse != null)
             {
-                _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)) });
+                _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
                 await _vtexApiService.ProcessConversions();
                 return paymentData.CreatePaymentResponse;
             }
@@ -82,6 +82,24 @@ namespace Cybersource.Services
                 }
             }
 
+            CybersourceConstants.CardType cardBrandName = CybersourceConstants.CardType.Unknown;
+            string cardType = string.Empty;
+            bool isDebit = false;
+            CybersourceBinLookupResponse cybersourceBinLookup = await _cybersourceApi.BinLookup(createPaymentRequest.Card.Bin);
+            if (cybersourceBinLookup != null && cybersourceBinLookup.PaymentAccountInformation != null && cybersourceBinLookup.PaymentAccountInformation.Card != null)
+            {
+                cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
+                if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
+                {
+                    cardBrandName = this.FindType(createPaymentRequest.Card.Bin);
+                }
+            }
+            else
+            {
+                cardType = this.GetCardType(createPaymentRequest.PaymentMethod);
+                cardBrandName = this.FindType(createPaymentRequest.Card.Bin);
+            }
+
             Payments payment = new Payments
             {
                 merchantInformation = new MerchantInformation
@@ -91,7 +109,7 @@ namespace Cybersource.Services
                 },
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = createPaymentRequest.OrderId,
+                    code = createPaymentRequest.OrderId, // Use Reference to have a consistent number with Fraud?
                     //transactionId = createPaymentRequest.TransactionId,
                     applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                     applicationVersion = _context.Vtex.App.Version,
@@ -105,7 +123,7 @@ namespace Cybersource.Services
                         securityCode = createPaymentRequest.Card.CscToken ?? createPaymentRequest.Card.Csc,
                         expirationMonth = createPaymentRequest.Card.Expiration.Month,
                         expirationYear = createPaymentRequest.Card.Expiration.Year,
-                        type = GetCardType(createPaymentRequest.PaymentMethod)
+                        type = cardType
                     }
                 },
                 orderInformation = new OrderInformation
@@ -169,34 +187,6 @@ namespace Cybersource.Services
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
             decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
-            //CybersourceConstants.CardType cardType = this.FindType(createPaymentRequest.Card.Bin);
-            CybersourceConstants.CardType cardType = CybersourceConstants.CardType.Unknown;
-            bool isDebit = false;
-            BinLookup binLookup = await _vtexApiService.BinLookup(createPaymentRequest.Card.Bin);
-            if(binLookup != null)
-            {
-                if (Enum.TryParse(binLookup.Bank.Name, true, out cardType))
-                {
-                    //Console.WriteLine($"Set to {cardType} from Bank Name.");
-                }
-                else if (Enum.TryParse(binLookup.Scheme, true, out cardType))
-                {
-                    //Console.WriteLine($"Set to {cardType} from Scheme.");
-                }
-                else
-                {
-                    cardType = this.FindType(createPaymentRequest.Card.Bin);
-                }
-
-                if (binLookup.Type != null)
-                {
-                    isDebit = binLookup.Type.Equals("debit", StringComparison.OrdinalIgnoreCase);
-                }
-            }
-            else
-            {
-                cardType = this.FindType(createPaymentRequest.Card.Bin);
-            }
 
             switch (merchantSettings.Processor)
             {
@@ -219,7 +209,7 @@ namespace Cybersource.Services
                         {
                             capture = "true",
                             commerceIndicator = CybersourceConstants.INSTALLMENT,
-                            reconciliationId = ""
+                            reconciliationId = createPaymentRequest.PaymentId
                         };
 
                         payment.installmentInformation = new InstallmentInformation
@@ -239,7 +229,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.VPC:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
                     {
-                        if (cardType.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
+                        if (cardBrandName.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
                         {
                             payment.processingInformation = new ProcessingInformation
                             {
@@ -257,7 +247,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.Izipay:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Peru))
                     {
-                        if (cardType.Equals(CybersourceConstants.CardType.Visa) || cardType.Equals(CybersourceConstants.CardType.MasterCard))
+                        if (cardBrandName.Equals(CybersourceConstants.CardType.Visa) || cardBrandName.Equals(CybersourceConstants.CardType.MasterCard))
                         {
                             plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
                             payment.issuerInformation = new IssuerInformation
@@ -298,7 +288,7 @@ namespace Cybersource.Services
                     {
                         capture = "true",
                         commerceIndicator = CybersourceConstants.INSTALLMENT,
-                        reconciliationId = ""
+                        reconciliationId = createPaymentRequest.PaymentId
                     };
 
                     payment.installmentInformation = new InstallmentInformation
@@ -320,7 +310,7 @@ namespace Cybersource.Services
                     {
                         capture = "true",
                         commerceIndicator = createPaymentRequest.Installments > 1 ? CybersourceConstants.INSTALLMENT : CybersourceConstants.INTERNET,
-                        reconciliationId = ""
+                        reconciliationId = createPaymentRequest.PaymentId
                     };
 
                     payment.installmentInformation = new InstallmentInformation
@@ -389,7 +379,7 @@ namespace Cybersource.Services
                 {
                     productSKU = vtexItem.Id,
                     productName = vtexItem.Name,
-                    unitPrice = (vtexItem.Price + vtexItem.Discount).ToString(), // Discount is negative
+                    unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)).ToString(), // Discount is negative
                     quantity = vtexItem.Quantity.ToString(),
                     discountAmount = vtexItem.Discount.ToString(),
                     taxAmount = taxAmount,
@@ -420,13 +410,43 @@ namespace Cybersource.Services
                 {
                     case "AUTHORIZED":
                     case "PARTIAL_AUTHORIZED":
-                        paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
+                        // Check for pre-auth fraud status
+                        SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
+                        if(antifraudDataResponse != null)
+                        {
+                            switch (antifraudDataResponse.Status)
+                            {
+                                case "ACCEPTED":
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                                    break;
+                                case "PENDING_REVIEW":
+                                case "PENDING_AUTHENTICATION":
+                                case "INVALID_REQUEST":
+                                case "CHALLENGE":
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                                    createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
+                                    break;
+                                case "REJECTED":
+                                case "DECLINED":
+                                case "AUTHENTICATION_FAILED":
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
+                                    break;
+                                default:
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
+                        }
                         break;
                     case "AUTHORIZED_PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
                     case "PENDING_REVIEW":
                     case "INVALID_REQUEST":
                         paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
+                        createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
                         break;
                     case "DECLINED":
                     case "AUTHORIZED_RISK_DECLINED":
@@ -477,7 +497,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = cancelPaymentRequest.PaymentId,
+                    code = await _vtexApiService.GetOrderId(cancelPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -514,7 +534,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = paymentData.OrderId, //capturePaymentRequest.PaymentId,
+                    code = await _vtexApiService.GetOrderId(paymentData.OrderId), //capturePaymentRequest.PaymentId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -563,7 +583,7 @@ namespace Cybersource.Services
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = refundPaymentRequest.PaymentId,
+                    code = await _vtexApiService.GetOrderId(refundPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor
@@ -607,8 +627,8 @@ namespace Cybersource.Services
                 {
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = sendAntifraudDataRequest.Id,
-                        comments = sendAntifraudDataRequest.Reference,
+                        code = sendAntifraudDataRequest.Reference,
+                        comments = sendAntifraudDataRequest.Id,
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
                         applicationUser = _context.Vtex.App.Vendor
@@ -663,6 +683,31 @@ namespace Cybersource.Services
                     payment.orderInformation.lineItems.Add(lineItem);
                 };
 
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(sendAntifraudDataRequest);
+                requestWrapper.MerchantId = merchantSettings.MerchantId;
+                string merchantName = string.Empty;
+                string merchantTaxId = string.Empty;
+                if (sendAntifraudDataRequest.MerchantSettings != null)
+                {
+                    foreach (MerchantSetting merchantSetting in sendAntifraudDataRequest.MerchantSettings)
+                    {
+                        switch (merchantSetting.Name)
+                        {
+                            case "Company Name":
+                                merchantName = merchantSetting.Value;
+                                break;
+                            case "Company Tax Id":
+                                merchantTaxId = merchantSetting.Value;
+                                break;
+                        }
+                    }
+                }
+
+                requestWrapper.CompanyName = merchantName;
+                requestWrapper.CompanyTaxId = merchantTaxId;
+                payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
+
                 PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
 
                 sendAntifraudDataResponse = new SendAntifraudDataResponse
@@ -680,10 +725,10 @@ namespace Cybersource.Services
                 switch (paymentsResponse.Status)
                 {
                     case "ACCEPTED":
-                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
-                        break;
                     case "PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;   // Set Review to Arroved otherwise auth will not be called
+                        break;
                     case "INVALID_REQUEST":
                     case "CHALLENGE":
                         sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
@@ -696,7 +741,7 @@ namespace Cybersource.Services
                     default:
                         sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
                         break;
-                };
+                }
 
                 string riskInfo = JsonConvert.SerializeObject(paymentsResponse.RiskInformation);
                 Dictionary<string, object> riskDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(riskInfo);
