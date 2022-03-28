@@ -61,7 +61,7 @@ workspace:
     enabled: false
 
 strategy:
-  payment:
+  sku:
     enabled: true
     sendDashboard: false
     hardTries: 0
@@ -69,4 +69,80 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cypress/integration/cybersource-payment.spec.js
+      - cy-runner/cypress/integration/sku.spec.js
+  singleProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.1-*
+  multiProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.2-*
+  discountProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.3-*
+  discountShipping:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.4-*
+  promotionalProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.5-*
+  externalSeller:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.6-*
+  fullRefund:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.7-*
+    dependency:
+      - singleProduct
+  partialRefund:
+    enabled: true
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cy-runner/cypress/integration/2.8-*
+    dependency:
+      - multiProduct
