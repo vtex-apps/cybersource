@@ -272,7 +272,8 @@
             string orderFormId = string.Empty;
             string totalItems = string.Empty;
             bool fromCache = false;
-            VtexTaxRequest taxRequest = new VtexTaxRequest();
+            VtexTaxRequest taxRequest = null;
+            VtexTaxRequest taxRequestOriginal = null;
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
                 ItemTaxResponse = new List<ItemTaxResponse>()
@@ -289,7 +290,7 @@
                 if (!string.IsNullOrEmpty(bodyAsText))
                 {
                     taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
-                    VtexTaxRequest taxRequestOriginal = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
+                    taxRequestOriginal = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
                     if (taxRequest != null)
                     {
                         orderFormId = taxRequest.OrderFormId;
@@ -319,7 +320,7 @@
             }
 
             timer.Stop();
-            _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequest)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+            _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
 
             return Json(vtexTaxResponse);
         }
@@ -391,6 +392,7 @@
                 try
                 {
                     string bodyAsText = HttpUtility.UrlDecode(bodyAsTextRaw);
+                    _context.Vtex.Logger.Debug("DecisionManagerNotify", null, "Request.Body", new[] { ("body", bodyAsTextRaw) });
                     bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
                     try
                     {

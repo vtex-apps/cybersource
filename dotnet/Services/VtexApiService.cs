@@ -1299,6 +1299,12 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
+        /// <summary>
+        /// Limits
+        /// Requests are throttled at 10 per minute with a burst allowance of 10. If you hit the speed limit the service will return a 429 http status code.
+        /// </summary>
+        /// <param name="bin"></param>
+        /// <returns></returns>
         public async Task<BinLookup> BinLookup(string bin)
         {
             // GET https://lookup.binlist.net/{{BIN}}
