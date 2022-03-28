@@ -5,7 +5,11 @@ import selectors from './common/selectors.js'
 import { orderAndSaveProductId } from './utils.js'
 import { externalSeller } from './sandbox_outputvalidation.js'
 
-export function completePayment(prefix, orderIdEnv) {
+export function completePayment(
+  prefix,
+  orderIdEnv = false,
+  externalSellerEnv = false
+) {
   it(`In ${prefix} - Completing the Payment & save OrderId`, () => {
     cy.intercept('**/gatewayCallback/**').as('callback')
 
@@ -46,7 +50,7 @@ export function completePayment(prefix, orderIdEnv) {
       cy.wait('@callback')
         .its('response.statusCode', { timeout: 5000 })
         .should('eq', 204)
-      orderAndSaveProductId(orderIdEnv)
+      orderAndSaveProductId(orderIdEnv, externalSellerEnv)
     })
   })
 }
