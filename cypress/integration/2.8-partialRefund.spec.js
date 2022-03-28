@@ -13,12 +13,12 @@ describe('Testing Cybersource transaction API for partial refund', () => {
   testSetup()
 
   const { prefix } = multiProduct
-  const { paymentTransactionIdEnv } = getTestVariables(prefix)
+  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
   it('Verify whether we have an order to request for full refund', () => {
     cy.getOrderItems().then(order => {
-      if (!order[requestRefund.partialRefundEnv]) {
-        throw new Error('Order id is missing')
+      if (!order[requestRefund.partialRefundEnv] && !order[transactionIdEnv]) {
+        throw new Error('MultiProduct Order id/Transaction id is missing')
       }
     })
   })

@@ -6,6 +6,7 @@ export const PRODUCTS = {
   pinktshirt: 'adidas women pink',
   invicta: 'invicta 3 slot', // used in promotionProduct
   testproduct3: 'test product 3', // used in discount Product and multiproduct
+  testproduct8: 'test product 8', // used in discountShipping
   greentshirt: 'green night',
-  invictawatch: 'invicta pro swiss watch', // used in discountShipping
+  invictawatch: 'invicta pro swiss watch',
 }

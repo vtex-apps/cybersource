@@ -4,14 +4,7 @@ import {
   requestRefund,
 } from '../support/sandbox_outputvalidation.js'
 import selectors from '../support/common/selectors.js'
-import {
-  completePayment,
-  verifyStatusInInteractionAPI,
-  verifyAntiFraud,
-  sendInvoiceTestCase,
-  verifyCyberSourceAPI,
-  invoiceAPITestCase,
-} from '../support/testcase.js'
+import { paymentAndAPITestCases } from '../support/testcase.js'
 import { getTestVariables } from '../support/utils.js'
 
 describe('Multi Product Testcase', () => {
@@ -20,7 +13,6 @@ describe('Multi Product Testcase', () => {
   const { prefix, product1Name, product2Name, tax, totalAmount, postalCode } =
     multiProduct
 
-  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
   const orderIdEnv = requestRefund.partialRefundEnv
 
   it('Adding Product to Cart', updateRetry(3), () => {
@@ -53,15 +45,9 @@ describe('Multi Product Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  completePayment(prefix, orderIdEnv)
-
-  invoiceAPITestCase(multiProduct, orderIdEnv)
-
-  verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
-
-  sendInvoiceTestCase(totalAmount, orderIdEnv)
-
-  verifyCyberSourceAPI({ prefix, transactionIdEnv, paymentTransactionIdEnv })
-
-  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+  paymentAndAPITestCases(
+    multiProduct,
+    { prefix, approved: true },
+    { ...getTestVariables(prefix), orderIdEnv }
+  )
 })

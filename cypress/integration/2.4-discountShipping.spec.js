@@ -2,21 +2,13 @@ import { testSetup, updateRetry } from '../support/common/support.js'
 import { discountShipping } from '../support/sandbox_outputvalidation'
 import selectors from '../support/common/selectors.js'
 import { getTestVariables } from '../support/utils.js'
-import {
-  completePayment,
-  verifyAntiFraud,
-  verifyStatusInInteractionAPI,
-  verifyCyberSourceAPI,
-  invoiceAPITestCase,
-} from '../support/testcase.js'
+import { paymentAndAPITestCases } from '../support/testcase.js'
 
 describe('Discount Shipping Testcase', () => {
   testSetup()
 
   const { prefix, productName, tax, totalAmount, postalCode, env } =
     discountShipping
-
-  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
@@ -42,13 +34,9 @@ describe('Discount Shipping Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  completePayment(prefix, env)
-
-  invoiceAPITestCase(discountShipping, env)
-
-  verifyStatusInInteractionAPI(prefix, env, transactionIdEnv)
-
-  verifyCyberSourceAPI({ prefix, transactionIdEnv, paymentTransactionIdEnv })
-
-  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+  paymentAndAPITestCases(
+    discountShipping,
+    { prefix, approved: false },
+    { ...getTestVariables(prefix), orderIdEnv: env }
+  )
 })

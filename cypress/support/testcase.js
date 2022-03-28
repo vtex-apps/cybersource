@@ -112,7 +112,7 @@ export function verifyAntiFraud({
   transactionIdEnv,
   paymentTransactionIdEnv,
 }) {
-  it(`In ${prefix} - Verifying AntiFraud status`, () => {
+  it.skip(`In ${prefix} - Verifying AntiFraud status`, () => {
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(order => {
         cy.getAPI(
@@ -131,8 +131,9 @@ export function verifyAntiFraud({
 export function verifyRefundTid({ prefix, paymentTransactionIdEnv }) {
   it(
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
-    { retries: 3 },
+    updateRetry(5),
     () => {
+      cy.addDelayBetweenRetries(5000)
       cy.getVtexItems().then(vtex => {
         cy.getOrderItems().then(order => {
           cy.task('cybersourceAPI', {
@@ -152,8 +153,9 @@ export function verifyCyberSourceAPI({
   prefix,
   transactionIdEnv,
   paymentTransactionIdEnv,
+  approved = false,
 }) {
-  it(`In ${prefix} - Verifying cybersource API`, () => {
+  it(`In ${prefix} - Verifying cybersource API`, updateRetry(3), () => {
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(item => {
         cy.getAPI(
@@ -165,22 +167,30 @@ export function verifyCyberSourceAPI({
           cy.task('cybersourceAPI', {
             vtex,
             tid: paymentResponse.body[0].tid,
+            approved,
+          }).then(({ status, data }) => {
+            expect(status).to.equal(200)
+            if (approved) {
+              expect(data.applicationInformation.reasonCode).to.equal('100')
+              expect(data.riskInformation.profile.decision).to.equal('ACCEPT')
+            } else {
+              expect(data.applicationInformation.reasonCode).to.equal('480')
+              expect(data.riskInformation.profile.decision).to.equal('REVIEW')
+            }
           })
-            .its('status')
-            .should('equal', 200)
         })
       })
     })
   })
 }
 
-export function sendInvoiceTestCase(total, orderIdEnv) {
-  it('Send Invoice', () => {
+export function sendInvoiceTestCase({ prefix, totalAmount }, orderIdEnv) {
+  it(`In ${prefix} - Send Invoice`, () => {
     cy.getOrderItems().then(item => {
       cy.sendInvoiceAPI(
         {
           invoiceNumber: '54321',
-          invoiceValue: total
+          invoiceValue: totalAmount
             .replace('$ ', '')
             .replace(/\./, '')
             .replace(/,/, ''),
@@ -198,45 +208,78 @@ export function sendInvoiceTestCase(total, orderIdEnv) {
 }
 
 export function invoiceAPITestCase(
-  product,
+  { prefix, tax: productTax },
   orderIdEnv,
-  externalSellerTestCase = false
+  { approved, externalSellerTestCase = false } = {}
 ) {
   let tax
 
-  it('Invoice API should have expected tax', updateRetry(2), () => {
-    if (externalSellerTestCase) {
-      if (externalSeller.directSaleEnv === orderIdEnv) {
-        tax = externalSeller.directSaleTax
-      } else {
-        tax = externalSeller.externalSellerTax
+  it(
+    `In ${prefix} - Invoice API should have expected tax`,
+    updateRetry(2),
+    () => {
+      if (externalSellerTestCase) {
+        if (externalSeller.directSaleEnv === orderIdEnv) {
+          tax = externalSeller.directSaleTax
+        } else {
+          tax = externalSeller.externalSellerTax
+        }
       }
-    }
-    // If this is not externalSellerTestCase then it is for refund test case
-    else {
-      tax = product.tax
-    }
+      // If this is not externalSellerTestCase then it is for refund test case
+      else {
+        tax = productTax
+      }
 
-    cy.getVtexItems().then(vtex => {
-      cy.getOrderItems().then(item => {
-        cy.getAPI(
-          `${
-            orderIdEnv === externalSeller.externalSaleEnv
-              ? invoiceAPI(vtex.urlExternalSeller)
-              : invoiceAPI(vtex.baseUrl)
-          }/${item[orderIdEnv]}`,
-          VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
-        ).then(response => {
-          expect(response.status).to.equal(200)
-          const taxesArray = response.body.totals.filter(
-            el => el.id === 'CustomTax'
-          )
+      cy.getVtexItems().then(vtex => {
+        cy.getOrderItems().then(item => {
+          cy.getAPI(
+            `${
+              orderIdEnv === externalSeller.externalSaleEnv
+                ? invoiceAPI(vtex.urlExternalSeller)
+                : invoiceAPI(vtex.baseUrl)
+            }/${item[orderIdEnv]}`,
+            VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
+          ).then(response => {
+            expect(response.status).to.equal(200)
+            if (approved) {
+              expect(response.body.status).to.match(/cancel|invoiced/)
+            } else {
+              expect(response.body.status).to.include('pending')
+            }
 
-          expect(
-            taxesArray.reduce((n, { value }) => n + value / 100, 0).toFixed(2)
-          ).to.eq(parseFloat(tax.replace('$ ', '')).toFixed(2))
+            const taxesArray = response.body.totals.filter(
+              el => el.id === 'CustomTax'
+            )
+
+            expect(
+              taxesArray.reduce((n, { value }) => n + value / 100, 0).toFixed(2)
+            ).to.eq(parseFloat(tax.replace('$ ', '')).toFixed(2))
+          })
         })
       })
-    })
+    }
+  )
+}
+
+export function paymentAndAPITestCases(
+  product,
+  { prefix, approved },
+  { transactionIdEnv, orderIdEnv, paymentTransactionIdEnv }
+) {
+  completePayment(prefix, orderIdEnv)
+
+  invoiceAPITestCase(product, orderIdEnv, { approved })
+
+  verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
+
+  sendInvoiceTestCase(product, orderIdEnv)
+
+  verifyCyberSourceAPI({
+    prefix,
+    transactionIdEnv,
+    paymentTransactionIdEnv,
+    approved,
   })
+
+  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
 }

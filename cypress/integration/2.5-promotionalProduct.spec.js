@@ -2,21 +2,13 @@ import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { promotionProduct } from '../support/sandbox_outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
-import {
-  completePayment,
-  verifyCyberSourceAPI,
-  verifyStatusInInteractionAPI,
-  verifyAntiFraud,
-  invoiceAPITestCase,
-} from '../support/testcase.js'
+import { paymentAndAPITestCases } from '../support/testcase.js'
 
 describe('Promotional Product Testcase', () => {
   testSetup()
 
   const { prefix, productName, tax, totalAmount, env, postalCode } =
     promotionProduct
-
-  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
@@ -29,6 +21,7 @@ describe('Promotional Product Testcase', () => {
     // Update Product quantity to 2
     cy.updateProductQuantity(promotionProduct, {
       quantity: '2',
+      timeout: 20000,
     })
   })
 
@@ -53,13 +46,9 @@ describe('Promotional Product Testcase', () => {
       .should('have.text', 'Free')
   })
 
-  completePayment(prefix, env)
-
-  invoiceAPITestCase(promotionProduct, env)
-
-  verifyStatusInInteractionAPI(prefix, env, transactionIdEnv)
-
-  verifyCyberSourceAPI({ prefix, transactionIdEnv, paymentTransactionIdEnv })
-
-  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+  paymentAndAPITestCases(
+    promotionProduct,
+    { prefix, approved: false },
+    { ...getTestVariables(prefix), orderIdEnv: env }
+  )
 })

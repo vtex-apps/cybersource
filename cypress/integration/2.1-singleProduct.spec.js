@@ -5,21 +5,13 @@ import {
   requestRefund,
 } from '../support/sandbox_outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
-import {
-  completePayment,
-  verifyStatusInInteractionAPI,
-  verifyAntiFraud,
-  verifyCyberSourceAPI,
-  sendInvoiceTestCase,
-  invoiceAPITestCase,
-} from '../support/testcase.js'
+import { paymentAndAPITestCases } from '../support/testcase.js'
 
 describe('Single Product Testcase', () => {
   testSetup()
 
   const { prefix, productName, tax, totalAmount, postalCode } = singleProduct
 
-  const { paymentTransactionIdEnv, transactionIdEnv } = getTestVariables(prefix)
   const orderIdEnv = requestRefund.fullRefundEnv
 
   it('Adding Product to Cart', updateRetry(3), () => {
@@ -48,15 +40,9 @@ describe('Single Product Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  completePayment(prefix, orderIdEnv)
-
-  invoiceAPITestCase(singleProduct, orderIdEnv)
-
-  verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
-
-  sendInvoiceTestCase(totalAmount, orderIdEnv)
-
-  verifyCyberSourceAPI({ prefix, transactionIdEnv, paymentTransactionIdEnv })
-
-  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+  paymentAndAPITestCases(
+    singleProduct,
+    { prefix, approved: true },
+    { ...getTestVariables(prefix), orderIdEnv }
+  )
 })
