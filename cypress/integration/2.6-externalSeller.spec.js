@@ -18,6 +18,7 @@ describe('Discount Shipping Testcase', () => {
     tax,
     totalAmount,
     postalCode,
+    directSaleEnv,
     externalSaleEnv,
   } = externalSeller
 
@@ -39,6 +40,11 @@ describe('Discount Shipping Testcase', () => {
     cy.updateProductQuantity(externalSeller, { quantity: '1' })
   })
 
+  it('Updating Shipping Information', updateRetry(3), () => {
+    // Update Shipping Section
+    cy.updateShippingInformation({ postalCode })
+  })
+
   it('Verify tax and total', updateRetry(3), () => {
     // Verify Tax
     cy.get(selectors.TaxAmtLabel).last().should('have.text', tax)
@@ -46,14 +52,29 @@ describe('Discount Shipping Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  it('Updating Shipping Information', updateRetry(3), () => {
-    // Update Shipping Section
-    cy.updateShippingInformation({ postalCode })
+  completePayment(prefix, false, externalSeller)
+
+  describe('Testing API for External Sale', () => {
+    it('Get External Sale orderId and update in Cypress env', () => {
+      cy.getOrderItems().then(order => {
+        if (!order[externalSaleEnv]) {
+          throw new Error('External Sale Order id is missing')
+        }
+      })
+    })
+
+    verifyStatusInInteractionAPI(prefix, externalSaleEnv, transactionIdEnv)
+
+    describe('Testing API for Direct Sale', () => {
+      it('Get Direct Sale orderId and update in Cypress env', () => {
+        cy.getOrderItems().then(order => {
+          if (!order[directSaleEnv]) {
+            throw new Error('Direct Sale Order id is missing')
+          }
+        })
+      })
+      verifyStatusInInteractionAPI(prefix, directSaleEnv, transactionIdEnv)
+      verifyAntiFraud(prefix, transactionIdEnv)
+    })
   })
-
-  completePayment(prefix, externalSaleEnv)
-
-  verifyStatusInInteractionAPI(prefix, externalSaleEnv, transactionIdEnv)
-
-  verifyAntiFraud(prefix, transactionIdEnv)
 })
