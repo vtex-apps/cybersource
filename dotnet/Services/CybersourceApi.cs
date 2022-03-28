@@ -508,6 +508,7 @@ namespace Cybersource.Services
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
+            _context.Vtex.Logger.Debug("CreateDecisionManager", null, json);
             string endpoint = $"{CybersourceConstants.RISK}decisions";
             SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
             if (response != null)
