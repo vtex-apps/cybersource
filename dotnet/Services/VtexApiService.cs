@@ -568,22 +568,22 @@ namespace Cybersource.Services
             //_context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
 
             // Combine skus
-            Dictionary<string, Item> itemDictionary = new Dictionary<string, Item>();
-            foreach (Item requestItem in taxRequest.Items)
-            {
-                if (itemDictionary.ContainsKey(requestItem.Sku))
-                {
-                    itemDictionary[requestItem.Sku].DiscountPrice += requestItem.DiscountPrice;
-                    itemDictionary[requestItem.Sku].ItemPrice += requestItem.ItemPrice;
-                    itemDictionary[requestItem.Sku].Quantity += requestItem.Quantity;
-                }
-                else
-                {
-                    itemDictionary.Add(requestItem.Sku, requestItem);
-                }
-            }
+            //Dictionary<string, Item> itemDictionary = new Dictionary<string, Item>();
+            //foreach (Item requestItem in taxRequest.Items)
+            //{
+            //    if (itemDictionary.ContainsKey(requestItem.Sku))
+            //    {
+            //        itemDictionary[requestItem.Sku].DiscountPrice += requestItem.DiscountPrice;
+            //        itemDictionary[requestItem.Sku].ItemPrice += requestItem.ItemPrice;
+            //        itemDictionary[requestItem.Sku].Quantity += requestItem.Quantity;
+            //    }
+            //    else
+            //    {
+            //        itemDictionary.Add(requestItem.Sku, requestItem);
+            //    }
+            //}
 
-            taxRequest.Items = itemDictionary.Values.ToArray();
+            //taxRequest.Items = itemDictionary.Values.ToArray();
 
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
@@ -698,7 +698,7 @@ namespace Cybersource.Services
                     return null;
                 }
 
-                //_context.Vtex.Logger.Debug("vtexTaxResponse", null, JsonConvert.SerializeObject(vtexTaxResponse));
+                _context.Vtex.Logger.Debug("vtexTaxResponse", null, JsonConvert.SerializeObject(vtexTaxResponse));
 
                 // Split response items to match request
                 try
@@ -786,23 +786,23 @@ namespace Cybersource.Services
                             responseId++;
                         }
 
-                        //vtexTaxResponse.ItemTaxResponse = itemTaxResponses.ToList();
-                        foreach(ItemTaxResponse taxResp in itemTaxResponses)
-                        {
-                            if(taxResp == null)
-                            {
-                                Console.WriteLine($" taxResp IS NULL!!!");
-                            }
+                        vtexTaxResponse.ItemTaxResponse = itemTaxResponses.ToList();
+                        //foreach(ItemTaxResponse taxResp in itemTaxResponses)
+                        //{
+                        //    if(taxResp == null)
+                        //    {
+                        //        Console.WriteLine($" taxResp IS NULL!!!");
+                        //    }
 
-                            Console.WriteLine($"Adding taxResp {taxResp.Id}");
-                            vtexTaxResponse.ItemTaxResponse.Add(taxResp);
-                            Console.WriteLine($"Added taxResp {taxResp.Id}");
-                        }
+                        //    Console.WriteLine($"Adding taxResp {taxResp.Id}");
+                        //    vtexTaxResponse.ItemTaxResponse.Add(taxResp);
+                        //    Console.WriteLine($"Added taxResp {taxResp.Id}");
+                        //}
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error splitting line items: '{ex.Message}'");
+                    //Console.WriteLine($"Error splitting line items: '{ex.Message}'");
                     _context.Vtex.Logger.Error("TaxjarResponseToVtexResponse", "Splitting", $"Error splitting line items", ex);
                     return null;
                 }
