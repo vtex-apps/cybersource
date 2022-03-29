@@ -385,7 +385,7 @@
 
         public async Task<IActionResult> DecisionManagerNotify()
         {
-            ActionResult actionResult = BadRequest();
+            //ActionResult actionResult = BadRequest();
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string result = string.Empty;
@@ -409,7 +409,7 @@
 
                             result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
                             _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) });
-                            actionResult = Ok();
+                            //actionResult = Ok();
                         }
                         catch (Exception ex)
                         {
@@ -427,7 +427,8 @@
                 }
             }
 
-            return actionResult;
+            //return actionResult;
+            return Ok();
         }
     }
 }
