@@ -1,7 +1,7 @@
 {
   "name": "cybersource",
   "vendor": "vtex",
-  "version": "1.1.25",
+  "version": "1.1.26",
   "title": "Cybersource",
   "description": "Cybersource payment",
   "categories": [],
