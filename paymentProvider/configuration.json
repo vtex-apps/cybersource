@@ -1,5 +1,5 @@
 {
-  "name": "Cybersource",
+  "name": "Cybersource IO",
   "serviceUrl": "/cybersource/payment-provider",
   "usesAntifraud": true,
   "paymentMethods": [
