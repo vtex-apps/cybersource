@@ -113,7 +113,11 @@ namespace Cybersource.Services
                     //transactionId = createPaymentRequest.TransactionId,
                     applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.Account
+                    applicationUser = _context.Vtex.Account,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 paymentInformation = new PaymentInformation
                 {
@@ -501,7 +505,11 @@ namespace Cybersource.Services
                     code = await _vtexApiService.GetOrderId(cancelPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.App.Vendor,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 reversalInformation = new ReversalInformation
                 {
@@ -538,7 +546,11 @@ namespace Cybersource.Services
                     code = await _vtexApiService.GetOrderId(paymentData.OrderId), //capturePaymentRequest.PaymentId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.App.Vendor,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 orderInformation = new OrderInformation
                 {
@@ -587,7 +599,11 @@ namespace Cybersource.Services
                     code = await _vtexApiService.GetOrderId(refundPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.App.Vendor,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 orderInformation = new OrderInformation
                 {
@@ -632,7 +648,11 @@ namespace Cybersource.Services
                         comments = sendAntifraudDataRequest.Id,
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
-                        applicationUser = _context.Vtex.App.Vendor
+                        applicationUser = _context.Vtex.App.Vendor,
+                        partner = new Partner
+                        {
+                            solutionId = CybersourceConstants.SOLUTION_ID
+                        }
                     },
                     orderInformation = new OrderInformation
                     {

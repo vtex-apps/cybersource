@@ -597,7 +597,11 @@ namespace Cybersource.Services
                 {
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = taxRequest.OrderFormId
+                        code = taxRequest.OrderFormId,
+                        partner = new Partner
+                        {
+                            solutionId = CybersourceConstants.SOLUTION_ID
+                        }
                     },
                     taxInformation = new TaxInformation
                     {
@@ -917,7 +921,11 @@ namespace Cybersource.Services
                     {
                         clientReferenceInformation = new ClientReferenceInformation
                         {
-                            code = vtexOrder.OrderFormId
+                            code = vtexOrder.OrderFormId,
+                            partner = new Partner
+                            {
+                                solutionId = CybersourceConstants.SOLUTION_ID
+                            }
                         },
                         taxInformation = new TaxInformation
                         {

@@ -12,7 +12,7 @@ This app uses Cybersource REST API to process Payments, Risk Management, and Tax
 
 ## Configuration
 
-1. [Install](https://developers.vtex.com/vtex-developer-docs/docs/vtex-io-documentation-installing-an-app) `vtex.cybersource` & `vtex.cybersource-ui` in the desired account.
+1. [Install](https://developers.vtex.com/vtex-developer-docs/docs/vtex-io-documentation-installing-an-app) `vtex.cybersource` and `vtex.cybersource-ui` in the desired account.
 
 2. In Cybersource EBC, generate authentication keys.
 	- Payment Configuration -> Key Management -> Generate Key
@@ -26,6 +26,36 @@ This app uses Cybersource REST API to process Payments, Risk Management, and Tax
 
 5. Payment Conditions
 	- Add New Payment using Gateway
+
+Device Fingerprint
+Replace {{ORG_ID}} and {{MERCHANT_ID}}
+```
+function addsDeviceFingerPrint() {
+  if (!window.vtex) return;
+  if (window.vtex.deviceFingerprint) return;
+  $.ajax({
+    type: 'get',
+    async: true,
+    url: rootPath() + '/api/sessions?items=*'
+  }).then(function(response) {
+    var ORG_ID = "{{ORG_ID}}";
+    var MERCHANT_ID = "{{MERCHANT_ID}}";
+    console.log('session', response);
+    window.vtex.deviceFingerprint = response.id;
+    var sessionId = response.id || "CYBERSOURCE";
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = `https://h.online-metrix.net/fp/tags.js?org_id=${ORG_ID}&session_id=${MERCHANT_ID}${sessionId}`;
+    document.head.appendChild(script);
+    var noScript = document.createElement("noscript");
+    var iframe = document.createElement("iframe");
+    iframe.style = "width: 100px; height: 100px; border: 0; position: absolute; top: -5000px;";
+    iframe.src = `https://h.online-metrix.net/fp/tags?org_id=${ORG_ID}&session_id=${MERCHANT_ID}${sessionId}`;
+    noScript.appendChild(iframe);
+    document.body.appendChild(noScript);
+  })
+}
+```
 
 ## Contributors ✨
 

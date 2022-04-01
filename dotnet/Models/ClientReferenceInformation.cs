@@ -11,5 +11,6 @@ namespace Cybersource.Models
         public string applicationName { get; set; }
         public string applicationVersion { get; set; }
         public string applicationUser { get; set; }
+        public Partner partner { get; set; }
     }
 }
