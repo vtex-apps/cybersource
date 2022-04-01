@@ -8,6 +8,7 @@ namespace Cybersource.Data
     {
         public const string AppName = "cybersource";
 
+        public const string SOLUTION_ID = "H4D4KDID";
         public const string FORWARDED_HEADER = "X-Forwarded-For";
         public const string FORWARDED_HOST = "X-Forwarded-Host";
         public const string APPLICATION_JSON = "application/json";
