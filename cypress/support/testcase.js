@@ -2,7 +2,7 @@ import { VTEX_AUTH_HEADER } from './common/constants.js'
 import { updateRetry } from './common/support.js'
 import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
-import { orderAndSaveProductId } from './utils.js'
+import { orderAndSaveProductId, getTestVariables } from './utils.js'
 import { externalSeller } from './sandbox_outputvalidation.js'
 
 export function completePayment(
@@ -55,17 +55,83 @@ export function completePayment(
   })
 }
 
-export function verifyStatusInInteractionAPI(
+function verifyPaymentStarted(interactionResponse) {
+  const expectedStatus = 'Payment Started'
+  const expectedMessage = 'Authorization response parsed'
+  const index = interactionResponse.body.findIndex(
+    ob => ob.Status === expectedStatus && ob.Message.includes(expectedMessage)
+  )
+
+  if (index >= 0) {
+    const jsonString = interactionResponse.body[index].Message.split(': ')
+
+    if (jsonString) {
+      const json = JSON.parse(jsonString[1])
+
+      expect(json.status).to.match(/approved|undefined/i)
+      expect(json.message).to.match(/authorized|review/i)
+    }
+  } else {
+    throw new Error(
+      `Unable to find expected Status: ${expectedStatus} and Message: ${expectedMessage} in transaction/interactions response`
+    )
+  }
+}
+
+export function verifyPaymentSettled(prefix, orderIdEnv) {
+  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
+
+  it(`In ${prefix} - Verify payment settlements`, updateRetry(3), () => {
+    if (cy.state('runnable')._currentRetry > 0) {
+      // Approving Payment via /cybersource/notify API
+      approvePayment(orderIdEnv, paymentTransactionIdEnv)
+    }
+
+    cy.getOrderItems().then(order => {
+      if (order[transactionIdEnv]) {
+        cy.getVtexItems().then(vtex => {
+          cy.getAPI(
+            `${transactionAPI(vtex.baseUrl)}/${
+              order[transactionIdEnv]
+            }/interactions`,
+            VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
+          ).then(response => {
+            expect(response.status).to.equal(200)
+            const expectedStatus = /Transaction Settled/i
+            const expectedMessage = /Settled/i
+            const index = response.body.findIndex(
+              ob =>
+                expectedStatus.test(ob.Status) &&
+                expectedMessage.test(ob.Message)
+            )
+
+            expect(index).to.not.equal(-1)
+          })
+        })
+      } else {
+        cy.log(
+          `${prefix} order was not successfull / transactionId is not captured`
+        )
+      }
+    })
+  })
+}
+
+export function verifyStatusInInteractionAPI({
   prefix,
+  transactionIdEnv,
   orderIdEnv,
-  transactionIdEnv
-) {
+  paymentTransactionIdEnv,
+  approved,
+}) {
   it(
     `In ${prefix} - Verifying status & message in transaction/interaction API`,
     updateRetry(3),
     () => {
-      const expectedStatus = 'Payment Started'
-      const expectedMessage = 'Authorization response parsed'
+      if (!approved) {
+        // Approving Payment via /cybersource/notify API
+        approvePayment(orderIdEnv, paymentTransactionIdEnv)
+      }
 
       cy.getVtexItems().then(vtex => {
         cy.getOrderItems().then(item => {
@@ -81,28 +147,8 @@ export function verifyStatusInInteractionAPI(
               `${transactionAPI(vtex.baseUrl)}/${transactionId}/interactions`,
               VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
             ).then(interactionResponse => {
-              expect(response.status).to.equal(200)
-              const index = interactionResponse.body.findIndex(
-                ob =>
-                  ob.Status === expectedStatus &&
-                  ob.Message.includes(expectedMessage)
-              )
-
-              if (index >= 0) {
-                const jsonString =
-                  interactionResponse.body[index].Message.split(': ')
-
-                if (jsonString) {
-                  const json = JSON.parse(jsonString[1])
-
-                  expect(json.status).to.match(/approved|undefined/i)
-                  expect(json.message).to.match(/authorized|review/i)
-                }
-              } else {
-                throw new Error(
-                  `Unable to find expected Status: ${expectedStatus} and Message: ${expectedMessage} in transaction/interactions response`
-                )
-              }
+              expect(interactionResponse.status).to.equal(200)
+              verifyPaymentStarted(interactionResponse)
             })
           })
         })
@@ -116,7 +162,7 @@ export function verifyAntiFraud({
   transactionIdEnv,
   paymentTransactionIdEnv,
 }) {
-  it.skip(`In ${prefix} - Verifying AntiFraud status`, () => {
+  it(`In ${prefix} - Verifying AntiFraud status`, () => {
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(order => {
         cy.getAPI(
@@ -213,8 +259,8 @@ export function sendInvoiceTestCase({ prefix, totalAmount }, orderIdEnv) {
 
 export function invoiceAPITestCase(
   { prefix, tax: productTax },
-  orderIdEnv,
-  { approved, externalSellerTestCase = false } = {}
+  { approved, orderIdEnv, transactionIdEnv },
+  { externalSellerTestCase = false } = {}
 ) {
   let tax
 
@@ -245,10 +291,13 @@ export function invoiceAPITestCase(
             VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
           ).then(response => {
             expect(response.status).to.equal(200)
+            const [{ transactionId }] = response.body.paymentData.transactions
+
+            cy.setOrderItem(transactionIdEnv, transactionId)
             if (approved) {
               expect(response.body.status).to.match(/cancel|invoiced/)
             } else {
-              expect(response.body.status).to.include('pending')
+              expect(response.body.status).to.match(/pending|handling/)
             }
 
             const taxesArray = response.body.totals.filter(
@@ -265,6 +314,51 @@ export function invoiceAPITestCase(
   )
 }
 
+function pad(d) {
+  return d.toString().padStart(2, '0')
+}
+
+function generateXML(orderId, paymentTransactionId) {
+  const date = new Date()
+
+  const formattedDate = `${date.getUTCFullYear()}-${pad(
+    date.getUTCMonth() + 1
+  )}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(
+    date.getUTCMinutes()
+  )}:${pad(date.getUTCSeconds())}`
+
+  return `content=<?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE CaseManagementOrderStatus SYSTEM "https://ebctest.cybersource.com/ebctest/reports/dtd/cmorderstatus_1_1.dtd">
+   <CaseManagementOrderStatus xmlns="http://reports.cybersource.com/reports/cmos/1.0" MerchantID="vtex_dev" Name="Case Management Order Status" Date="${formattedDate} GMT" Version="1.1">
+     <Update MerchantReferenceNumber="${
+       orderId.split('-')[0]
+     }" RequestID="${paymentTransactionId}">
+       <OriginalDecision>REVIEW</OriginalDecision>
+       <NewDecision>ACCEPT</NewDecision>
+       <Reviewer>brian</Reviewer>
+       <Notes>
+         <Note Date="${formattedDate}" AddedBy="brian" Comment="Took ownership." />
+       </Notes>
+       <Queue>Example</Queue>
+       <Profile>Testing</Profile>
+     </Update>
+   </CaseManagementOrderStatus>`
+}
+
+function approvePayment(orderIdEnv, paymentTransactionIdEnv) {
+  // Approving Payment via /cybersource/notify API
+  cy.getOrderItems().then(item => {
+    cy.request({
+      url: 'https://sandboxusdev.myvtex.com/cybersource/notify',
+      method: 'POST',
+      body: generateXML(item[orderIdEnv], item[paymentTransactionIdEnv]),
+      timeout: 10000,
+    }).then(response => {
+      expect(response.status).to.equal(200)
+    })
+  })
+}
+
 export function paymentAndAPITestCases(
   product,
   { prefix, approved },
@@ -272,9 +366,7 @@ export function paymentAndAPITestCases(
 ) {
   completePayment(prefix, orderIdEnv)
 
-  invoiceAPITestCase(product, orderIdEnv, { approved })
-
-  verifyStatusInInteractionAPI(prefix, orderIdEnv, transactionIdEnv)
+  invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
 
   sendInvoiceTestCase(product, orderIdEnv)
 
@@ -285,5 +377,11 @@ export function paymentAndAPITestCases(
     approved,
   })
 
-  verifyAntiFraud({ prefix, transactionIdEnv, paymentTransactionIdEnv })
+  verifyStatusInInteractionAPI({
+    prefix,
+    transactionIdEnv,
+    orderIdEnv,
+    paymentTransactionIdEnv,
+    approved,
+  })
 }

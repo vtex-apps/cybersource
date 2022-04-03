@@ -4,7 +4,7 @@ import selectors from '../support/common/selectors.js'
 import { getTestVariables } from '../support/utils.js'
 import {
   completePayment,
-  verifyAntiFraud,
+  verifyCyberSourceAPI,
   verifyStatusInInteractionAPI,
 } from '../support/testcase.js'
 
@@ -22,7 +22,7 @@ describe('Discount Shipping Testcase', () => {
     externalSaleEnv,
   } = externalSeller
 
-  const { transactionIdEnv } = getTestVariables(prefix)
+  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
@@ -63,7 +63,13 @@ describe('Discount Shipping Testcase', () => {
       })
     })
 
-    verifyStatusInInteractionAPI(prefix, externalSaleEnv, transactionIdEnv)
+    verifyStatusInInteractionAPI({
+      prefix,
+      transactionIdEnv,
+      orderIdEnv: externalSaleEnv,
+      paymentTransactionIdEnv,
+      approved: true,
+    })
 
     describe('Testing API for Direct Sale', () => {
       it('Get Direct Sale orderId and update in Cypress env', () => {
@@ -73,8 +79,21 @@ describe('Discount Shipping Testcase', () => {
           }
         })
       })
-      verifyStatusInInteractionAPI(prefix, directSaleEnv, transactionIdEnv)
-      verifyAntiFraud(prefix, transactionIdEnv)
+
+      verifyStatusInInteractionAPI({
+        prefix,
+        transactionIdEnv,
+        orderIdEnv: externalSaleEnv,
+        paymentTransactionIdEnv,
+        approved: true,
+      })
+
+      verifyCyberSourceAPI({
+        prefix,
+        transactionIdEnv,
+        paymentTransactionIdEnv,
+        approved: true,
+      })
     })
   })
 })
