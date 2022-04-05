@@ -186,8 +186,6 @@ namespace Cybersource.Services
             requestWrapper.CompanyName = merchantName;
             requestWrapper.CompanyTaxId = merchantTaxId;
 
-            payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
-
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
             decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
@@ -348,6 +346,12 @@ namespace Cybersource.Services
                             vtexOrderItems.Add(vtexItem);
                         }
                     }
+
+                    if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
+                    {
+                        requestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                        _context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", JsonConvert.SerializeObject(requestWrapper.CustomData));
+                    }
                 }
             }
 
@@ -392,6 +396,9 @@ namespace Cybersource.Services
 
                 payment.orderInformation.lineItems.Add(lineItem);
             }
+
+            // Set Merchant Defined Information fields
+            payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
             _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("payment", JsonConvert.SerializeObject(payment)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
@@ -1074,7 +1081,7 @@ namespace Cybersource.Services
                     foreach (MerchantDefinedValueSetting merchantDefinedValueSetting in merchantSettings.MerchantDefinedValueSettings)
                     {
                         merchantDefinedValueKey++;
-                        if (merchantDefinedValueSetting.IsValid)
+                        //if (merchantDefinedValueSetting.IsValid)
                         {
                             string merchantDefinedValue = merchantDefinedValueSetting.UserInput; // merchantDefinedValueSetting.GoodPortion;
                             if (!string.IsNullOrEmpty(merchantDefinedValue))

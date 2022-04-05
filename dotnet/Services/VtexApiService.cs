@@ -1349,5 +1349,42 @@ namespace Cybersource.Services
 
             return binLookup;
         }
+
+        public async Task<List<string>> GetPropertyList()
+        {
+            PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(new CreatePaymentRequest());
+            List<string> propertyList = requestWrapper.GetPropertyList();
+            string jsonSerializedOrderConfig = await _cybersourceRepository.GetOrderConfiguration();
+            if(!string.IsNullOrEmpty(jsonSerializedOrderConfig))
+            {
+                List<CustomApp> customApps = null;
+                dynamic orderConfig = JsonConvert.DeserializeObject(jsonSerializedOrderConfig);
+                try
+                {
+                    string appsConfig = JsonConvert.SerializeObject(orderConfig["apps"]);
+                    if (!string.IsNullOrEmpty(appsConfig))
+                    {
+                        customApps = JsonConvert.DeserializeObject<List<CustomApp>>(appsConfig);
+                        foreach (CustomApp customApp in customApps)
+                        {
+                            Console.WriteLine($"customApp '{customApp.Id}' = '{JsonConvert.SerializeObject(customApp.Fields)}'");
+                            JArray fieldsArray = (JArray)customApp.Fields;
+                            List<string> fieldNames = fieldsArray.ToObject<List<string>>();
+                            foreach (string fieldName in fieldNames)
+                            {
+                                propertyList.Add($"CustomData.CustomApps.{customApp.Id}.{fieldName}");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"ERROR: {ex.Message}");
+                    _context.Vtex.Logger.Error("GetPropertyList", null, "Error getting property list", ex);
+                }
+            }
+
+            return propertyList;
+        }
     }
 }

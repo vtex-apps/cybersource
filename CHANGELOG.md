@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Custom Apps data
+
 ## [1.1.29] - 2022-04-01
 
 ### Added

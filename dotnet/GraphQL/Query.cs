@@ -10,7 +10,7 @@ namespace Cybersource.GraphQL
     [GraphQLMetadata("Query")]
     public class Query : ObjectGraphType<object>
     {
-        public Query(ICybersourcePaymentService cybersourcePaymentService)
+        public Query(ICybersourcePaymentService cybersourcePaymentService, IVtexApiService vtexApiService)
         {
             Name = "Query";
 
@@ -41,8 +41,7 @@ namespace Cybersource.GraphQL
                 "merchantDefinedFields",
                 resolve: async context =>
                 {
-                    PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(new CreatePaymentRequest());
-                    return requestWrapper.GetPropertyList();
+                    return await vtexApiService.GetPropertyList();
                 }
             );
         }
