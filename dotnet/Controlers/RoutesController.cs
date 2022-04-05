@@ -43,7 +43,7 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                //_context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
+                _context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
                 try
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);

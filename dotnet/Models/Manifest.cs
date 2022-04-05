@@ -22,8 +22,8 @@ namespace Cybersource.Models
         [JsonProperty("type")]
         public string Type { get; set; }
 
-        [JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
-        public List<Option> Options { get; set; }
+        //[JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
+        //public List<Option> Options { get; set; }
     }
 
     public class Option
