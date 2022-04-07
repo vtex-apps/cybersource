@@ -43,7 +43,7 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                //_context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
+                _context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
                 try
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
@@ -272,7 +272,8 @@
             string orderFormId = string.Empty;
             string totalItems = string.Empty;
             bool fromCache = false;
-            VtexTaxRequest taxRequest = new VtexTaxRequest();
+            VtexTaxRequest taxRequest = null;
+            VtexTaxRequest taxRequestOriginal = null;
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
                 ItemTaxResponse = new List<ItemTaxResponse>()
@@ -289,7 +290,7 @@
                 if (!string.IsNullOrEmpty(bodyAsText))
                 {
                     taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
-                    VtexTaxRequest taxRequestOriginal = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
+                    taxRequestOriginal = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
                     if (taxRequest != null)
                     {
                         orderFormId = taxRequest.OrderFormId;
@@ -319,7 +320,7 @@
             }
 
             timer.Stop();
-            _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequest)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+            _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
 
             return Json(vtexTaxResponse);
         }
@@ -384,42 +385,49 @@
 
         public async Task<IActionResult> DecisionManagerNotify()
         {
-            string result = string.Empty;
-            try
+            //ActionResult actionResult = BadRequest();
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
-                string bodyAsTextRaw = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                string result = string.Empty;
                 try
                 {
-                    string bodyAsText = HttpUtility.UrlDecode(bodyAsTextRaw);
-                    bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
+                    string bodyAsTextRaw = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                     try
                     {
-                        XmlSerializer serializer = new XmlSerializer(typeof(CaseManagementOrderStatus));
-                        CaseManagementOrderStatus caseManagementOrderStatus;
-
-                        using (TextReader reader = new StringReader(bodyAsText))
+                        string bodyAsText = HttpUtility.UrlDecode(bodyAsTextRaw);
+                        //_context.Vtex.Logger.Debug("DecisionManagerNotify", null, "Request.Body", new[] { ("body", bodyAsTextRaw) });
+                        bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
+                        try
                         {
-                            caseManagementOrderStatus = (CaseManagementOrderStatus)serializer.Deserialize(reader);
-                        }
+                            XmlSerializer serializer = new XmlSerializer(typeof(CaseManagementOrderStatus));
+                            CaseManagementOrderStatus caseManagementOrderStatus;
 
-                        result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
-                        _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) });
+                            using (TextReader reader = new StringReader(bodyAsText))
+                            {
+                                caseManagementOrderStatus = (CaseManagementOrderStatus)serializer.Deserialize(reader);
+                            }
+
+                            result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
+                            _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) });
+                            //actionResult = Ok();
+                        }
+                        catch (Exception ex)
+                        {
+                            _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error serializing request body", ex, new[] { ("body", bodyAsText) });
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error serializing request body", ex, new[] { ("body", bodyAsText) });
+                        _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error decoding request body", ex, new[] { ("body", bodyAsTextRaw) });
                     }
                 }
                 catch (Exception ex)
                 {
-                    _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error decoding request body", ex, new[] { ("body", bodyAsTextRaw) });
+                    _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error reading request body", ex);
                 }
             }
-            catch (Exception ex)
-            {
-                _context.Vtex.Logger.Error("DecisionManagerNotify", null, "Error reading request body", ex);
-            }
 
+            //return actionResult;
             return Ok();
         }
     }

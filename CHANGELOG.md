@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.30] - 2022-04-05
+
+### Added
+
+- Custom Apps data
+
+## [1.1.29] - 2022-04-01
+
+### Added
+
+- Solution Id
+
+## [1.1.28] - 2022-03-31
+
+### Added
+
+- Debug Device Fingerprint
+
+## [1.1.27] - 2022-03-29
+
+### Fixed
+
+- DM notifications
+
+## [1.1.26] - 2022-03-29
+
+## [1.1.25] - 2022-03-28
+
 ## [1.1.24] - 2022-03-25
 
 ## [1.1.23] - 2022-03-25

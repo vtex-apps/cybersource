@@ -113,7 +113,11 @@ namespace Cybersource.Services
                     //transactionId = createPaymentRequest.TransactionId,
                     applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.Account
+                    applicationUser = _context.Vtex.Account,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 paymentInformation = new PaymentInformation
                 {
@@ -181,8 +185,6 @@ namespace Cybersource.Services
             requestWrapper.MerchantId = merchantSettings.MerchantId;
             requestWrapper.CompanyName = merchantName;
             requestWrapper.CompanyTaxId = merchantTaxId;
-
-            payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
 
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
@@ -344,6 +346,12 @@ namespace Cybersource.Services
                             vtexOrderItems.Add(vtexItem);
                         }
                     }
+
+                    if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
+                    {
+                        requestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                        _context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", JsonConvert.SerializeObject(requestWrapper.CustomData));
+                    }
                 }
             }
 
@@ -389,7 +397,11 @@ namespace Cybersource.Services
                 payment.orderInformation.lineItems.Add(lineItem);
             }
 
+            // Set Merchant Defined Information fields
+            payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
+
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+            _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("payment", JsonConvert.SerializeObject(payment)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
             if (paymentsResponse != null)
             {
                 createPaymentResponse = new CreatePaymentResponse();
@@ -500,7 +512,11 @@ namespace Cybersource.Services
                     code = await _vtexApiService.GetOrderId(cancelPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.App.Vendor,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 reversalInformation = new ReversalInformation
                 {
@@ -537,7 +553,11 @@ namespace Cybersource.Services
                     code = await _vtexApiService.GetOrderId(paymentData.OrderId), //capturePaymentRequest.PaymentId,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.App.Vendor,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 orderInformation = new OrderInformation
                 {
@@ -586,7 +606,11 @@ namespace Cybersource.Services
                     code = await _vtexApiService.GetOrderId(refundPaymentRequest.PaymentId),
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.App.Vendor
+                    applicationUser = _context.Vtex.App.Vendor,
+                    partner = new Partner
+                    {
+                        solutionId = CybersourceConstants.SOLUTION_ID
+                    }
                 },
                 orderInformation = new OrderInformation
                 {
@@ -631,7 +655,11 @@ namespace Cybersource.Services
                         comments = sendAntifraudDataRequest.Id,
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
-                        applicationUser = _context.Vtex.App.Vendor
+                        applicationUser = _context.Vtex.App.Vendor,
+                        partner = new Partner
+                        {
+                            solutionId = CybersourceConstants.SOLUTION_ID
+                        }
                     },
                     orderInformation = new OrderInformation
                     {
@@ -1053,7 +1081,7 @@ namespace Cybersource.Services
                     foreach (MerchantDefinedValueSetting merchantDefinedValueSetting in merchantSettings.MerchantDefinedValueSettings)
                     {
                         merchantDefinedValueKey++;
-                        if (merchantDefinedValueSetting.IsValid)
+                        //if (merchantDefinedValueSetting.IsValid)
                         {
                             string merchantDefinedValue = merchantDefinedValueSetting.UserInput; // merchantDefinedValueSetting.GoodPortion;
                             if (!string.IsNullOrEmpty(merchantDefinedValue))

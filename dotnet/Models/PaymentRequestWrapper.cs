@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,6 +15,29 @@ namespace Cybersource.Models
         public string CompanyTaxId { get; set; }
         //public string CustomerName { get { return $"{ this.MiniCart.Buyer.FirstName } { this.MiniCart.Buyer.LastName }"; } }
         //public string Bin { get { return this.Card.Bin; } }
+        public dynamic CustomData { get; private set; }
+
+        public void FlattenCustomData(CustomData customData)
+        {
+            try
+            {
+                foreach (CustomApp customApp in customData.CustomApps)
+                {
+                    string propName = customApp.Id;
+                    JArray fieldsArray = (JArray)customApp.Fields;
+                    Dictionary<string, string> fields = fieldsArray.ToObject<Dictionary<string, string>>();
+                    foreach (string fieldName in fields.Keys)
+                    {
+                        string fieldValue = fields[fieldName];
+                        this.CustomData.CustomApps[propName][fieldName] = fieldValue;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"ERROR FLATTENING DATA {ex.Message}");
+            }
+        }
 
         public PaymentRequestWrapper(CreatePaymentRequest createPaymentRequest)
         {

@@ -1,4 +1,5 @@
 ﻿using Cybersource.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Cybersource.Services
@@ -24,6 +25,7 @@ namespace Cybersource.Services
         Task<VtexOrder[]> LookupOrders(string orderId);
         Task<string> GetSequence(string orderId);
         Task<string> GetOrderId(string reference);
+        Task<List<string>> GetPropertyList();
 
         Task<BinLookup> BinLookup(string bin);
     }

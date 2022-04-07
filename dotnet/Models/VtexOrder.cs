@@ -140,7 +140,7 @@ namespace Cybersource.Models
         public object TaxData { get; set; }
 
         [JsonProperty("customData")]
-        public object CustomData { get; set; }
+        public CustomData CustomData { get; set; }
 
         [JsonProperty("hooksData")]
         public object HooksData { get; set; }
@@ -1298,5 +1298,23 @@ namespace Cybersource.Models
 
         [JsonProperty("receipt")]
         public string ReceiptReceipt { get; set; }
+    }
+
+    public class CustomData
+    {
+        [JsonProperty("customApps")]
+        public List<CustomApp> CustomApps { get; set; }
+    }
+
+    public class CustomApp
+    {
+        [JsonProperty("fields")]
+        public object Fields { get; set; }
+
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("major")]
+        public long Major { get; set; }
     }
 }
