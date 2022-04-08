@@ -12,7 +12,7 @@ namespace Cybersource.Services
         Task<VtexDockResponse[]> ListVtexDocks();
         Task<string> RemoveConfiguration();
         Task<string> InitConfiguration();
-        Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse);
+        Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse, VtexTaxRequest taxRequest);
         Task<bool> ProcessNotification(AllStatesNotification allStatesNotification);
         Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest, VtexTaxRequest taxRequestOriginal);
         Task<VtexTaxResponse> GetFallbackTaxes(VtexTaxRequest taxRequest);
