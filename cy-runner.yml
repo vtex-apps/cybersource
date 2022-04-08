@@ -80,6 +80,8 @@ strategy:
     runInOrder: true
     specs:
       - cypress/integration/sku.spec.js
+    dependency:
+      - postSetup
   singleProduct:
     enabled: true
     sendDashboard: false
@@ -89,6 +91,8 @@ strategy:
     runInOrder: true
     specs:
       - cypress/integration/2.1-*
+    dependency:
+      - postSetup
   multiProduct:
     enabled: true
     sendDashboard: false
@@ -98,6 +102,8 @@ strategy:
     runInOrder: true
     specs:
       - cypress/integration/2.2-*
+    dependency:
+      - postSetup
   discountProduct:
     enabled: true
     sendDashboard: false
@@ -107,6 +113,8 @@ strategy:
     runInOrder: true
     specs:
       - cypress/integration/2.3-*
+    dependency:
+      - postSetup
   discountShipping:
     enabled: true
     sendDashboard: false
@@ -116,6 +124,8 @@ strategy:
     runInOrder: true
     specs:
       - cypress/integration/2.4-*
+    dependency:
+      - postSetup
   promotionalProduct:
     enabled: true
     sendDashboard: false
@@ -125,6 +135,8 @@ strategy:
     runInOrder: true
     specs:
       - cypress/integration/2.5-*
+    dependency:
+      - postSetup
   externalSeller:
     enabled: true
     sendDashboard: false
@@ -134,6 +146,8 @@ strategy:
     runInOrder: true
     specs:
       - cypress/integration/2.6-*
+    dependency:
+      - postSetup
   fullRefund:
     enabled: true
     sendDashboard: false
