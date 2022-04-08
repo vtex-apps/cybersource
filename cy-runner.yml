@@ -4,7 +4,7 @@ base:
     enabled: true
     name: VTEX_QE
   vtex:
-    account: sandboxusdev
+    account: productusqa
     id: 2001459804
     domain: myvtex.com
     urlExternalSeller:
@@ -24,7 +24,7 @@ base:
     enabled: false
     channel: some-channel
   cypress:
-    devMode: true
+    devMode: false
     runHeaded: false
     enabled: false
     projectId: xyza
@@ -44,24 +44,25 @@ base:
   stateFiles: [.orders.json]
 
 workspace:
-  name: master
+  name: random
   prefix: cybersource
   linkApp:
-    enabled: false
+    enabled: true
     logOutput:
       enabled: false
   installApps:
-    - vtex.cybersource
+    - vtex.cybersource-fraud
+    - vtex.cybersource-ui
   removeApps: []
   wipe:
-    enabled: false
+    enabled: true
     stopOnFail: false
-    spec: cypress-shared/integration/pass.spec.js
+    spec: cypress/integration/wipe.spec.js
   teardown:
-    enabled: false
+    enabled: true
 
 strategy:
-  sku:
+  postSetup:
     enabled: true
     sendDashboard: false
     hardTries: 0
@@ -69,7 +70,16 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/sku.spec.js
+      - cypress/integration/post_setup.spec.js
+  sku:
+    enabled: false
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/sku.spec.js
   singleProduct:
     enabled: true
     sendDashboard: false
@@ -78,7 +88,7 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.1-*
+      - cypress/integration/2.1-*
   multiProduct:
     enabled: true
     sendDashboard: false
@@ -87,7 +97,7 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.2-*
+      - cypress/integration/2.2-*
   discountProduct:
     enabled: true
     sendDashboard: false
@@ -96,7 +106,7 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.3-*
+      - cypress/integration/2.3-*
   discountShipping:
     enabled: true
     sendDashboard: false
@@ -105,16 +115,16 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.4-*
+      - cypress/integration/2.4-*
   promotionalProduct:
-    enabled: true
+    enabled: false
     sendDashboard: false
     hardTries: 0
     stopOnFail: false
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.5-*
+      - cypress/integration/2.5-*
   externalSeller:
     enabled: true
     sendDashboard: false
@@ -123,7 +133,7 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.6-*
+      - cypress/integration/2.6-*
   fullRefund:
     enabled: true
     sendDashboard: false
@@ -132,7 +142,7 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.7-*
+      - cypress/integration/2.7-*
     dependency:
       - singleProduct
   partialRefund:
@@ -143,6 +153,6 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cy-runner/cypress/integration/2.8-*
+      - cypress/integration/2.8-*
     dependency:
       - multiProduct

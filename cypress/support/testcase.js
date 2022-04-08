@@ -3,7 +3,7 @@ import { updateRetry, saveOrderId } from './common/support.js'
 import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
 import { getTestVariables } from './utils.js'
-import { externalSeller } from './sandbox_outputvalidation.js'
+import { externalSeller } from './outputvalidation.js'
 
 export function completePayment(
   prefix,

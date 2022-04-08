@@ -1,4 +1,4 @@
-import { requestRefund, multiProduct } from '../support/outputvalidation'
+import { requestRefund, multiProduct } from '../support/outputvalidation.js'
 import { testSetup } from '../support/common/support.js'
 import { refund } from '../support/common/refund_apis.js'
 import { getRefundPayload } from '../support/refund_payload.js'
