@@ -40,9 +40,14 @@ export function completePayment(
           .select('30')
       }
 
-      cy.getIframeBody(selectors.PaymentMethodIFrame)
-        .find('.SavedCard span[class*=Master]')
-        .click()
+      cy.getIframeBody(selectors.PaymentMethodIFrame).then($paymentBtn => {
+        if (!$paymentBtn.find(selectors.PaymentMethodIFrame).length) {
+          cy.getIframeBody(selectors.PaymentMethodIFrame)
+            .find('.SavedCard span[class*=Master]')
+            .click()
+        }
+      })
+
       cy.getIframeBody(selectors.PaymentMethodIFrame)
         .find(selectors.CreditCardCode)
         .type('123')
