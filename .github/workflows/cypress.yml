@@ -1,10 +1,10 @@
-name: '[QE] Cypress Runner'
+name: "[QE] Cypress Runner"
 
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Choose another branch to test'
+        description: "Choose another branch to test"
         required: true
         default: master
 
@@ -34,14 +34,14 @@ jobs:
       - name: Cache
         uses: actions/cache@v2
         with:
-          path: '~/.cache/'
+          path: "~/.cache/"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
 
       - name: Install Cypress
         run: yarn install --frozen-lockfile
         working-directory: ./cy-runner
 
-       - name: Install Packages which is required in cybersource testcase.
+      - name: Install Packages which is required in cybersource testcase.
         run: yarn add cybersource-rest-client jwk-to-pem moment
         working-directory: ./cy-runner
 
