@@ -83,7 +83,7 @@ strategy:
   singleProduct:
     enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true
@@ -92,7 +92,7 @@ strategy:
   multiProduct:
     enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true
@@ -101,7 +101,7 @@ strategy:
   discountProduct:
     enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true
@@ -110,16 +110,16 @@ strategy:
   discountShipping:
     enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true
     specs:
       - cypress/integration/2.4-*
   promotionalProduct:
-    enabled: false
+    enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true
@@ -128,7 +128,7 @@ strategy:
   externalSeller:
     enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true
@@ -137,7 +137,7 @@ strategy:
   fullRefund:
     enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true
@@ -148,7 +148,7 @@ strategy:
   partialRefund:
     enabled: true
     sendDashboard: false
-    hardTries: 0
+    hardTries: 1
     stopOnFail: false
     parallel: false
     runInOrder: true

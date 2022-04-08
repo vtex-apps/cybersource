@@ -82,6 +82,7 @@ export function verifyPaymentSettled(prefix, orderIdEnv) {
   const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
   it(`In ${prefix} - Verify payment settlements`, updateRetry(3), () => {
+    cy.addDelayBetweenRetries(5000)
     if (cy.state('runnable')._currentRetry > 0) {
       // Approving Payment via /cybersource/notify API
       approvePayment(orderIdEnv, paymentTransactionIdEnv)
