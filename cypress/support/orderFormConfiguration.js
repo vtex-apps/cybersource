@@ -48,13 +48,11 @@ export function configureTaxConfigurationInOrderForm(workspace = null) {
   })
 }
 
-export function startCyberSource(workspace) {
+export function startCyberSource() {
   it('Start cybersource', () => {
     cy.getVtexItems().then(vtex => {
       callOrderFormConfiguration(vtex).then(response => {
-        if (!response.body.taxConfiguration.url.includes(workspace)) {
-          expect(response.body.taxConfiguration).to.be.null
-        }
+        expect(response.body.taxConfiguration).to.be.null
       })
     })
   })

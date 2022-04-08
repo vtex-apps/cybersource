@@ -13,7 +13,7 @@ const { name } = config.workspace
 describe('Configure workspace and tax in orderForm configuration', () => {
   testSetup()
 
-  startCyberSource(name)
+  startCyberSource()
   configureTaxConfigurationInOrderForm(name)
   setWorkspaceInAffiliation(name)
 })
