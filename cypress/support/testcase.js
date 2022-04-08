@@ -374,9 +374,9 @@ export function paymentAndAPITestCases(
 ) {
   completePayment(prefix, orderIdEnv)
 
-  invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
-
   sendInvoiceTestCase(product, orderIdEnv)
+
+  invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
 
   verifyCyberSourceAPI({
     prefix,

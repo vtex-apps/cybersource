@@ -104,7 +104,7 @@ strategy:
       - cypress/integration/2.2-*
     dependency:
       - postSetup
-  discountProduct:
+  promotionalProduct:
     enabled: true
     sendDashboard: false
     hardTries: 1
@@ -115,7 +115,7 @@ strategy:
       - cypress/integration/2.3-*
     dependency:
       - postSetup
-  discountShipping:
+  discountProduct:
     enabled: true
     sendDashboard: false
     hardTries: 1
@@ -126,7 +126,7 @@ strategy:
       - cypress/integration/2.4-*
     dependency:
       - postSetup
-  promotionalProduct:
+  discountShipping:
     enabled: true
     sendDashboard: false
     hardTries: 1
@@ -170,3 +170,14 @@ strategy:
       - cypress/integration/2.8-*
     dependency:
       - multiProduct
+  settlements:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.9-*
+    dependency:
+      - promotionalProduct

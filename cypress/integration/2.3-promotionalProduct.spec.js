@@ -2,10 +2,7 @@ import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { promotionProduct } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
-import {
-  paymentAndAPITestCases,
-  verifyPaymentSettled,
-} from '../support/testcase.js'
+import { paymentAndAPITestCases } from '../support/testcase.js'
 
 describe('Promotional Product Testcase', () => {
   testSetup()
@@ -54,6 +51,4 @@ describe('Promotional Product Testcase', () => {
     { prefix, approved: false },
     { ...getTestVariables(prefix), orderIdEnv: env }
   )
-
-  verifyPaymentSettled(promotionProduct.prefix, promotionProduct.env)
 })
