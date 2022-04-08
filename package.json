@@ -31,6 +31,7 @@
     "husky": "^4.2.3",
     "jwk-to-pem": "^2.0.5",
     "lint-staged": "^10.1.1",
+    "moment": "^2.29.2",
     "prettier": "^2.0.2",
     "typescript": "^3.8.3"
   }
