@@ -1,7 +1,7 @@
 import { requestRefund, singleProduct } from '../support/outputvalidation'
 import { testSetup } from '../support/common/support.js'
 import { refund } from '../support/common/refund_apis.js'
-import { getRefundPayload } from '../support/refund.js'
+import { getRefundPayload } from '../support/refund_payload.js'
 import { getTestVariables } from '../support/utils.js'
 import { verifyRefundTid } from '../support/testcase.js'
 

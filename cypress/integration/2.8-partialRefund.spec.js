@@ -1,10 +1,7 @@
-import {
-  requestRefund,
-  multiProduct,
-} from '../support/sandbox_outputvalidation.js'
+import { requestRefund, multiProduct } from '../support/outputvalidation'
 import { testSetup } from '../support/common/support.js'
-import { refund } from '../support/sandbox_refund_apis.js'
-import { getRefundPayload } from '../support/sandbox_refund.js'
+import { refund } from '../support/common/refund_apis.js'
+import { getRefundPayload } from '../support/refund_payload.js'
 import { getTestVariables } from '../support/utils.js'
 import { verifyRefundTid } from '../support/testcase.js'
 
@@ -15,7 +12,7 @@ describe('Testing Cybersource transaction API for partial refund', () => {
   const { prefix } = multiProduct
   const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
-  it('Verify whether we have an order to request for full refund', () => {
+  it('Verify whether we have an order to request for partial refund', () => {
     cy.getOrderItems().then(order => {
       if (!order[requestRefund.partialRefundEnv] && !order[transactionIdEnv]) {
         throw new Error('MultiProduct Order id/Transaction id is missing')
