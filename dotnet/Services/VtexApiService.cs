@@ -568,22 +568,24 @@ namespace Cybersource.Services
             //_context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
 
             // Combine skus
-            //Dictionary<string, Item> itemDictionary = new Dictionary<string, Item>();
-            //foreach (Item requestItem in taxRequest.Items)
-            //{
-            //    if (itemDictionary.ContainsKey(requestItem.Sku))
-            //    {
-            //        itemDictionary[requestItem.Sku].DiscountPrice += requestItem.DiscountPrice;
-            //        itemDictionary[requestItem.Sku].ItemPrice += requestItem.ItemPrice;
-            //        itemDictionary[requestItem.Sku].Quantity += requestItem.Quantity;
-            //    }
-            //    else
-            //    {
-            //        itemDictionary.Add(requestItem.Sku, requestItem);
-            //    }
-            //}
+            Dictionary<string, Item> itemDictionary = new Dictionary<string, Item>();
+            foreach (Item requestItem in taxRequest.Items)
+            {
+                if (itemDictionary.ContainsKey(requestItem.Sku))
+                {
+                    itemDictionary[requestItem.Sku].DiscountPrice += requestItem.DiscountPrice;
+                    itemDictionary[requestItem.Sku].ItemPrice += requestItem.ItemPrice;
+                    itemDictionary[requestItem.Sku].Quantity += requestItem.Quantity;
+                }
+                else
+                {
+                    itemDictionary.Add(requestItem.Sku, requestItem);
+                }
+            }
 
-            //taxRequest.Items = itemDictionary.Values.ToArray();
+            taxRequest.Items = itemDictionary.Values.ToArray();
+
+            //_context.Vtex.Logger.Debug("GetTaxes", null, "VtexTaxRequest", new[] { ("taxRequest", JsonConvert.SerializeObject(taxRequest)), ("taxRequestOriginal", JsonConvert.SerializeObject(taxRequestOriginal)) });
 
             VtexTaxResponse vtexTaxResponse = new VtexTaxResponse
             {
@@ -686,7 +688,7 @@ namespace Cybersource.Services
                 {
                     if (taxResponse.Status.Equals("COMPLETED"))
                     {
-                        vtexTaxResponse = await this.CybersourceResponseToVtexResponse(taxResponse);
+                        vtexTaxResponse = await this.CybersourceResponseToVtexResponse(taxResponse, taxRequest);
                         string splitSkus = taxRequest.Items.Length.Equals(taxRequestOriginal.Items.Length) ? "Skus were not combined" : $"Skus combined. {taxRequestOriginal.Items.Length} line items combined to {taxRequest.Items.Length}";
                         _context.Vtex.Logger.Debug("GetTaxes", "CalculateTaxes", splitSkus, new[] { ("cyberTaxRequest", JsonConvert.SerializeObject(cyberTaxRequest)), ("taxResponse", JsonConvert.SerializeObject(taxResponse)), ("vtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
                     }
@@ -707,11 +709,10 @@ namespace Cybersource.Services
                 // Split response items to match request
                 try
                 {
+                    _context.Vtex.Logger.Debug("GetTaxes", "Splitting", "VtexTaxRequest", new[] { ("taxRequest", JsonConvert.SerializeObject(taxRequest)), ("taxRequestOriginal", JsonConvert.SerializeObject(taxRequestOriginal)), ("taxResponse", JsonConvert.SerializeObject(taxResponse)), ("vtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
                     // Split out skus to match request
                     if (taxRequest.Items.Length != taxRequestOriginal.Items.Length)
                     {
-                        Console.WriteLine($"taxRequest.Items.Length {taxRequest.Items.Length} != taxRequestOriginal.Items.Length {taxRequestOriginal.Items.Length}");
-                        Console.WriteLine($"vtexTaxResponse.ItemTaxResponse.Count = {vtexTaxResponse.ItemTaxResponse.Count}");
                         ItemTaxResponse[] itemTaxResponses = new ItemTaxResponse[taxRequestOriginal.Items.Length];
                         int responseId = 0;
                         decimal totalSplitAllocatedTax = 0m;
@@ -719,18 +720,14 @@ namespace Cybersource.Services
                         foreach (Item requestItem in taxRequestOriginal.Items)
                         {
                             Item trItem = taxRequest.Items.FirstOrDefault(i => i.Sku.Equals(requestItem.Sku));
-                            Console.WriteLine($"trItem: {trItem.Id} sku [{requestItem.Sku}] id: {requestItem.Id}");
                             string taxResponseIndexId = trItem.Id;
                             if (requestItem.Quantity == trItem.Quantity)
                             {
                                 itemTaxResponses[responseId] = vtexTaxResponse.ItemTaxResponse.FirstOrDefault(t => t.Id.Equals(taxResponseIndexId));
                                 if(itemTaxResponses[responseId] == null)
                                 {
-                                    Console.WriteLine($"responseId {responseId} == NULL!!! taxResponseIndexId [{taxResponseIndexId}]");
                                     return null;
                                 }
-
-                                //Console.WriteLine($"ADDING {responseId} == ");
                             }
                             else
                             {
@@ -761,7 +758,6 @@ namespace Cybersource.Services
                                 }
 
                                 itemTaxResponses[responseId] = itemTaxResponseSplit;
-                                Console.WriteLine($"ADDING {responseId} != ");
                                 totalSplitAllocatedTax += itemTaxResponseSplit.Taxes.Sum(i => i.Value);
 
                                 if (qntyAllocatedPerSku.ContainsKey(requestItem.Sku))
@@ -780,7 +776,7 @@ namespace Cybersource.Services
                                     {
                                         decimal adjustmentAmount = Math.Round((totalTaxToAllocate - totalSplitAllocatedTax), 2, MidpointRounding.ToEven);
                                         itemTaxResponses[responseId].Taxes.First().Value += adjustmentAmount;
-                                        _context.Vtex.Logger.Warn("GetTaxes", null, $"Applying adjustment to id [{taxResponseIndexId}]: {totalTaxToAllocate} - {totalSplitAllocatedTax} = {adjustmentAmount}");
+                                        _context.Vtex.Logger.Warn("GetTaxes", "Splitting", $"Applying adjustment to id [{taxResponseIndexId}]: {totalTaxToAllocate} - {totalSplitAllocatedTax} = {adjustmentAmount}");
                                     }
 
                                     totalSplitAllocatedTax = 0m;
@@ -791,22 +787,10 @@ namespace Cybersource.Services
                         }
 
                         vtexTaxResponse.ItemTaxResponse = itemTaxResponses.ToList();
-                        //foreach(ItemTaxResponse taxResp in itemTaxResponses)
-                        //{
-                        //    if(taxResp == null)
-                        //    {
-                        //        Console.WriteLine($" taxResp IS NULL!!!");
-                        //    }
-
-                        //    Console.WriteLine($"Adding taxResp {taxResp.Id}");
-                        //    vtexTaxResponse.ItemTaxResponse.Add(taxResp);
-                        //    Console.WriteLine($"Added taxResp {taxResp.Id}");
-                        //}
                     }
                 }
                 catch (Exception ex)
                 {
-                    //Console.WriteLine($"Error splitting line items: '{ex.Message}'");
                     _context.Vtex.Logger.Error("TaxjarResponseToVtexResponse", "Splitting", $"Error splitting line items", ex);
                     return null;
                 }
@@ -866,10 +850,6 @@ namespace Cybersource.Services
                         {
                             inNexus = true;
                             break;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"{pickupPoint.Name} not InNexus");
                         }
                     }
                 }
@@ -985,7 +965,7 @@ namespace Cybersource.Services
                     }
 
                     // Add shipping as an item
-                    decimal shippingAmount = vtexOrder.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
+                    decimal shippingAmount = (decimal)vtexOrder.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
                     LineItem lineItemShipping = new LineItem
                     {
                         productName = "Shipping",
@@ -1002,7 +982,7 @@ namespace Cybersource.Services
                     {
                         if (taxResponse.Status.Equals("COMPLETED"))
                         {
-                            VtexTaxResponse vtexTaxResponse = await this.CybersourceResponseToVtexResponse(taxResponse);
+                            VtexTaxResponse vtexTaxResponse = await this.CybersourceResponseToVtexResponse(taxResponse, null);
                         }
                         else
                         {
@@ -1126,7 +1106,7 @@ namespace Cybersource.Services
             return countryCode;
         }
 
-        public async Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse)
+        public async Task<VtexTaxResponse> CybersourceResponseToVtexResponse(PaymentsResponse taxResponse, VtexTaxRequest taxRequest)
         {
             if (taxResponse == null)
             {
@@ -1150,17 +1130,31 @@ namespace Cybersource.Services
                 ItemTaxResponse = new List<ItemTaxResponse>()
             };
 
+            if(taxRequest == null)
+            {
+                taxRequest = new VtexTaxRequest
+                {
+                    Items = new Item[taxResponse.OrderInformation.lineItems.Count]
+                };
+
+                for (int index = 0; index < taxResponse.OrderInformation.lineItems.Count - 1; index++)
+                {
+                    taxRequest.Items[index].Id = index.ToString();
+                }
+            }
+
             double totalItemTax = double.Parse(taxResponse.OrderInformation.taxAmount);
 
             // The last item is shipping
             LineItem shippingTaxes = taxResponse.OrderInformation.lineItems.Last();
-            for (int i = 0; i < taxResponse.OrderInformation.lineItems.Count-1; i++)
+            int i = 0;
+            foreach (Item item in taxRequest.Items)
             {
                 LineItem lineItem = taxResponse.OrderInformation.lineItems[i];
                 double itemTaxPercentOfWhole = double.Parse(lineItem.taxAmount) / totalItemTax;
                 ItemTaxResponse itemTaxResponse = new ItemTaxResponse
                 {
-                    Id = i.ToString()
+                    Id = item.Id
                 };
 
                 List<VtexTax> vtexTaxes = new List<VtexTax>();
@@ -1197,7 +1191,8 @@ namespace Cybersource.Services
 
                 itemTaxResponse.Taxes = vtexTaxes.ToArray();
                 vtexTaxResponse.ItemTaxResponse.Add(itemTaxResponse);
-            };
+                i++;
+            }
 
             decimal totalOrderTax = decimal.Parse(taxResponse.OrderInformation.taxAmount);
             decimal totalResponseTax = vtexTaxResponse.ItemTaxResponse.SelectMany(t => t.Taxes).Sum(i => i.Value);
@@ -1367,7 +1362,6 @@ namespace Cybersource.Services
                         customApps = JsonConvert.DeserializeObject<List<CustomApp>>(appsConfig);
                         foreach (CustomApp customApp in customApps)
                         {
-                            Console.WriteLine($"customApp '{customApp.Id}' = '{JsonConvert.SerializeObject(customApp.Fields)}'");
                             JArray fieldsArray = (JArray)customApp.Fields;
                             List<string> fieldNames = fieldsArray.ToObject<List<string>>();
                             foreach (string fieldName in fieldNames)
@@ -1379,7 +1373,6 @@ namespace Cybersource.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"ERROR: {ex.Message}");
                     _context.Vtex.Logger.Error("GetPropertyList", null, "Error getting property list", ex);
                 }
             }

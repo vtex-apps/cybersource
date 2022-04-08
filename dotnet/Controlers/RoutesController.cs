@@ -348,7 +348,7 @@
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 PaymentsResponse taxResponse = JsonConvert.DeserializeObject<PaymentsResponse>(bodyAsText);
-                vtexTaxResponse = await this._vtexApiService.CybersourceResponseToVtexResponse(taxResponse);
+                vtexTaxResponse = await this._vtexApiService.CybersourceResponseToVtexResponse(taxResponse, null);
             }
 
             return Json(vtexTaxResponse);
