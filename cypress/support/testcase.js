@@ -272,8 +272,9 @@ export function invoiceAPITestCase(
 
   it(
     `In ${prefix} - Invoice API should have expected tax`,
-    updateRetry(2),
+    updateRetry(6),
     () => {
+      cy.addDelayBetweenRetries(5000)
       if (externalSellerTestCase) {
         if (externalSeller.directSaleEnv === orderIdEnv) {
           tax = externalSeller.directSaleTax
