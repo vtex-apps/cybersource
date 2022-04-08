@@ -1,8 +1,5 @@
 import { testSetup, updateRetry } from '../support/common/support.js'
-import {
-  multiProduct,
-  requestRefund,
-} from '../support/sandbox_outputvalidation.js'
+import { multiProduct, requestRefund } from '../support/outputvalidation'
 import selectors from '../support/common/selectors.js'
 import { paymentAndAPITestCases } from '../support/testcase.js'
 import { getTestVariables } from '../support/utils.js'

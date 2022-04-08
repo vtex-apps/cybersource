@@ -1,5 +1,5 @@
 import { testSetup, updateRetry } from '../support/common/support.js'
-import { externalSeller } from '../support/sandbox_outputvalidation'
+import { externalSeller } from '../support/outputvalidation.js'
 import selectors from '../support/common/selectors.js'
 import { getTestVariables } from '../support/utils.js'
 import {
@@ -8,7 +8,7 @@ import {
   verifyStatusInInteractionAPI,
 } from '../support/testcase.js'
 
-describe('Discount Shipping Testcase', () => {
+describe('External Seller Testcase', () => {
   testSetup()
 
   const {

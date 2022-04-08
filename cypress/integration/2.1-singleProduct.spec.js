@@ -1,9 +1,6 @@
 import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
-import {
-  singleProduct,
-  requestRefund,
-} from '../support/sandbox_outputvalidation.js'
+import { singleProduct, requestRefund } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
 import { paymentAndAPITestCases } from '../support/testcase.js'
 

@@ -1,8 +1,8 @@
 import { VTEX_AUTH_HEADER } from './common/constants.js'
-import { updateRetry } from './common/support.js'
+import { updateRetry, saveOrderId } from './common/support.js'
 import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
-import { orderAndSaveProductId, getTestVariables } from './utils.js'
+import { getTestVariables } from './utils.js'
 import { externalSeller } from './sandbox_outputvalidation.js'
 
 export function completePayment(
@@ -47,10 +47,10 @@ export function completePayment(
         .find(selectors.CreditCardCode)
         .type('123')
       cy.get(selectors.BuyNowBtn).last().click()
-      cy.wait('@callback')
+      cy.wait('@callback', { timeout: 40000 })
         .its('response.statusCode', { timeout: 5000 })
         .should('eq', 204)
-      orderAndSaveProductId(orderIdEnv, externalSellerEnv)
+      saveOrderId(orderIdEnv, externalSellerEnv)
     })
   })
 }
@@ -295,7 +295,7 @@ export function invoiceAPITestCase(
 
             cy.setOrderItem(transactionIdEnv, transactionId)
             if (approved) {
-              expect(response.body.status).to.match(/cancel|invoiced/)
+              expect(response.body.status).to.match(/cancel|invoiced|handling/)
             } else {
               expect(response.body.status).to.match(/pending|handling/)
             }
@@ -348,13 +348,15 @@ function generateXML(orderId, paymentTransactionId) {
 function approvePayment(orderIdEnv, paymentTransactionIdEnv) {
   // Approving Payment via /cybersource/notify API
   cy.getOrderItems().then(item => {
-    cy.request({
-      url: 'https://sandboxusdev.myvtex.com/cybersource/notify',
-      method: 'POST',
-      body: generateXML(item[orderIdEnv], item[paymentTransactionIdEnv]),
-      timeout: 10000,
-    }).then(response => {
-      expect(response.status).to.equal(200)
+    cy.getVtexItems().then(vtex => {
+      cy.request({
+        url: `${vtex.baseUrl}/cybersource/notify`,
+        method: 'POST',
+        body: generateXML(item[orderIdEnv], item[paymentTransactionIdEnv]),
+        timeout: 10000,
+      }).then(response => {
+        expect(response.status).to.equal(200)
+      })
     })
   })
 }

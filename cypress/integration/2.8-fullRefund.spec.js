@@ -1,10 +1,7 @@
-import {
-  requestRefund,
-  singleProduct,
-} from '../support/sandbox_outputvalidation.js'
+import { requestRefund, singleProduct } from '../support/outputvalidation'
 import { testSetup } from '../support/common/support.js'
-import { refund } from '../support/sandbox_refund_apis.js'
-import { getRefundPayload } from '../support/sandbox_refund.js'
+import { refund } from '../support/common/refund_apis.js'
+import { getRefundPayload } from '../support/refund.js'
 import { getTestVariables } from '../support/utils.js'
 import { verifyRefundTid } from '../support/testcase.js'
 

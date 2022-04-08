@@ -1,6 +1,6 @@
 import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
-import { discountProduct } from '../support/sandbox_outputvalidation.js'
+import { discountProduct } from '../support/outputvalidation'
 import { getTestVariables } from '../support/utils.js'
 import { paymentAndAPITestCases } from '../support/testcase.js'
 
@@ -40,7 +40,7 @@ describe('Discount Product Testcase', () => {
 
   paymentAndAPITestCases(
     discountProduct,
-    { prefix, approved: false },
+    { prefix, approved: true },
     { ...getTestVariables(prefix), orderIdEnv: env }
   )
 })
