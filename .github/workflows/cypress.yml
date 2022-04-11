@@ -41,7 +41,7 @@ jobs:
         run: yarn install --frozen-lockfile
         working-directory: ./cy-runner
 
-      - name: Install packages to testcase
+      - name: Install Cybersource packages
         run: yarn install --frozen-lockfile
 
       - name: Cypress Runner
