@@ -1,0 +1,45 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "sku": "880300",
+      "ean": null,
+      "refId": "880300a",
+      "unitMultiplier": 1,
+      "measurementUnit": "un",
+      "targetPrice": 540,
+      "itemPrice": 5400,
+      "quantity": 10,
+      "discountPrice": 0,
+      "dockId": "1",
+      "freightPrice": 10,
+      "brandId": "9280"
+    }
+  ],
+  "totals": [
+    { "id": "Items", "name": "Items Total", "value": 540000 },
+    { "id": "Discounts", "name": "Discounts Total", "value": 0 },
+    { "id": "Shipping", "name": "Shipping Total", "value": 1000 },
+    { "id": "Tax", "name": "Tax Total", "value": 0 }
+  ],
+  "clientEmail": null,
+  "shippingDestination": {
+    "country": "USA",
+    "state": "FL",
+    "city": "Aventura",
+    "neighborhood": null,
+    "postalCode": "33180",
+    "street": "19501 19501 Biscayne Blvd Space"
+  },
+  "clientData": {
+    "email": "syed.mujeeb@vtex.com.br",
+    "document": null,
+    "corporateDocument": null,
+    "stateInscription": null,
+    "documentType": null
+  },
+  "paymentData": null,
+  "orderFormId": "5176f9cdc08541b58ee0ca65c51f202a",
+  "salesChannel": "1",
+  "taxApp": null
+}

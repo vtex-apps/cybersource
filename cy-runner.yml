@@ -4,7 +4,7 @@ base:
     enabled: true
     name: VTEX_QE
   vtex:
-    account: sandboxusdev
+    account: productusqa
     id: 2001459804
     domain: myvtex.com
     urlExternalSeller:
@@ -24,6 +24,8 @@ base:
     enabled: false
     channel: some-channel
   cypress:
+    devMode: false
+    runHeaded: false
     enabled: false
     projectId: xyza
     video: true
@@ -42,26 +44,25 @@ base:
   stateFiles: [.orders.json]
 
 workspace:
-  name: master
+  name: random
   prefix: cybersource
-  runInDevMode: false
-  runHeaded: false
   linkApp:
-    enabled: false
+    enabled: true
     logOutput:
       enabled: false
   installApps:
-    - vtex.cybersource
+    - vtex.cybersource-fraud
+    - vtex.cybersource-ui
   removeApps: []
   wipe:
-    enabled: false
+    enabled: true
     stopOnFail: false
-    spec: cypress-shared/integration/pass.spec.js
+    spec: cypress/integration/wipe.spec.js
   teardown:
-    enabled: false
+    enabled: true
 
 strategy:
-  payment:
+  postSetup:
     enabled: true
     sendDashboard: false
     hardTries: 0
@@ -69,4 +70,114 @@ strategy:
     parallel: false
     runInOrder: true
     specs:
-      - cypress/integration/cybersource-payment.spec.js
+      - cypress/integration/post_setup.spec.js
+  sku:
+    enabled: false
+    sendDashboard: false
+    hardTries: 0
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/sku.spec.js
+    dependency:
+      - postSetup
+  singleProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.1-*
+    dependency:
+      - postSetup
+  multiProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.2-*
+    dependency:
+      - postSetup
+  promotionalProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.3-*
+    dependency:
+      - postSetup
+  discountProduct:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.4-*
+    dependency:
+      - postSetup
+  discountShipping:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.5-*
+    dependency:
+      - postSetup
+  externalSeller:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.6-*
+    dependency:
+      - postSetup
+  fullRefund:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.7-*
+    dependency:
+      - singleProduct
+  partialRefund:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.8-*
+    dependency:
+      - multiProduct
+  settlements:
+    enabled: true
+    sendDashboard: false
+    hardTries: 1
+    stopOnFail: false
+    parallel: false
+    runInOrder: true
+    specs:
+      - cypress/integration/2.9-*
+    dependency:
+      - promotionalProduct
