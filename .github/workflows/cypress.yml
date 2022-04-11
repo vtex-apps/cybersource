@@ -42,7 +42,7 @@ jobs:
         working-directory: ./cy-runner
 
       - name: Install packages to testcase
-        run: yarn add cybersource-rest-client jwk-to-pem moment
+        run: yarn install --frozen-lockfile
 
       - name: Cypress Runner
         run: yarn cy-r
