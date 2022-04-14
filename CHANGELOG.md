@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.32] - 2022-04-14
+
 ### Fixed
 
 - Custom Apps to MDD
