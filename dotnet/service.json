@@ -107,6 +107,10 @@
     "decisionManagerNotify": {
       "path": "/cybersource/notify",
       "public": true
+    },
+    "testFlattenCustomData": {
+      "path": "/cybersource/test-custom-data",
+      "public": true
     }
   },
   "events": {

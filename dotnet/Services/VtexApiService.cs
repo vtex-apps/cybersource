@@ -1366,7 +1366,7 @@ namespace Cybersource.Services
                             List<string> fieldNames = fieldsArray.ToObject<List<string>>();
                             foreach (string fieldName in fieldNames)
                             {
-                                propertyList.Add($"CustomData.CustomApps.{customApp.Id}.{fieldName}");
+                                propertyList.Add($"CustomData.CustomApps.{customApp.Id}_{fieldName}");
                             }
                         }
                     }
