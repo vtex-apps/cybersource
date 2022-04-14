@@ -430,5 +430,29 @@
             //return actionResult;
             return Ok();
         }
+
+        public async Task<IActionResult> TestFlattenCustomData()
+        {
+            string response = null;
+            PaymentRequestWrapper requestWrapper = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                try
+                {
+                    VtexOrder vtexOrder = JsonConvert.DeserializeObject<VtexOrder>(bodyAsText);
+                    CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest();
+                    requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+                    response = requestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                    Console.WriteLine(response);
+                }
+                catch (Exception ex)
+                {
+                    _context.Vtex.Logger.Error("TestFlattenCustomData", "FlattenCustomData", "Error", ex, new[] { ("body", bodyAsText) });
+                }
+            }
+
+            return Json(requestWrapper);
+        }
     }
 }

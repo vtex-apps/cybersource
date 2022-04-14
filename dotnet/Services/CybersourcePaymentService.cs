@@ -349,8 +349,14 @@ namespace Cybersource.Services
 
                     if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
                     {
-                        requestWrapper.FlattenCustomData(vtexOrder.CustomData);
-                        _context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", JsonConvert.SerializeObject(requestWrapper.CustomData));
+                        string response = requestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                        if (!string.IsNullOrEmpty(response))
+                        {
+                            // A response indicates an error.
+                            _context.Vtex.Logger.Error("CreatePayment", "FlattenCustomData", response, null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                        }
+
+                        _context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
                     }
                 }
             }
@@ -1081,7 +1087,7 @@ namespace Cybersource.Services
                     foreach (MerchantDefinedValueSetting merchantDefinedValueSetting in merchantSettings.MerchantDefinedValueSettings)
                     {
                         merchantDefinedValueKey++;
-                        //if (merchantDefinedValueSetting.IsValid)
+                        if (merchantDefinedValueSetting.IsValid)
                         {
                             string merchantDefinedValue = merchantDefinedValueSetting.UserInput; // merchantDefinedValueSetting.GoodPortion;
                             if (!string.IsNullOrEmpty(merchantDefinedValue))

@@ -1,6 +1,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Reflection;
 
 namespace Cybersource.Models
@@ -15,28 +16,34 @@ namespace Cybersource.Models
         public string CompanyTaxId { get; set; }
         //public string CustomerName { get { return $"{ this.MiniCart.Buyer.FirstName } { this.MiniCart.Buyer.LastName }"; } }
         //public string Bin { get { return this.Card.Bin; } }
-        public dynamic CustomData { get; private set; }
+        public CustomDataWrapper CustomData { get; private set; }
 
-        public void FlattenCustomData(CustomData customData)
+        public string FlattenCustomData(CustomData customData)
         {
+            string retval = null;
             try
             {
+                this.CustomData = new CustomDataWrapper();
+                this.CustomData.CustomApps = new ExpandoObject();
                 foreach (CustomApp customApp in customData.CustomApps)
                 {
                     string propName = customApp.Id;
-                    JArray fieldsArray = (JArray)customApp.Fields;
+                    JObject fieldsArray = (JObject)customApp.Fields;
                     Dictionary<string, string> fields = fieldsArray.ToObject<Dictionary<string, string>>();
                     foreach (string fieldName in fields.Keys)
                     {
                         string fieldValue = fields[fieldName];
-                        this.CustomData.CustomApps[propName][fieldName] = fieldValue;
+                        ((IDictionary<string, object>)this.CustomData.CustomApps).Add($"{propName}_{fieldName}", fieldValue);
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"ERROR FLATTENING DATA {ex.Message}");
+                retval = $"ERROR FLATTENING DATA {ex.Message}";
             }
+
+            return retval;
         }
 
         public PaymentRequestWrapper(CreatePaymentRequest createPaymentRequest)
@@ -216,5 +223,10 @@ namespace Cybersource.Models
                 "MiniCart.ShippingAddress.State"
             };
         }
+    }
+
+    public class CustomDataWrapper
+    {
+        public dynamic CustomApps { get; set; }
     }
 }
