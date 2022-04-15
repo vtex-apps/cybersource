@@ -2,13 +2,19 @@ import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { promotionProduct } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
-import { paymentAndAPITestCases } from '../support/testcase.js'
+import {
+  paymentAndAPITestCases,
+  orderTaxAPITestCase,
+} from '../support/testcase.js'
 
 describe('Promotional Product Testcase', () => {
   testSetup()
 
   const { prefix, productName, tax, totalAmount, env, postalCode } =
     promotionProduct
+
+  // Verify tax via order tax api
+  orderTaxAPITestCase(prefix, tax)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product

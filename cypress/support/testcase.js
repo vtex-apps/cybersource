@@ -5,6 +5,16 @@ import selectors from './common/selectors.js'
 import { getTestVariables } from './utils.js'
 import { externalSeller } from './outputvalidation.js'
 
+export function orderTaxAPITestCase(fixtureName, tax) {
+  // Verify tax amounts via order-tax API
+  it(`Verify ${fixtureName} tax via order-tax API`, { retries: 0 }, () => {
+    // Load fixtures request payload and use them in orderTax API
+    cy.fixture(fixtureName).then(requestPayload =>
+      cy.orderTaxApi(requestPayload, tax)
+    )
+  })
+}
+
 export function completePayment(
   prefix,
   orderIdEnv = false,

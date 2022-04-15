@@ -372,7 +372,6 @@ healthchecksdb
 secrets.env.json
 .VTEX_QE.json
 cypress/screenshots
-cypress/fixtures
 cypress/videos
 cy-runner
 cypress/support/common

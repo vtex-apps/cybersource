@@ -20,9 +20,27 @@ describe('External Seller Testcase', () => {
     postalCode,
     directSaleEnv,
     externalSaleEnv,
+    directSaleTax,
+    externalSellerTax,
   } = externalSeller
 
   const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
+
+  it.skip('Verifying tax amount for external seller product via order-tax API', () => {
+    // We have stored externalSeller.json in cypress/fixtures
+    // That we are loading using cy.fixture() command and passing as a payload to orderTaxAPI
+    cy.fixture('externalSeller').then(requestPayload =>
+      cy.orderTaxApi(requestPayload, externalSellerTax)
+    )
+  })
+
+  it('Verifying tax amount for direct sale product via order-tax API', () => {
+    // We have stored singleProduct.json in cypress/fixtures
+    // That we are loading using cy.fixture() command and passing to orderTaxAPI
+    cy.fixture('directSale').then(requestPayload =>
+      cy.orderTaxApi(requestPayload, directSaleTax)
+    )
+  })
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product

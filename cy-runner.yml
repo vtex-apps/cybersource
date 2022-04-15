@@ -72,7 +72,7 @@ strategy:
     specs:
       - cypress/integration/post_setup.spec.js
   sku:
-    enabled: false
+    enabled: true
     sendDashboard: false
     hardTries: 0
     stopOnFail: false

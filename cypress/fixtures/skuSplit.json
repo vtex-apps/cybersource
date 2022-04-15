@@ -40,11 +40,11 @@
   "clientEmail": null,
   "shippingDestination": {
     "country": "USA",
-    "state": "FL",
-    "city": "Aventura",
+    "state": "CA",
+    "city": "TOPANGA",
     "neighborhood": null,
-    "postalCode": "33180",
-    "street": "19501 19501 Biscayne Blvd Space"
+    "postalCode": "90290",
+    "street": "Kerry Lane"
   },
   "clientData": {
     "email": "syed.mujeeb@vtex.com.br",

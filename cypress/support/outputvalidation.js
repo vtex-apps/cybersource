@@ -50,7 +50,7 @@ export default {
     env: 'discountShippingOrder',
   },
   promotionProduct: {
-    prefix: 'promotionProduct',
+    prefix: 'promotionalProduct',
     postalCode: '90290',
     totalAmount: '$ 27.13',
     tax: '$ 2.36',
@@ -70,6 +70,8 @@ export default {
     tax: '$ 14.17',
     directSaleAmount: '$ 55.00',
     directSaleEnv: 'directSale',
+    directSaleTax: '$ 5.23',
+    externalSellerTax: '$ 8.94',
     externalSellerAmount: '$ 107.94',
     externalSaleEnv: 'externalSaleEnv',
     subTotal: '$ 144.00',

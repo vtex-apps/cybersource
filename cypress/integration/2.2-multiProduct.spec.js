@@ -1,7 +1,10 @@
 import { testSetup, updateRetry } from '../support/common/support.js'
 import { multiProduct, requestRefund } from '../support/outputvalidation'
 import selectors from '../support/common/selectors.js'
-import { paymentAndAPITestCases } from '../support/testcase.js'
+import {
+  paymentAndAPITestCases,
+  orderTaxAPITestCase,
+} from '../support/testcase.js'
 import { getTestVariables } from '../support/utils.js'
 
 describe('Multi Product Testcase', () => {
@@ -11,6 +14,9 @@ describe('Multi Product Testcase', () => {
     multiProduct
 
   const orderIdEnv = requestRefund.partialRefundEnv
+
+  // Verify tax via order tax api
+  orderTaxAPITestCase(prefix, tax)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product

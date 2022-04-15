@@ -1,0 +1,53 @@
+{
+  "orderFormId": "2658aa26ce034202a73696a1e0713b79",
+  "salesChannel": "1",
+  "items": [
+    {
+      "id": "0",
+      "sku": "880020",
+      "ean": null,
+      "refId": "880020a",
+      "unitMultiplier": 1,
+      "measurementUnit": "un",
+      "targetPrice": 94.0,
+      "itemPrice": 94.0,
+      "quantity": 1,
+      "discountPrice": 0.0,
+      "dockId": "1",
+      "freightPrice": 5.0,
+      "brandId": "9280"
+    }
+  ],
+  "totals": [
+    { "id": "Items", "name": "Items Total", "value": 9400.0 },
+    { "id": "Discounts", "name": "Discounts Total", "value": 0.0 },
+    { "id": "Shipping", "name": "Shipping Total", "value": 500.0 },
+    { "id": "Tax", "name": "Tax Total", "value": 0.0 }
+  ],
+  "clientEmail": null,
+  "shippingDestination": {
+    "country": "USA",
+    "state": "CA",
+    "city": "Topanga",
+    "neighborhood": "Fernwood",
+    "postalCode": "90290",
+    "street": "Kerry Lane"
+  },
+  "clientData": {
+    "email": "syed.mujeeb@vtex.com.br",
+    "document": null,
+    "corporateDocument": null,
+    "stateInscription": null
+  },
+  "paymentData": {
+    "payments": [
+      {
+        "paymentSystem": "4",
+        "bin": "555555",
+        "referenceValue": 10794.0,
+        "value": 10794.0,
+        "installments": 1
+      }
+    ]
+  }
+}

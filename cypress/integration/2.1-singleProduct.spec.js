@@ -2,7 +2,10 @@ import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { singleProduct, requestRefund } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
-import { paymentAndAPITestCases } from '../support/testcase.js'
+import {
+  paymentAndAPITestCases,
+  orderTaxAPITestCase,
+} from '../support/testcase.js'
 
 describe('Single Product Testcase', () => {
   testSetup()
@@ -10,6 +13,9 @@ describe('Single Product Testcase', () => {
   const { prefix, productName, tax, totalAmount, postalCode } = singleProduct
 
   const orderIdEnv = requestRefund.fullRefundEnv
+
+  // Verify tax via order tax api
+  orderTaxAPITestCase(prefix, tax)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
