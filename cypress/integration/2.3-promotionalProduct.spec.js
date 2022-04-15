@@ -24,6 +24,7 @@ describe('Promotional Product Testcase', () => {
   })
 
   it('Updating product quantity to 2', updateRetry(3), () => {
+    cy.checkForTaxErrors()
     // Update Product quantity to 2
     cy.updateProductQuantity(promotionProduct, {
       quantity: '2',
@@ -32,6 +33,7 @@ describe('Promotional Product Testcase', () => {
   })
 
   it('Updating Shipping Information', updateRetry(3), () => {
+    cy.checkForTaxErrors()
     // Update Shipping Section
     cy.updateShippingInformation({ postalCode })
   })

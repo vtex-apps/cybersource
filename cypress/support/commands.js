@@ -26,3 +26,10 @@ Cypress.Commands.add('orderTaxApi', (requestPayload, tax) => {
     })
   })
 })
+
+Cypress.Commands.add('checkForTaxErrors', () => {
+  cy.contains('communication error with Tax System has occurred', {
+    timeout: 2000,
+  }).should('not.exist')
+  cy.get('p[class*=vtex-front-messages]', { timeout: 2000 }).should('not.exist')
+})

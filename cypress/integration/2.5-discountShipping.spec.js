@@ -24,11 +24,13 @@ describe('Discount Shipping Testcase', () => {
   })
 
   it('Updating product quantity to 1', updateRetry(3), () => {
+    cy.checkForTaxErrors()
     // Update Product quantity to 1
     cy.updateProductQuantity(discountShipping, { quantity: '1' })
   })
 
   it('Updating Shipping Information', updateRetry(3), () => {
+    cy.checkForTaxErrors()
     // Update Shipping Section
     cy.updateShippingInformation({ postalCode })
   })
