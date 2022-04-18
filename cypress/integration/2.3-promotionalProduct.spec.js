@@ -4,7 +4,7 @@ import { promotionProduct } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
 import {
   paymentAndAPITestCases,
-  orderTaxAPITestCase,
+  // orderTaxAPITestCase,
 } from '../support/testcase.js'
 
 describe('Promotional Product Testcase', () => {
@@ -14,7 +14,7 @@ describe('Promotional Product Testcase', () => {
     promotionProduct
 
   // Verify tax via order tax api
-  orderTaxAPITestCase(prefix, tax)
+  // orderTaxAPITestCase(prefix, tax)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
