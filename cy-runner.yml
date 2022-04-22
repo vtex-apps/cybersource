@@ -28,7 +28,7 @@ base:
     runHeaded: false
     enabled: false
     projectId: xyza
-    video: true
+    video: false
     videoCompression: false
     videoUploadOnPasses: false
     screenshotOnRunFailure: true
