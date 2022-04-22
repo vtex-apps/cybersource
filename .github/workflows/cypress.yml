@@ -62,9 +62,10 @@ jobs:
           VTEX_QE: ${{ secrets.VTEX_QE }}
           NODE_NO_WARNINGS: 1
 
-      - name: Save results
-        uses: actions/upload-artifact@master
-        if: always()
-        with:
-          name: cy-runner-logs
-          path: cy-runner/logs
+# Quota exceed, disabling to avoid false positve errors
+#       - name: Save results
+#         uses: actions/upload-artifact@master
+#         if: always()
+#         with:
+#           name: cy-runner-logs
+#           path: cy-runner/logs
