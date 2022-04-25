@@ -2,13 +2,19 @@ import { testSetup, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { discountProduct } from '../support/outputvalidation'
 import { getTestVariables } from '../support/utils.js'
-import { paymentAndAPITestCases } from '../support/testcase.js'
+import {
+  paymentAndAPITestCases,
+  orderTaxAPITestCase,
+} from '../support/testcase.js'
 
 describe('Discount Product Testcase', () => {
   testSetup()
 
   const { prefix, productName, env, tax, totalAmount, postalCode } =
     discountProduct
+
+  // Verify tax via order tax api
+  orderTaxAPITestCase(prefix, tax)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product
@@ -18,6 +24,7 @@ describe('Discount Product Testcase', () => {
   })
 
   it('Updating product quantity to 1', updateRetry(3), () => {
+    cy.checkForTaxErrors()
     // Update Product quantity to 1
     cy.updateProductQuantity(discountProduct, {
       quantity: '1',
@@ -25,6 +32,7 @@ describe('Discount Product Testcase', () => {
   })
 
   it('Updating Shipping Information', updateRetry(3), () => {
+    cy.checkForTaxErrors()
     // Update Shipping Section
     cy.updateShippingInformation({ postalCode })
   })

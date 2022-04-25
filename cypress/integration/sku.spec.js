@@ -1,9 +1,9 @@
 import { updateRetry } from '../support/common/support.js'
 
 describe('Testing Split/Non-Split Sku', () => {
-  const tax = '$ 378.70'
+  const tax = '$ 513.96'
 
-  it.skip(
+  it(
     'Verifying same sku with split of 10 products(7 and 3) then verify tax amounts via order-tax API',
     updateRetry(5),
     () => {

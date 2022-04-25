@@ -28,8 +28,8 @@ base:
     runHeaded: false
     enabled: false
     projectId: xyza
-    video: true
-    videoCompression: 32
+    video: false
+    videoCompression: false
     videoUploadOnPasses: false
     screenshotOnRunFailure: true
     trashAssetsBeforeRuns: false
@@ -72,7 +72,7 @@ strategy:
     specs:
       - cypress/integration/post_setup.spec.js
   sku:
-    enabled: false
+    enabled: true
     sendDashboard: false
     hardTries: 0
     stopOnFail: false

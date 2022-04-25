@@ -1,0 +1,68 @@
+{
+  "orderFormId": "f82b9bb37b534c4cb3dac8dc91239b59",
+  "salesChannel": "1",
+  "items": [
+    {
+      "id": "0",
+      "sku": "880260",
+      "ean": null,
+      "refId": "880260a",
+      "unitMultiplier": 1,
+      "measurementUnit": "un",
+      "targetPrice": 50.0,
+      "itemPrice": 100.0,
+      "quantity": 2,
+      "discountPrice": 0.0,
+      "dockId": "1",
+      "freightPrice": 3.33,
+      "brandId": "9280"
+    },
+    {
+      "id": "1",
+      "sku": "880310",
+      "ean": null,
+      "refId": "880310a",
+      "unitMultiplier": 1,
+      "measurementUnit": "un",
+      "targetPrice": 20.0,
+      "itemPrice": 20.0,
+      "quantity": 1,
+      "discountPrice": 0.0,
+      "dockId": "1",
+      "freightPrice": 1.67,
+      "brandId": "9280"
+    }
+  ],
+  "totals": [
+    { "id": "Items", "name": "Items Total", "value": 12000.0 },
+    { "id": "Discounts", "name": "Discounts Total", "value": 0.0 },
+    { "id": "Shipping", "name": "Shipping Total", "value": 500.0 },
+    { "id": "Tax", "name": "Tax Total", "value": 0.0 }
+  ],
+  "clientEmail": null,
+  "shippingDestination": {
+    "country": "USA",
+    "state": "CA",
+    "city": "Topanga",
+    "neighborhood": "Fernwood",
+    "postalCode": "90290",
+    "street": "Kerry Lane"
+  },
+  "clientData": {
+    "email": "robot.partnerhere@gmail.com",
+    "document": null,
+    "corporateDocument": null,
+    "stateInscription": null
+  },
+  "paymentData": {
+    "payments": [
+      {
+        "paymentSystem": "4",
+        "bin": "555555",
+        "referenceValue": 13687.0,
+        "value": 13687.0,
+        "installments": 1
+      }
+    ]
+  }
+}
