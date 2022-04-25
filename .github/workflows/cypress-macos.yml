@@ -1,0 +1,45 @@
+name: "[QE] TEST cy-r on MacOS"
+
+on:
+  push:
+    branches:
+      - fix/cy-runner-parallel
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  Cypress:
+    runs-on: macos-10.15
+    steps:
+      - name: Checkout CyberSource
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Get cy-runner
+        run: git clone https://github.com/vtex-apps/cy-runner.git
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: "~/.cache/"
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Cypress
+        run: |
+          git checkout feature/add-parallelization
+          rm -rf .git
+          yarn install --frozen-lockfile
+        working-directory: ./cy-runner
+
+      - name: Install Cybersource packages
+        run: yarn install --frozen-lockfile
+
+      - name: Cypress Runner
+        run: yarn cy-r
+        env:
+          VTEX_QE: ${{ secrets.VTEX_QE }}
+          NODE_NO_WARNINGS: 1
