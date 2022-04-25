@@ -104,6 +104,7 @@ strategy:
       - cypress/integration/2.1-singleProduct*
       - cypress/integration/2.2-multiProduct*
       - cypress/integration/2.3-promotionalProduct*
+
 #  fullRefund:
 #    enabled: true
 #    sendDashboard: true
