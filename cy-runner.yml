@@ -90,33 +90,47 @@ strategy:
       - cypress/integration/2.6-externalSeller*
     dependency:
       - cypress/integration/post_setup.spec.js
-  fullRefund:
+  refund:
     enabled: true
     sendDashboard: true
     hardTries: 1
     stopOnFail: false
-    parallel: false
+    parallel: true
     specs:
       - cypress/integration/2.7-fullRefund*
-    dependency:
-      - cypress/integration/2.1-singleProduct*
-  partialRefund:
-    enabled: true
-    sendDashboard: true
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    specs:
       - cypress/integration/2.8-partialRefund*
-    dependency:
-      - cypress/integration/2.2-multiProduct*
-  settlements:
-    enabled: true
-    sendDashboard: true
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    specs:
       - cypress/integration/2.9-settlements*
     dependency:
+      - cypress/integration/2.1-singleProduct*
+      - cypress/integration/2.2-multiProduct*
       - cypress/integration/2.3-promotionalProduct*
+#  fullRefund:
+#    enabled: true
+#    sendDashboard: true
+#    hardTries: 1
+#    stopOnFail: false
+#    parallel: false
+#    specs:
+#      - cypress/integration/2.7-fullRefund*
+#    dependency:
+#      - cypress/integration/2.1-singleProduct*
+#  partialRefund:
+#    enabled: true
+#    sendDashboard: true
+#    hardTries: 1
+#    stopOnFail: false
+#    parallel: false
+#    specs:
+#      - cypress/integration/2.8-partialRefund*
+#    dependency:
+#      - cypress/integration/2.2-multiProduct*
+#  settlements:
+#    enabled: true
+#    sendDashboard: true
+#    hardTries: 1
+#    stopOnFail: false
+#    parallel: false
+#    specs:
+#      - cypress/integration/2.9-settlements*
+#    dependency:
+#      - cypress/integration/2.3-promotionalProduct*
