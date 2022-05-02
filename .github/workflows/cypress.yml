@@ -3,7 +3,7 @@ name: '[QE] Cypress Runner'
 on:
   schedule:
     # 7:00 AM UTC = 3:00 AM EDT
-    - cron: '0 7 * * *'
+    - cron: '0 7 * * MON-FRI'
   pull_request:
     branches:
       - master
@@ -23,9 +23,7 @@ concurrency:
 
 jobs:
   cypress:
-    runs-on: macos-10.15
-    # To avoid waste Cypress tests,
-    # lets run it only when the pull request is ready.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout CyberSource
