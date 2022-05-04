@@ -26,8 +26,10 @@ base:
   cypress:
     devMode: false
     runHeaded: false
-    enabled: false
-    projectId: xyza
+    getCookies: true
+    maxJobs: 3
+    quiet: true
+    projectId: ny5emv
     video: false
     videoCompression: false
     videoUploadOnPasses: false
@@ -41,6 +43,7 @@ base:
     pageLoadTimeout: 45000
     browser: chrome
     chromeWebSecurity: false
+    sorry: false
   stateFiles: [.orders.json]
 
 workspace:
@@ -57,127 +60,47 @@ workspace:
   wipe:
     enabled: true
     stopOnFail: false
-    spec: cypress/integration/wipe.spec.js
+    specs:
+      - cypress/integration/wipe.spec.js
   teardown:
     enabled: true
 
 strategy:
-  postSetup:
+  config:
     enabled: true
-    sendDashboard: false
-    hardTries: 0
-    stopOnFail: false
+    sendDashboard: true
+    hardTries: 1
+    stopOnFail: true
     parallel: false
-    runInOrder: true
     specs:
       - cypress/integration/post_setup.spec.js
-  sku:
+  basicTests:
     enabled: true
-    sendDashboard: false
-    hardTries: 0
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/sku.spec.js
-    dependency:
-      - postSetup
-  singleProduct:
-    enabled: true
-    sendDashboard: false
+    sendDashboard: true
     hardTries: 1
     stopOnFail: false
-    parallel: false
-    runInOrder: true
+    parallel: true
     specs:
-      - cypress/integration/2.1-*
+      - cypress/integration/sku*
+      - cypress/integration/2.1-singleProduct*
+      - cypress/integration/2.2-multiProduct*
+      - cypress/integration/2.3-promotionalProduct*
+      - cypress/integration/2.4-discountProduct*
+      - cypress/integration/2.5-discountShipping*
+      - cypress/integration/2.6-externalSeller*
     dependency:
-      - postSetup
-  multiProduct:
+      - cypress/integration/post_setup.spec.js
+  refund:
     enabled: true
-    sendDashboard: false
-    hardTries: 1
+    sendDashboard: true
+    hardTries: 2
     stopOnFail: false
-    parallel: false
-    runInOrder: true
+    parallel: true
     specs:
-      - cypress/integration/2.2-*
+      - cypress/integration/2.7-fullRefund*
+      - cypress/integration/2.8-partialRefund*
+      - cypress/integration/2.9-settlements*
     dependency:
-      - postSetup
-  promotionalProduct:
-    enabled: true
-    sendDashboard: false
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/2.3-*
-    dependency:
-      - postSetup
-  discountProduct:
-    enabled: true
-    sendDashboard: false
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/2.4-*
-    dependency:
-      - postSetup
-  discountShipping:
-    enabled: true
-    sendDashboard: false
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/2.5-*
-    dependency:
-      - postSetup
-  externalSeller:
-    enabled: true
-    sendDashboard: false
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/2.6-*
-    dependency:
-      - postSetup
-  fullRefund:
-    enabled: true
-    sendDashboard: false
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/2.7-*
-    dependency:
-      - singleProduct
-  partialRefund:
-    enabled: true
-    sendDashboard: false
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/2.8-*
-    dependency:
-      - multiProduct
-  settlements:
-    enabled: true
-    sendDashboard: false
-    hardTries: 1
-    stopOnFail: false
-    parallel: false
-    runInOrder: true
-    specs:
-      - cypress/integration/2.9-*
-    dependency:
-      - promotionalProduct
+      - cypress/integration/2.1-singleProduct*
+      - cypress/integration/2.2-multiProduct*
+      - cypress/integration/2.3-promotionalProduct*
