@@ -356,7 +356,17 @@ namespace Cybersource.Services
                             _context.Vtex.Logger.Error("CreatePayment", "FlattenCustomData", response, null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
                         }
 
-                        _context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                        //_context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                    }
+
+                    if(vtexOrder.MarketingData != null)
+                    {
+                        string response = requestWrapper.SetMarketingData(vtexOrder.MarketingData);
+                        if (!string.IsNullOrEmpty(response))
+                        {
+                            // A response indicates an error.
+                            _context.Vtex.Logger.Error("CreatePayment", "SetMarketingData", response, null, new[] { ("vtexOrder.MarketingData", JsonConvert.SerializeObject(vtexOrder.MarketingData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                        }
                     }
                 }
             }

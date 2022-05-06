@@ -17,6 +17,7 @@ namespace Cybersource.Models
         //public string CustomerName { get { return $"{ this.MiniCart.Buyer.FirstName } { this.MiniCart.Buyer.LastName }"; } }
         //public string Bin { get { return this.Card.Bin; } }
         public CustomDataWrapper CustomData { get; private set; }
+        public MarketingDataWrapper MarketingData { get; private set; }
 
         public string FlattenCustomData(CustomData customData)
         {
@@ -39,8 +40,35 @@ namespace Cybersource.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ERROR FLATTENING DATA {ex.Message}");
                 retval = $"ERROR FLATTENING DATA {ex.Message}";
+            }
+
+            return retval;
+        }
+
+        public string SetMarketingData(MarketingData marketingData)
+        {
+            string retval = null;
+            try
+            {
+                this.MarketingData = new MarketingDataWrapper
+                {
+                    Coupon = marketingData.Coupon,
+                    Id = marketingData.Id,
+                    UtmCampaign = marketingData.UtmCampaign,
+                    UtmiCampaign = marketingData.UtmiCampaign,
+                    Utmipage = marketingData.Utmipage,
+                    UtmiPart = marketingData.UtmiPart,
+                    UtmMedium = marketingData.UtmMedium,
+                    UtmPartner = marketingData.UtmPartner,
+                    UtmSource = marketingData.UtmSource
+                };
+
+                this.MarketingData.MarketingTags = string.Join(',', marketingData.MarketingTags);
+            }
+            catch (Exception ex)
+            {
+                retval = $"ERROR Adding Marketing Data {ex.Message}";
             }
 
             return retval;
@@ -220,7 +248,17 @@ namespace Cybersource.Models
                 "MiniCart.ShippingAddress.Neighborhood",
                 "MiniCart.ShippingAddress.PostalCode",
                 "MiniCart.ShippingAddress.City",
-                "MiniCart.ShippingAddress.State"
+                "MiniCart.ShippingAddress.State",
+                "MarketingData.Id",
+                "MarketingData.UtmSource",
+                "MarketingData.UtmPartner",
+                "MarketingData.UtmMedium",
+                "MarketingData.UtmCampaign",
+                "MarketingData.Coupon",
+                "MarketingData.UtmiCampaign",
+                "MarketingData.Utmipage",
+                "MarketingData.UtmiPart",
+                "MarketingData.MarketingTags"
             };
         }
     }
@@ -228,5 +266,10 @@ namespace Cybersource.Models
     public class CustomDataWrapper
     {
         public dynamic CustomApps { get; set; }
+    }
+
+    public class MarketingDataWrapper : MarketingData
+    {
+        public new string MarketingTags { get; set; }
     }
 }

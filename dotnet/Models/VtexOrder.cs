@@ -119,7 +119,7 @@ namespace Cybersource.Models
         public object CommercialConditionData { get; set; }
 
         [JsonProperty("marketingData")]
-        public object MarketingData { get; set; }
+        public MarketingData MarketingData { get; set; }
 
         [JsonProperty("storePreferencesData")]
         public StorePreferencesData StorePreferencesData { get; set; }
@@ -1316,5 +1316,38 @@ namespace Cybersource.Models
 
         [JsonProperty("major")]
         public long Major { get; set; }
+    }
+
+    public partial class MarketingData
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("utmSource")]
+        public string UtmSource { get; set; }
+
+        [JsonProperty("utmPartner")]
+        public string UtmPartner { get; set; }
+
+        [JsonProperty("utmMedium")]
+        public string UtmMedium { get; set; }
+
+        [JsonProperty("utmCampaign")]
+        public string UtmCampaign { get; set; }
+
+        [JsonProperty("coupon")]
+        public string Coupon { get; set; }
+
+        [JsonProperty("utmiCampaign")]
+        public string UtmiCampaign { get; set; }
+
+        [JsonProperty("utmipage")]
+        public string Utmipage { get; set; }
+
+        [JsonProperty("utmiPart")]
+        public string UtmiPart { get; set; }
+
+        [JsonProperty("marketingTags")]
+        public List<string> MarketingTags { get; set; }
     }
 }
