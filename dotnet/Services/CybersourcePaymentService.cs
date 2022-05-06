@@ -759,7 +759,7 @@ namespace Cybersource.Services
                     Id = sendAntifraudDataRequest.Id,
                     Tid = paymentsResponse.Id,
                     Status = CybersourceConstants.VtexAntifraudStatus.Undefined,
-                    Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
+                    //Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
                     AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
                     Responses = new Dictionary<string, string>(),
                     Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
@@ -771,7 +771,7 @@ namespace Cybersource.Services
                     case "ACCEPTED":
                     case "PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
-                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;   // Set Review to Arroved otherwise auth will not be called
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;   // Set Review to Approved otherwise auth will not be called
                         break;
                     case "INVALID_REQUEST":
                     case "CHALLENGE":

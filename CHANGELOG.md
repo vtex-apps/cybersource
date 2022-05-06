@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- (CYBRSOURCE-25) Do not pass fraud score because status must be controled by Decision Manager
 - (CYBRSOURCE-27) Configure Cybersource gateway to use auth/capture
 - (CYBRSOURCE-28) Add Marketing Data to Merchant Defined Fields
 
