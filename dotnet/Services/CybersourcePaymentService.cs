@@ -356,7 +356,17 @@ namespace Cybersource.Services
                             _context.Vtex.Logger.Error("CreatePayment", "FlattenCustomData", response, null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
                         }
 
-                        _context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                        //_context.Vtex.Logger.Debug("CreatePayment", "FlattenCustomData", null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                    }
+
+                    if(vtexOrder.MarketingData != null)
+                    {
+                        string response = requestWrapper.SetMarketingData(vtexOrder.MarketingData);
+                        if (!string.IsNullOrEmpty(response))
+                        {
+                            // A response indicates an error.
+                            _context.Vtex.Logger.Error("CreatePayment", "SetMarketingData", response, null, new[] { ("vtexOrder.MarketingData", JsonConvert.SerializeObject(vtexOrder.MarketingData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                        }
                     }
                 }
             }
@@ -749,7 +759,7 @@ namespace Cybersource.Services
                     Id = sendAntifraudDataRequest.Id,
                     Tid = paymentsResponse.Id,
                     Status = CybersourceConstants.VtexAntifraudStatus.Undefined,
-                    Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
+                    //Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
                     AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
                     Responses = new Dictionary<string, string>(),
                     Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
@@ -761,7 +771,7 @@ namespace Cybersource.Services
                     case "ACCEPTED":
                     case "PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
-                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;   // Set Review to Arroved otherwise auth will not be called
+                        sendAntifraudDataResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;   // Set Review to Approved otherwise auth will not be called
                         break;
                     case "INVALID_REQUEST":
                     case "CHALLENGE":

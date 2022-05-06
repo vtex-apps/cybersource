@@ -2,6 +2,7 @@
   "name": "Cybersource IO",
   "serviceUrl": "/cybersource/payment-provider",
   "usesAntifraud": true,
+  "usesAutoSettleOptions": true,
   "paymentMethods": [
     {
       "name": "Visa",
