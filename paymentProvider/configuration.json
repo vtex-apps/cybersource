@@ -41,6 +41,20 @@
     {
       "name": "Company Tax Id",
       "type": "text"
+    },
+    {
+      "options": [
+        {
+          "text": "Delayed Capture",
+          "value": "DelayedCapture"
+        },
+        {
+          "text": "Immediate Capture",
+          "value": "AuthAndCapture"
+        }
+      ],
+      "name": "Capture Setting",
+      "type": "select"
     }
   ]
 }
