@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Custom payment options
+
 ## [1.1.34] - 2022-05-09
 
 ### Added
