@@ -66,17 +66,21 @@ namespace Cybersource.Services
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string merchantName = createPaymentRequest.MerchantName;
             string merchantTaxId = string.Empty;
+            bool doCapture = false;
             if (createPaymentRequest.MerchantSettings != null)
             {
                 foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
                 {
                     switch(merchantSetting.Name)
                     {
-                        case "Company Name":
+                        case CybersourceConstants.ManifestCustomField.CompanyName:
                             merchantName = merchantSetting.Value;
                             break;
-                        case "Company Tax Id":
+                        case CybersourceConstants.ManifestCustomField.CompanyTaxId:
                             merchantTaxId = merchantSetting.Value;
+                            break;
+                        case CybersourceConstants.ManifestCustomField.CaptureSetting:
+                            doCapture = merchantSetting.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture);
                             break;
                     }
                 }
@@ -158,7 +162,11 @@ namespace Cybersource.Services
                         address2 = createPaymentRequest.MiniCart.ShippingAddress.Complement,
                         administrativeArea = createPaymentRequest.MiniCart.ShippingAddress.State,
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
-                        postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode
+                        postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode,
+                        locality = createPaymentRequest.MiniCart.ShippingAddress.City,
+                        phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone, // Note that this is the buyer's number, we do not have a number for the shipping destination
+                        firstName = createPaymentRequest.MiniCart.Buyer.FirstName, // defaulting to buyer info.  This should be ovverridden from the order data
+                        lastName = createPaymentRequest.MiniCart.Buyer.LastName,
                     },
                     lineItems = new List<LineItem>()
                 },
@@ -186,6 +194,11 @@ namespace Cybersource.Services
             requestWrapper.CompanyName = merchantName;
             requestWrapper.CompanyTaxId = merchantTaxId;
 
+            if(doCapture)
+            {
+                payment.processingInformation.capture = "true";
+            }
+
             string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
             string plan = string.Empty;
             decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
@@ -209,7 +222,6 @@ namespace Cybersource.Services
                     {
                         payment.processingInformation = new ProcessingInformation
                         {
-                            capture = "true",
                             commerceIndicator = CybersourceConstants.INSTALLMENT,
                             reconciliationId = createPaymentRequest.PaymentId
                         };
@@ -269,7 +281,6 @@ namespace Cybersource.Services
                     plan = installmentsInterestRate > 0 ? "05" : "03";  // 03 no interest 05 with interest
                     payment.processingInformation = new ProcessingInformation
                     {
-                        capture = "true",
                         commerceIndicator = CybersourceConstants.INSTALLMENT_INTERNET
                     };
 
@@ -288,7 +299,6 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.AmexDirect:
                     payment.processingInformation = new ProcessingInformation
                     {
-                        capture = "true",
                         commerceIndicator = CybersourceConstants.INSTALLMENT,
                         reconciliationId = createPaymentRequest.PaymentId
                     };
@@ -310,7 +320,6 @@ namespace Cybersource.Services
                     plan = installmentsInterestRate > 0 ? "05" : "03";
                     payment.processingInformation = new ProcessingInformation
                     {
-                        capture = "true",
                         commerceIndicator = createPaymentRequest.Installments > 1 ? CybersourceConstants.INSTALLMENT : CybersourceConstants.INTERNET,
                         reconciliationId = createPaymentRequest.PaymentId
                     };
@@ -339,6 +348,11 @@ namespace Cybersource.Services
             {
                 foreach (VtexOrder vtexOrder in vtexOrders)
                 {
+                    requestWrapper.ContextData = new ContextData
+                    {
+                        LoggedIn = vtexOrder.ContextData.LoggedIn
+                    };
+
                     foreach (VtexOrderItem vtexItem in vtexOrder.Items)
                     {
                         if (!vtexOrderItems.Contains(vtexItem))
@@ -366,6 +380,21 @@ namespace Cybersource.Services
                         {
                             // A response indicates an error.
                             _context.Vtex.Logger.Error("CreatePayment", "SetMarketingData", response, null, new[] { ("vtexOrder.MarketingData", JsonConvert.SerializeObject(vtexOrder.MarketingData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                        }
+                    }
+
+                    if(!string.IsNullOrEmpty(vtexOrder.ShippingData.Address.ReceiverName))
+                    {
+                        string[] nameArr = vtexOrder.ShippingData.Address.ReceiverName.Split(' ', 2);
+                        if(nameArr.Length <= 1)
+                        {
+                            payment.orderInformation.shipTo.firstName = string.Empty;
+                            payment.orderInformation.shipTo.lastName = vtexOrder.ShippingData.Address.ReceiverName;
+                        }
+                        else
+                        {
+                            payment.orderInformation.shipTo.firstName = nameArr[0];
+                            payment.orderInformation.shipTo.lastName = nameArr[1];
                         }
                     }
                 }

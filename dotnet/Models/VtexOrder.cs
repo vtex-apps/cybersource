@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Cybersource.Models
 {
@@ -946,7 +945,7 @@ namespace Cybersource.Models
         public string Street { get; set; }
 
         [JsonProperty("number")]
-        public object Number { get; set; }
+        public string Number { get; set; }
 
         [JsonProperty("neighborhood")]
         public string Neighborhood { get; set; }
@@ -955,7 +954,7 @@ namespace Cybersource.Models
         public string Complement { get; set; }
 
         [JsonProperty("reference")]
-        public object Reference { get; set; }
+        public string Reference { get; set; }
 
         [JsonProperty("geoCoordinates")]
         public List<double> GeoCoordinates { get; set; }

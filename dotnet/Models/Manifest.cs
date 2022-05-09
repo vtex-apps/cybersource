@@ -11,7 +11,7 @@ namespace Cybersource.Models
         public List<PaymentMethod> PaymentMethods { get; set; }
 
         [JsonProperty("customFields")]
-        public List<CustomField> CustomFields { get; set; }
+        public List<object> CustomFields { get; set; }
     }
 
     public class CustomField
@@ -21,9 +21,12 @@ namespace Cybersource.Models
 
         [JsonProperty("type")]
         public string Type { get; set; }
+    }
 
-        //[JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
-        //public List<Option> Options { get; set; }
+    public class CustomFieldOptions : CustomField
+    {
+        [JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
+        public List<Option> Options { get; set; }
     }
 
     public class Option
