@@ -180,23 +180,40 @@
                         AllowsSplit = "onCapture"
                     }
                 },
-                CustomFields = new List<CustomField>
+                CustomFields = new List<object>
                 {
                     new CustomField
                     {
-                        Name = "Company Name",
+                        Name = CybersourceConstants.ManifestCustomField.CompanyName,
                         Type = "text"
                     },
                     new CustomField
                     {
-                        Name = "Company Tax Id",
+                        Name = CybersourceConstants.ManifestCustomField.CompanyTaxId,
                         Type = "text"
+                    },
+                    new CustomFieldOptions
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.CaptureSetting,
+                        Type = "select",
+                        Options = new List<Option>
+                        {
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.DelayedCapture,
+                                Value = CybersourceConstants.CaptureSetting.DelayedCapture
+                            },
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.ImmediateCapture,
+                                Value = CybersourceConstants.CaptureSetting.ImmediateCapture
+                            }
+                        }
                     }
                 }
             };
 
-            //Response.Headers.Add("Cache-Control", "private");
-
+            Response.Headers.Add("Cache-Control", "private");
             return Json(manifest);
         }
 

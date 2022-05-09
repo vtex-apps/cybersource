@@ -17,7 +17,9 @@ namespace Cybersource.Models
         //public string CustomerName { get { return $"{ this.MiniCart.Buyer.FirstName } { this.MiniCart.Buyer.LastName }"; } }
         //public string Bin { get { return this.Card.Bin; } }
         public CustomDataWrapper CustomData { get; private set; }
-        public MarketingDataWrapper MarketingData { get; private set; }
+        public MarketingDataWrapper MarketingData { get; set; }
+        public ContextData ContextData { get; set; }
+
 
         public string FlattenCustomData(CustomData customData)
         {
@@ -258,7 +260,8 @@ namespace Cybersource.Models
                 "MarketingData.UtmiCampaign",
                 "MarketingData.Utmipage",
                 "MarketingData.UtmiPart",
-                "MarketingData.MarketingTags"
+                "MarketingData.MarketingTags",
+                "ContextData.LoggedIn"
             };
         }
     }
@@ -271,5 +274,10 @@ namespace Cybersource.Models
     public class MarketingDataWrapper : MarketingData
     {
         public new string MarketingTags { get; set; }
+    }
+
+    public class ContextDataWrapper
+    {
+        public bool? LoggedIn { get; set; }
     }
 }

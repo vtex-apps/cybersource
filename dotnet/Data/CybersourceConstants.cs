@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Cybersource.Data
 {
@@ -107,6 +105,21 @@ namespace Cybersource.Data
         {
             public const string Fulfillment = "Fulfillment";
             public const string Marketplace = "Marketplace";
+        }
+
+        public static class ManifestCustomField
+        {
+            public const string CompanyName = "CompanyName";
+            public const string CompanyTaxId = "CompanyTaxId";
+            public const string CaptureSetting = "Capture Setting";
+            public const string DelayedCapture = "Delayed Capture";
+            public const string ImmediateCapture = "Immediate Capture";
+        }
+
+        public static class CaptureSetting
+        {
+            public const string DelayedCapture = "DelayedCapture";
+            public const string ImmediateCapture = "AuthAndCapture";
         }
 
         public const string ResponseHeadersSeparator = "\r\n";

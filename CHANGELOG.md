@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- (CYBRSOURCE-27) Added option for auth & capture
+### Fixed
+- Shipping data
+
 ## [1.1.33] - 2022-05-06
 
 - (CYBRSOURCE-25) Do not pass fraud score because status must be controled by Decision Manager
