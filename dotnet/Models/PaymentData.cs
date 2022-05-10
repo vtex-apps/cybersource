@@ -11,5 +11,6 @@ namespace Cybersource.Models
         public CreatePaymentResponse CreatePaymentResponse { get; set; }
         public string CallbackUrl { get; set; }
         public string OrderId { get; set; }
+        public bool ImmediateCapture { get; set; }
     }
 }

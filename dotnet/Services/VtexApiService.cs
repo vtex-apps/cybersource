@@ -176,11 +176,18 @@ namespace Cybersource.Services
             try
             {
                 VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
-                orderId = vtexOrderList.List.First().OrderId;
-                int charLocation = orderId.IndexOf("-", StringComparison.Ordinal);
-                if (charLocation > 0)
+                if (vtexOrderList != null && vtexOrderList.List.Count > 0)
                 {
-                    orderId = orderId.Substring(0, charLocation);
+                    orderId = vtexOrderList.List.First().OrderId;
+                    int charLocation = orderId.IndexOf("-", StringComparison.Ordinal);
+                    if (charLocation > 0)
+                    {
+                        orderId = orderId.Substring(0, charLocation);
+                    }
+                }
+                else
+                {
+                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Could not find order id fpr reference# {reference} ");
                 }
             }
             catch (Exception ex)
