@@ -194,7 +194,8 @@ namespace Cybersource.Services
             requestWrapper.CompanyName = merchantName;
             requestWrapper.CompanyTaxId = merchantTaxId;
 
-            if(doCapture)
+            payment.processingInformation = new ProcessingInformation();
+            if (doCapture)
             {
                 payment.processingInformation.capture = "true";
             }
@@ -208,11 +209,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.Braspag:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
                     {
-                        payment.processingInformation = new ProcessingInformation
-                        {
-                            commerceIndicator = CybersourceConstants.INSTALLMENT
-                        };
-
+                        payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
                         payment.installmentInformation = new InstallmentInformation
                         {
                             totalCount = numberOfInstallments
@@ -220,12 +217,8 @@ namespace Cybersource.Services
                     }
                     else if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Mexico))
                     {
-                        payment.processingInformation = new ProcessingInformation
-                        {
-                            commerceIndicator = CybersourceConstants.INSTALLMENT,
-                            reconciliationId = createPaymentRequest.PaymentId
-                        };
-
+                        payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
+                        payment.processingInformation.reconciliationId = createPaymentRequest.PaymentId;
                         payment.installmentInformation = new InstallmentInformation
                         {
                             totalCount = numberOfInstallments
@@ -245,11 +238,7 @@ namespace Cybersource.Services
                     {
                         if (cardBrandName.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
                         {
-                            payment.processingInformation = new ProcessingInformation
-                            {
-                                commerceIndicator = CybersourceConstants.INSTALLMENT
-                            };
-
+                            payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
                             payment.installmentInformation = new InstallmentInformation
                             {
                                 totalCount = numberOfInstallments
@@ -279,11 +268,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.eGlobal:
                 case CybersourceConstants.Processors.BBVA:
                     plan = installmentsInterestRate > 0 ? "05" : "03";  // 03 no interest 05 with interest
-                    payment.processingInformation = new ProcessingInformation
-                    {
-                        commerceIndicator = CybersourceConstants.INSTALLMENT_INTERNET
-                    };
-
+                    payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT_INTERNET;
                     //POS 1 - 2: # of months of deferred payment
                     //POS 3 - 4: # installments
                     //POS 5 - 6: plan(03 no interest, 05 with interest)"
@@ -297,12 +282,8 @@ namespace Cybersource.Services
                     break;
                 case CybersourceConstants.Processors.Banorte:
                 case CybersourceConstants.Processors.AmexDirect:
-                    payment.processingInformation = new ProcessingInformation
-                    {
-                        commerceIndicator = CybersourceConstants.INSTALLMENT,
-                        reconciliationId = createPaymentRequest.PaymentId
-                    };
-
+                    payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
+                    payment.processingInformation.reconciliationId = createPaymentRequest.PaymentId;
                     payment.installmentInformation = new InstallmentInformation
                     {
                         totalCount = numberOfInstallments
@@ -318,12 +299,8 @@ namespace Cybersource.Services
                     //-totalCount: # installments
                     //-gracePeriodDuration: if planType = 07 and totalCount = 00, this must be greater than 00
                     plan = installmentsInterestRate > 0 ? "05" : "03";
-                    payment.processingInformation = new ProcessingInformation
-                    {
-                        commerceIndicator = createPaymentRequest.Installments > 1 ? CybersourceConstants.INSTALLMENT : CybersourceConstants.INTERNET,
-                        reconciliationId = createPaymentRequest.PaymentId
-                    };
-
+                    payment.processingInformation.commerceIndicator = createPaymentRequest.Installments > 1 ? CybersourceConstants.INSTALLMENT : CybersourceConstants.INTERNET;
+                    payment.processingInformation.reconciliationId = createPaymentRequest.PaymentId;
                     payment.installmentInformation = new InstallmentInformation
                     {
                         totalCount = numberOfInstallments,
@@ -350,7 +327,7 @@ namespace Cybersource.Services
                 {
                     requestWrapper.ContextData = new ContextData
                     {
-                        LoggedIn = vtexOrder.ContextData.LoggedIn
+                        LoggedIn = vtexOrder?.ContextData?.LoggedIn
                     };
 
                     foreach (VtexOrderItem vtexItem in vtexOrder.Items)
@@ -1105,7 +1082,7 @@ namespace Cybersource.Services
             }
             catch(Exception ex)
             {
-                _context.Vtex.Logger.Error("GetPropertyValue", null, $"Could not get value of '{propertyName}'", ex);
+                _context.Vtex.Logger.Error("GetPropertyValue", null, $"Could not get value of '{propertyName}'", ex, new[] { ("object", JsonConvert.SerializeObject(obj)) });
             }
 
             return obj;
