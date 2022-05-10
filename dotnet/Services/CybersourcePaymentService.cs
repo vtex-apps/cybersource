@@ -71,7 +71,7 @@ namespace Cybersource.Services
             {
                 foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
                 {
-                    switch(merchantSetting.Name)
+                    switch (merchantSetting.Name)
                     {
                         case CybersourceConstants.ManifestCustomField.CompanyName:
                             merchantName = merchantSetting.Value;
@@ -80,7 +80,11 @@ namespace Cybersource.Services
                             merchantTaxId = merchantSetting.Value;
                             break;
                         case CybersourceConstants.ManifestCustomField.CaptureSetting:
-                            doCapture = merchantSetting.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture);
+                            if (merchantSetting.Value != null)
+                            {
+                                doCapture = merchantSetting.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture);
+                            }
+
                             break;
                     }
                 }
@@ -423,9 +427,10 @@ namespace Cybersource.Services
             payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
 
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
-            _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("payment", JsonConvert.SerializeObject(payment)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
             if (paymentsResponse != null)
             {
+                //Console.WriteLine($"paymentsResponse: '{JsonConvert.SerializeObject(paymentsResponse)}' ");
+                _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("payment", JsonConvert.SerializeObject(payment)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
                 createPaymentResponse = new CreatePaymentResponse();
                 createPaymentResponse.AuthorizationId = paymentsResponse.Id;
                 createPaymentResponse.Tid = paymentsResponse.Id;
@@ -497,9 +502,15 @@ namespace Cybersource.Services
                 createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
 
                 decimal authAmount = 0m;
+                decimal capturedAmount = 0m;
                 if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
                 {
                     decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.authorizedAmount, out authAmount);
+                }
+
+                if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
+                {
+                    decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.totalAmount, out capturedAmount);
                 }
 
                 paymentData = new PaymentData
@@ -515,7 +526,18 @@ namespace Cybersource.Services
                     OrderId = createPaymentRequest.OrderId
                 };
 
+                if (capturedAmount > 0)
+                {
+                    paymentData.ImmediateCapture = true;
+                    paymentData.CaptureId = paymentsResponse.Id;
+                    paymentData.Value = capturedAmount;
+                }
+
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
+            }
+            else
+            {
+                _context.Vtex.Logger.Debug("CreatePayment", null, "Null Response");
             }
 
             //_context.Vtex.Logger.Debug("createPaymentResponse", null, JsonConvert.SerializeObject(createPaymentResponse));
@@ -568,6 +590,23 @@ namespace Cybersource.Services
         {
             CapturePaymentResponse capturePaymentResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(capturePaymentRequest.PaymentId);
+            if (paymentData != null && paymentData.CreatePaymentResponse != null)
+            {
+                _context.Vtex.Logger.Debug("CapturePayment", null, "Loaded PaymentData", new[] { ("orderId", paymentData.OrderId), ("paymentId", paymentData.PaymentId), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
+                if(paymentData.ImmediateCapture)
+                {
+                    capturePaymentResponse = new CapturePaymentResponse();
+                    capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
+                    capturePaymentResponse.RequestId = capturePaymentRequest.RequestId;
+                    capturePaymentResponse.Code = paymentData.CreatePaymentResponse.Code;
+                    capturePaymentResponse.Message = paymentData.CreatePaymentResponse.Message;
+                    capturePaymentResponse.SettleId = paymentData.CreatePaymentResponse.AuthorizationId;
+                    capturePaymentResponse.Value = paymentData.Value;
+                }
+
+                return capturePaymentResponse;
+            }
+
             Payments payment = new Payments
             {
                 clientReferenceInformation = new ClientReferenceInformation
@@ -600,7 +639,6 @@ namespace Cybersource.Services
                 capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
                 capturePaymentResponse.SettleId = paymentsResponse.Id;
                 capturePaymentResponse.Value = paymentsResponse.ErrorInformation != null ? 0m : decimal.Parse(paymentsResponse.OrderInformation.amountDetails.totalAmount);
-                capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
 
                 decimal authAmount = 0m;
                 if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
