@@ -471,5 +471,31 @@
 
             return Json(requestWrapper);
         }
+
+        public async Task<IActionResult> TestMerchantDefinedData()
+        {
+            List<MerchantDefinedInformation> mdd = null;
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
+                PaymentRequestWrapper paymentRequestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+                VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}-01");
+                if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
+                {
+                    string response = paymentRequestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                    if (!string.IsNullOrWhiteSpace(response))
+                    {
+                        // A response indicates an error.
+                        Console.WriteLine($"ERROR: {response}");
+                    }
+                }
+
+                mdd = await _cybersourcePaymentService.GetMerchantDefinedInformation(merchantSettings, paymentRequestWrapper);
+            }
+
+            return Json(mdd);
+        }
     }
 }
