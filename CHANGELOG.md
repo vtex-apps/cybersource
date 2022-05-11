@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Custom MDD
+
 ## [1.1.37] - 2022-05-10
 - Auth & Bill
 ## [1.1.36] - 2022-05-10

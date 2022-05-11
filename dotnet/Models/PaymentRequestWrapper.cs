@@ -37,6 +37,7 @@ namespace Cybersource.Models
                     {
                         string fieldValue = fields[fieldName];
                         ((IDictionary<string, object>)this.CustomData.CustomApps).Add($"{propName}_{fieldName}", fieldValue);
+                        //Console.WriteLine($"'{propName}_{fieldName}' = '{fieldValue}'");
                     }
                 }
             }
@@ -269,6 +270,7 @@ namespace Cybersource.Models
     public class CustomDataWrapper
     {
         public dynamic CustomApps { get; set; }
+        //public Dictionary<string, string> CustomApps { get; set; }
     }
 
     public class MarketingDataWrapper : MarketingData

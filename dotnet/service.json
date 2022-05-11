@@ -111,6 +111,10 @@
     "testFlattenCustomData": {
       "path": "/cybersource/test-custom-data",
       "public": true
+    },
+    "testMerchantDefinedData": {
+      "path": "/cybersource/test-mdd",
+      "public": true
     }
   },
   "events": {

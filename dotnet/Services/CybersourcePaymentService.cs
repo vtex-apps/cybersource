@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -8,6 +9,7 @@ using Cybersource.Data;
 using Cybersource.Models;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Vtex.Api.Context;
 
 namespace Cybersource.Services
@@ -1116,9 +1118,30 @@ namespace Cybersource.Services
             try
             {
                 foreach (var prop in propertyName.Split('.').Select(s => obj.GetType().GetProperty(s)))
-                    obj = prop.GetValue(obj, null);
+                {
+                    if (prop.Name == "CustomApps")
+                    {
+                        var json = JsonConvert.SerializeObject(obj);
+                        var customDataWrapper = JsonConvert.DeserializeObject<CustomDataWrapper>(json);
+                        JObject dictObj = customDataWrapper.CustomApps;
+                        Dictionary<string, string> dictionary = dictObj.ToObject<Dictionary<string, string>>();
+                        string customFieldKey = propertyName.Split('.').Last();
+                        if (dictionary.Keys.Contains(customFieldKey))
+                        {
+                            obj = dictionary[customFieldKey];
+                        }
+                        else
+                        {
+                            obj = string.Empty;
+                        }
+                    }
+                    else
+                    {
+                        obj = prop.GetValue(obj, null);
+                    }
+                }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("GetPropertyValue", null, $"Could not get value of '{propertyName}'", ex, new[] { ("object", JsonConvert.SerializeObject(obj)) });
             }
@@ -1126,7 +1149,7 @@ namespace Cybersource.Services
             return obj;
         }
 
-        private async Task<List<MerchantDefinedInformation>> GetMerchantDefinedInformation(MerchantSettings merchantSettings, PaymentRequestWrapper requestWrapper)
+        public async Task<List<MerchantDefinedInformation>> GetMerchantDefinedInformation(MerchantSettings merchantSettings, PaymentRequestWrapper requestWrapper)
         {
             List<MerchantDefinedInformation> merchantDefinedInformationList = new List<MerchantDefinedInformation>();
 
@@ -1211,7 +1234,11 @@ namespace Cybersource.Services
                                             }
                                             else
                                             {
-                                                propValue = this.GetPropertyValue(requestWrapper, valueSubStr).ToString();
+                                                var propValueObj = this.GetPropertyValue(requestWrapper, valueSubStr);
+                                                if(propValueObj != null)
+                                                {
+                                                    propValue = propValueObj.ToString();
+                                                }
                                             }
                                         }
 
@@ -1240,7 +1267,7 @@ namespace Cybersource.Services
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, null, ex);
             }
