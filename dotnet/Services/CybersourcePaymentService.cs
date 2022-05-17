@@ -455,32 +455,36 @@ namespace Cybersource.Services
                         SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
                         if(antifraudDataResponse != null)
                         {
-                            switch (antifraudDataResponse.Status)
-                            {
-                                case "ACCEPTED":
-                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
-                                    break;
-                                case "PENDING_REVIEW":
-                                case "PENDING_AUTHENTICATION":
-                                case "INVALID_REQUEST":
-                                case "CHALLENGE":
-                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
-                                    createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
-                                    break;
-                                case "REJECTED":
-                                case "DECLINED":
-                                case "AUTHENTICATION_FAILED":
-                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
-                                    break;
-                                default:
-                                    createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
-                                    break;
-                            }
+                            Console.WriteLine($"antifraudDataResponse: {antifraudDataResponse.Status}");
+                            paymentStatus = antifraudDataResponse.Status;
+                            Console.WriteLine($"paymentStatus: {paymentStatus}");
+                            //switch (antifraudDataResponse.Status)
+                            //{
+                            //    case "ACCEPTED":
+                            //        createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Approved;
+                            //        break;
+                            //    case "PENDING_REVIEW":
+                            //    case "PENDING_AUTHENTICATION":
+                            //    case "INVALID_REQUEST":
+                            //    case "CHALLENGE":
+                            //        createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                            //        createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
+                            //        break;
+                            //    case "REJECTED":
+                            //    case "DECLINED":
+                            //    case "AUTHENTICATION_FAILED":
+                            //        createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Denied;
+                            //        break;
+                            //    default:
+                            //        createPaymentResponse.Status = CybersourceConstants.VtexAntifraudStatus.Undefined;
+                            //        break;
+                            //}
                         }
                         else
                         {
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
                         }
+
                         break;
                     case "AUTHORIZED_PENDING_REVIEW":
                     case "PENDING_AUTHENTICATION":
@@ -551,6 +555,29 @@ namespace Cybersource.Services
         {
             CancelPaymentResponse cancelPaymentResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(cancelPaymentRequest.PaymentId);
+            if(paymentData.ImmediateCapture)
+            {
+                // If transaction was auth & bill must refund, not reverse
+                RefundPaymentRequest refundPaymentRequest = new RefundPaymentRequest
+                {
+                    PaymentId = cancelPaymentRequest.PaymentId,
+                    RequestId = cancelPaymentRequest.RequestId,
+                    SettleId = cancelPaymentRequest.AuthorizationId,
+                    TransactionId = null,
+                    Value = paymentData.Value
+                };
+
+                RefundPaymentResponse refundPaymentResponse = await this.RefundPayment(refundPaymentRequest);
+                cancelPaymentResponse = new CancelPaymentResponse();
+                cancelPaymentResponse.PaymentId = refundPaymentResponse.PaymentId;
+                cancelPaymentResponse.RequestId = refundPaymentResponse.RequestId;
+                cancelPaymentResponse.CancellationId = refundPaymentResponse.RefundId;
+                cancelPaymentResponse.Message = refundPaymentResponse.Message;
+                cancelPaymentResponse.Code = refundPaymentResponse.Code;
+
+                return cancelPaymentResponse;
+            }
+
             Payments payment = new Payments
             {
                 clientReferenceInformation = new ClientReferenceInformation
@@ -604,9 +631,9 @@ namespace Cybersource.Services
                     capturePaymentResponse.Message = paymentData.CreatePaymentResponse.Message;
                     capturePaymentResponse.SettleId = paymentData.CreatePaymentResponse.AuthorizationId;
                     capturePaymentResponse.Value = paymentData.Value;
-                }
 
-                return capturePaymentResponse;
+                    return capturePaymentResponse;
+                }
             }
 
             Payments payment = new Payments
@@ -630,7 +657,7 @@ namespace Cybersource.Services
                     }
                 }
             };
-
+            
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, paymentData.AuthorizationId);
             if (paymentsResponse != null)
             {
@@ -808,8 +835,8 @@ namespace Cybersource.Services
                     //Score = paymentsResponse.RiskInformation != null ? double.Parse(paymentsResponse.RiskInformation.Score.Result) : 100d,
                     AnalysisType = CybersourceConstants.VtexAntifraudType.Automatic,
                     Responses = new Dictionary<string, string>(),
-                    Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
-                    Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
+                    //Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
+                    //Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message
                 };
 
                 switch (paymentsResponse.Status)
@@ -843,6 +870,13 @@ namespace Cybersource.Services
                            );
 
                 sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
+
+                sendAntifraudDataResponse.Score = sendAntifraudDataResponse.Status.Equals(CybersourceConstants.VtexAntifraudStatus.Denied) ? 99d : 1d;
+                if(paymentsResponse.ErrorInformation != null)
+                {
+                    sendAntifraudDataResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
+                    sendAntifraudDataResponse.Message = paymentsResponse.ErrorInformation.Message;
+                }
 
                 await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
             }
