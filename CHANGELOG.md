@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Auth and Capture fix
+
 ## [1.1.38] - 2022-05-11
 
 ### Fixed
