@@ -273,17 +273,20 @@ namespace Cybersource.Services
                     break;
                 case CybersourceConstants.Processors.eGlobal:
                 case CybersourceConstants.Processors.BBVA:
-                    plan = installmentsInterestRate > 0 ? "05" : "03";  // 03 no interest 05 with interest
-                    payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT_INTERNET;
-                    //POS 1 - 2: # of months of deferred payment
-                    //POS 3 - 4: # installments
-                    //POS 5 - 6: plan(03 no interest, 05 with interest)"
-                    string monthsDeferred = "00";
-                    payment.installmentInformation = new InstallmentInformation
+                    if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Mexico))
                     {
-                        amount = $"{monthsDeferred}{numberOfInstallments}{plan}",
-                        totalCount = numberOfInstallments
-                    };
+                        plan = installmentsInterestRate > 0 ? "05" : "03";  // 03 no interest 05 with interest
+                        payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT_INTERNET;
+                        //POS 1 - 2: # of months of deferred payment
+                        //POS 3 - 4: # installments
+                        //POS 5 - 6: plan(03 no interest, 05 with interest)"
+                        string monthsDeferred = "00";
+                        payment.installmentInformation = new InstallmentInformation
+                        {
+                            amount = $"{monthsDeferred}{numberOfInstallments}{plan}",
+                            totalCount = numberOfInstallments
+                        };
+                    }
 
                     break;
                 case CybersourceConstants.Processors.Banorte:
