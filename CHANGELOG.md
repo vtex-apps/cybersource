@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.40] - 2022-05-18
+
 ### Changed
 - Changed custom payload for eGlobal & BBVA
 
