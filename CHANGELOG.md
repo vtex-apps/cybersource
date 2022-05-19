@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added free bin lookup service as fallback
+
 ## [1.1.40] - 2022-05-18
 
 ### Changed

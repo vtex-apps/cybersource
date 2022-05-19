@@ -95,20 +95,7 @@ namespace Cybersource.Services
             CybersourceConstants.CardType cardBrandName = CybersourceConstants.CardType.Unknown;
             string cardType = string.Empty;
             bool isDebit = false;
-            CybersourceBinLookupResponse cybersourceBinLookup = await _cybersourceApi.BinLookup(createPaymentRequest.Card.Bin);
-            if (cybersourceBinLookup != null && cybersourceBinLookup.PaymentAccountInformation != null && cybersourceBinLookup.PaymentAccountInformation.Card != null)
-            {
-                cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
-                if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
-                {
-                    cardBrandName = this.FindType(createPaymentRequest.Card.Bin);
-                }
-            }
-            else
-            {
-                cardType = this.GetCardType(createPaymentRequest.PaymentMethod);
-                cardBrandName = this.FindType(createPaymentRequest.Card.Bin);
-            }
+            this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out isDebit, out cardType, out cardBrandName);
 
             Payments payment = new Payments
             {
@@ -458,9 +445,8 @@ namespace Cybersource.Services
                         SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
                         if(antifraudDataResponse != null)
                         {
-                            Console.WriteLine($"antifraudDataResponse: {antifraudDataResponse.Status}");
+                            //Console.WriteLine($"antifraudDataResponse: {antifraudDataResponse.Status}");
                             paymentStatus = antifraudDataResponse.Status;
-                            Console.WriteLine($"paymentStatus: {paymentStatus}");
                             //switch (antifraudDataResponse.Status)
                             //{
                             //    case "ACCEPTED":
@@ -1310,6 +1296,38 @@ namespace Cybersource.Services
             }
 
             return merchantDefinedInformationList;
+        }
+
+        public void BinLookup(string cardBin, string paymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName)
+        {
+            isDebit = false;
+            CybersourceBinLookupResponse cybersourceBinLookup = _cybersourceApi.BinLookup(cardBin).Result;
+            if (cybersourceBinLookup != null && cybersourceBinLookup.PaymentAccountInformation != null && cybersourceBinLookup.PaymentAccountInformation.Card != null)
+            {
+                cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
+                if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
+                {
+                    cardBrandName = this.FindType(cardBin);
+                }
+            }
+            else
+            {
+                BinLookup binLookup = _vtexApiService.BinLookup(cardBin).Result;
+                if (binLookup != null && binLookup.Type != null && binLookup.Scheme != null)
+                {
+                    isDebit = binLookup.Type.ToLower().Equals("debit");
+                    cardType = this.GetCardType(binLookup.Scheme);
+                    if (!Enum.TryParse(binLookup.Scheme, true, out cardBrandName))
+                    {
+                        cardBrandName = this.FindType(cardBin);
+                    }
+                }
+                else
+                {
+                    cardType = this.GetCardType(paymentMethod);
+                    cardBrandName = this.FindType(cardBin);
+                }
+            }
         }
     }
 }
