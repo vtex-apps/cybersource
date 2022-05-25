@@ -678,11 +678,15 @@ namespace Cybersource.Services
                 }
 
                 // Add shipping as an item
+                // FR000000 Freight
+                // FR010000 Delivery by company vehicle
+                // FR010100 Delivery by company vehicle before passage of title
+                // FR010200 Delivery by company vehicle after passage of title
                 decimal shippingAmount = taxRequest.Totals.Where(t => t.Id.Contains("Shipping")).Sum(t => t.Value) / 100;
                 LineItem lineItemShipping = new LineItem
                 {
                     productName = "Shipping",
-                    productCode = "shipping",
+                    productCode = "FR000000",
                     productSKU = "Shipping",
                     unitPrice = shippingAmount.ToString("0.00"),
                     quantity = "1"

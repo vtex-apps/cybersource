@@ -1183,6 +1183,7 @@ namespace Cybersource.Services
             {
                 if (merchantSettings.MerchantDefinedValueSettings != null)
                 {
+                    MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation();
                     int merchantDefinedValueKey = 0;
                     foreach (MerchantDefinedValueSetting merchantDefinedValueSetting in merchantSettings.MerchantDefinedValueSettings)
                     {
@@ -1271,21 +1272,37 @@ namespace Cybersource.Services
                                     while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
                                 }
 
-                                MerchantDefinedInformation merchantDefinedInformation = new MerchantDefinedInformation
+                                merchantDefinedInformation = new MerchantDefinedInformation
                                 {
                                     key = merchantDefinedValueKey,
                                     value = merchantDefinedValue
                                 };
-
-                                try
-                                {
-                                    merchantDefinedInformationList.Add(merchantDefinedInformation);
-                                }
-                                catch (Exception ex)
-                                {
-                                    _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
-                                }
                             }
+                            else
+                            {
+                                merchantDefinedInformation = new MerchantDefinedInformation
+                                {
+                                    key = merchantDefinedValueKey,
+                                    value = string.Empty
+                                };
+                            }
+                        }
+                        else
+                        {
+                            merchantDefinedInformation = new MerchantDefinedInformation
+                            {
+                                key = merchantDefinedValueKey,
+                                value = string.Empty
+                            };
+                        }
+
+                        try
+                        {
+                            merchantDefinedInformationList.Add(merchantDefinedInformation);
+                        }
+                        catch (Exception ex)
+                        {
+                            _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error adding '{merchantDefinedInformation.key}:{merchantDefinedInformation.value}'", ex);
                         }
                     }
                 }
