@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.42] - 2022-05-25
+
 ### Changed
 - Allow blank lines in MDD
 - Changed shipping product code
