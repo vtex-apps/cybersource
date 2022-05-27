@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -92,10 +91,7 @@ namespace Cybersource.Services
                 }
             }
 
-            CybersourceConstants.CardType cardBrandName = CybersourceConstants.CardType.Unknown;
-            string cardType = string.Empty;
-            bool isDebit = false;
-            this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out isDebit, out cardType, out cardBrandName);
+            this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName);
 
             Payments payment = new Payments
             {
@@ -229,7 +225,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.VPC:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia))
                     {
-                        if (cardBrandName.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
+                        if (CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.Visa) && !isDebit)
                         {
                             payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
                             payment.installmentInformation = new InstallmentInformation
@@ -243,7 +239,7 @@ namespace Cybersource.Services
                 case CybersourceConstants.Processors.Izipay:
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Peru))
                     {
-                        if (cardBrandName.Equals(CybersourceConstants.CardType.Visa) || cardBrandName.Equals(CybersourceConstants.CardType.MasterCard))
+                        if (CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.Visa) || CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.MasterCard))
                         {
                             plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
                             payment.issuerInformation = new IssuerInformation
@@ -323,7 +319,7 @@ namespace Cybersource.Services
                 {
                     requestWrapper.ContextData = new ContextData
                     {
-                        LoggedIn = vtexOrder?.ContextData?.LoggedIn
+                        LoggedIn = vtexOrder?.ContextData?.LoggedIn ?? false
                     };
 
                     foreach (VtexOrderItem vtexItem in vtexOrder.Items)
@@ -1325,6 +1321,11 @@ namespace Cybersource.Services
                 if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
                 {
                     cardBrandName = this.FindType(cardBin);
+                }
+
+                if (cybersourceBinLookup.PaymentAccountInformation.Features != null && cybersourceBinLookup.PaymentAccountInformation.Features.AccountFundingSource != null)
+                {
+                    isDebit = cybersourceBinLookup.PaymentAccountInformation.Features.AccountFundingSource.ToUpper().Equals("DEBIT");
                 }
             }
             else

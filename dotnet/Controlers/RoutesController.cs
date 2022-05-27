@@ -481,15 +481,32 @@
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                 PaymentRequestWrapper paymentRequestWrapper = new PaymentRequestWrapper(createPaymentRequest);
-                VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}-01");
-                if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
+                VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}");
+                if (vtexOrder != null)
                 {
-                    string response = paymentRequestWrapper.FlattenCustomData(vtexOrder.CustomData);
-                    if (!string.IsNullOrWhiteSpace(response))
+                    if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
                     {
-                        // A response indicates an error.
-                        Console.WriteLine($"ERROR: {response}");
+                        string response = paymentRequestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                        if (!string.IsNullOrWhiteSpace(response))
+                        {
+                            // A response indicates an error.
+                            Console.WriteLine($"ERROR: {response}");
+                        }
                     }
+
+                    if (vtexOrder.MarketingData != null)
+                    {
+                        string response = paymentRequestWrapper.SetMarketingData(vtexOrder.MarketingData);
+                        if (!string.IsNullOrWhiteSpace(response))
+                        {
+                            // A response indicates an error.
+                            Console.WriteLine($"ERROR: {response}");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"ERROR: {createPaymentRequest.OrderId} is NULL!");
                 }
 
                 mdd = await _cybersourcePaymentService.GetMerchantDefinedInformation(merchantSettings, paymentRequestWrapper);
