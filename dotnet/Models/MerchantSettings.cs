@@ -35,6 +35,9 @@ namespace Cybersource.Models
         [JsonProperty("salesChannelExclude")]
         public string SalesChannelExclude { get; set; }
 
+        [JsonProperty("shippingProductCode")]
+        public string ShippingProductCode { get; set; }
+
         [JsonProperty("nexusRegions")]
         public string NexusRegions { get; set; }
 

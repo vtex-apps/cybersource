@@ -187,7 +187,7 @@ namespace Cybersource.Services
                 }
                 else
                 {
-                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Could not find order id fpr reference# {reference} ");
+                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Could not find order id for reference# {reference} ");
                 }
             }
             catch (Exception ex)
@@ -572,6 +572,7 @@ namespace Cybersource.Services
 
         public async Task<VtexTaxResponse> GetTaxes(VtexTaxRequest taxRequest, VtexTaxRequest taxRequestOriginal)
         {
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             //_context.Vtex.Logger.Debug("GetTaxes", null, $"VtexTaxRequest\n{JsonConvert.SerializeObject(taxRequest)}");
 
             // Combine skus
@@ -686,7 +687,7 @@ namespace Cybersource.Services
                 LineItem lineItemShipping = new LineItem
                 {
                     productName = "Shipping",
-                    productCode = "FR000000",
+                    productCode = merchantSettings.ShippingProductCode,
                     productSKU = "Shipping",
                     unitPrice = shippingAmount.ToString("0.00"),
                     quantity = "1"
@@ -980,7 +981,7 @@ namespace Cybersource.Services
                     LineItem lineItemShipping = new LineItem
                     {
                         productName = "Shipping",
-                        productCode = "shipping",
+                        productCode = merchantSettings.ShippingProductCode,
                         productSKU = "Shipping",
                         unitPrice = shippingAmount.ToString("0.00"),
                         quantity = "1"
