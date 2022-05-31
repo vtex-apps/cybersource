@@ -844,28 +844,32 @@ namespace Cybersource.Services
                     }
                 }
             }
-
-            if (!usedMerchantSettings)
+            else
             {
-                PickupPoints pickupPoints = await this.ListPickupPoints();
-                if (pickupPoints != null)
-                {
-                    //List<string> nexusStates = new List<string>();
-                    foreach (PickupPointItem pickupPoint in pickupPoints.Items)
-                    {
-                        if (pickupPoint != null &&
-                            pickupPoint.Address != null &&
-                            pickupPoint.Address.State != null &&
-                            pickupPoint.Address.Country != null &&
-                            pickupPoint.Address.State.Equals(state) &&
-                            this.GetCountryCode(pickupPoint.Address.Country.Acronym).Equals(country))
-                        {
-                            inNexus = true;
-                            break;
-                        }
-                    }
-                }
+                // If no nexus is set, calculate tax
+                inNexus = true;
             }
+
+            //if (!usedMerchantSettings)
+            //{
+            //    PickupPoints pickupPoints = await this.ListPickupPoints();
+            //    if (pickupPoints != null)
+            //    {
+            //        foreach (PickupPointItem pickupPoint in pickupPoints.Items)
+            //        {
+            //            if (pickupPoint != null &&
+            //                pickupPoint.Address != null &&
+            //                pickupPoint.Address.State != null &&
+            //                pickupPoint.Address.Country != null &&
+            //                pickupPoint.Address.State.Equals(state) &&
+            //                this.GetCountryCode(pickupPoint.Address.Country.Acronym).Equals(country))
+            //            {
+            //                inNexus = true;
+            //                break;
+            //            }
+            //        }
+            //    }
+            //}
 
             return inNexus;
         }

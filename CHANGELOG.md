@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- If tax nexus is not specified, calculate tax.
+
 ## [1.1.43] - 2022-05-27
 
 ### Added
