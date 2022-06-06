@@ -314,7 +314,7 @@ export function invoiceAPITestCase(
             if (approved) {
               expect(response.body.status).to.match(/cancel|invoiced|handling/)
             } else {
-              expect(response.body.status).to.match(/pending|handling/)
+              expect(response.body.status).to.match(/pending|handling|cancel/)
             }
 
             const taxesArray = response.body.totals.filter(
