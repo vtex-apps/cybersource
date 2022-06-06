@@ -384,24 +384,28 @@ export function paymentAndAPITestCases(
   { prefix, approved },
   { transactionIdEnv, orderIdEnv, paymentTransactionIdEnv }
 ) {
-  completePayment(prefix, orderIdEnv)
+  if (product) {
+    completePayment(prefix, orderIdEnv)
 
-  sendInvoiceTestCase(product, orderIdEnv)
+    sendInvoiceTestCase(product, orderIdEnv)
 
-  invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
+    invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
+  }
 
-  verifyCyberSourceAPI({
-    prefix,
-    transactionIdEnv,
-    paymentTransactionIdEnv,
-    approved,
-  })
+  if (approved) {
+    verifyCyberSourceAPI({
+      prefix,
+      transactionIdEnv,
+      paymentTransactionIdEnv,
+      approved,
+    })
 
-  verifyStatusInInteractionAPI({
-    prefix,
-    transactionIdEnv,
-    orderIdEnv,
-    paymentTransactionIdEnv,
-    approved,
-  })
+    verifyStatusInInteractionAPI({
+      prefix,
+      transactionIdEnv,
+      orderIdEnv,
+      paymentTransactionIdEnv,
+      approved,
+    })
+  }
 }
