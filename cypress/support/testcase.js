@@ -222,6 +222,7 @@ export function verifyCyberSourceAPI({
   approved = false,
 }) {
   it(`In ${prefix} - Verifying cybersource API`, updateRetry(3), () => {
+    cy.addDelayBetweenRetries(5000)
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(item => {
         cy.getAPI(
