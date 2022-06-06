@@ -222,6 +222,7 @@ export function verifyCyberSourceAPI({
   approved = false,
 }) {
   it(`In ${prefix} - Verifying cybersource API`, updateRetry(3), () => {
+    cy.addDelayBetweenRetries(5000)
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(item => {
         cy.getAPI(
@@ -314,7 +315,7 @@ export function invoiceAPITestCase(
             if (approved) {
               expect(response.body.status).to.match(/cancel|invoiced|handling/)
             } else {
-              expect(response.body.status).to.match(/pending|handling/)
+              expect(response.body.status).to.match(/pending|handling|cancel/)
             }
 
             const taxesArray = response.body.totals.filter(
@@ -383,24 +384,28 @@ export function paymentAndAPITestCases(
   { prefix, approved },
   { transactionIdEnv, orderIdEnv, paymentTransactionIdEnv }
 ) {
-  completePayment(prefix, orderIdEnv)
+  if (product) {
+    completePayment(prefix, orderIdEnv)
 
-  sendInvoiceTestCase(product, orderIdEnv)
+    sendInvoiceTestCase(product, orderIdEnv)
 
-  invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
+    invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
+  }
 
-  verifyCyberSourceAPI({
-    prefix,
-    transactionIdEnv,
-    paymentTransactionIdEnv,
-    approved,
-  })
+  if (approved) {
+    verifyCyberSourceAPI({
+      prefix,
+      transactionIdEnv,
+      paymentTransactionIdEnv,
+      approved,
+    })
 
-  verifyStatusInInteractionAPI({
-    prefix,
-    transactionIdEnv,
-    orderIdEnv,
-    paymentTransactionIdEnv,
-    approved,
-  })
+    verifyStatusInInteractionAPI({
+      prefix,
+      transactionIdEnv,
+      orderIdEnv,
+      paymentTransactionIdEnv,
+      approved,
+    })
+  }
 }
