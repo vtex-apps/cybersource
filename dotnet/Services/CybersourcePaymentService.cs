@@ -317,10 +317,18 @@ namespace Cybersource.Services
             {
                 foreach (VtexOrder vtexOrder in vtexOrders)
                 {
-                    requestWrapper.ContextData = new ContextData
+                    // ContextData is not returned in the order group list
+                    if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("ContextData")))
                     {
-                        LoggedIn = vtexOrder?.ContextData?.LoggedIn ?? false
-                    };
+                        VtexOrder vtexCheckoutOrder = await _vtexApiService.GetOrderInformation(vtexOrder.OrderId);
+                        requestWrapper.ContextData = new ContextData
+                        {
+                            LoggedIn = vtexCheckoutOrder?.ContextData?.LoggedIn ?? false,
+                            HasAccessToOrderFormEnabledByLicenseManager = vtexCheckoutOrder?.ContextData?.HasAccessToOrderFormEnabledByLicenseManager,
+                            UserAgent = vtexCheckoutOrder?.ContextData ?.UserAgent,
+                            UserId = vtexCheckoutOrder?.ContextData ?.UserId
+                        };
+                    }
 
                     foreach (VtexOrderItem vtexItem in vtexOrder.Items)
                     {
