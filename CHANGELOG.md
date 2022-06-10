@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.0] - 2022-06-10
+
 ### Added
 - Added call to get ContextData
 - Added docs builder
