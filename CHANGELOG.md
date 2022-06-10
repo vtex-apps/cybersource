@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Added call to get ContextData
+- Added docs builder
+
+### Changed
+- Get order from checkout instead of oms
+
 ## [1.1.44] - 2022-05-31
 
 ### Changed
