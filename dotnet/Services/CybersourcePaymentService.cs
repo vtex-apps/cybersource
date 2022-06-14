@@ -615,7 +615,7 @@ namespace Cybersource.Services
             if (paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 _context.Vtex.Logger.Debug("CapturePayment", null, "Loaded PaymentData", new[] { ("orderId", paymentData.OrderId), ("paymentId", paymentData.PaymentId), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
-                if(paymentData.ImmediateCapture)
+                if(paymentData.ImmediateCapture) // || !string.IsNullOrEmpty(paymentData.CaptureId))
                 {
                     capturePaymentResponse = new CapturePaymentResponse();
                     capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
@@ -629,11 +629,13 @@ namespace Cybersource.Services
                 }
             }
 
+            string referenceNumber = await _vtexApiService.GetOrderId(paymentData.OrderId);
+
             Payments payment = new Payments
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = await _vtexApiService.GetOrderId(paymentData.OrderId), //capturePaymentRequest.PaymentId,
+                    code = referenceNumber,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor,
@@ -650,26 +652,60 @@ namespace Cybersource.Services
                     }
                 }
             };
-            
+
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, paymentData.AuthorizationId);
             if (paymentsResponse != null)
             {
+                //Console.WriteLine($"paymentsResponse [{JsonConvert.SerializeObject(paymentsResponse)}]");
                 capturePaymentResponse = new CapturePaymentResponse();
                 capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
                 capturePaymentResponse.RequestId = capturePaymentRequest.RequestId;
                 capturePaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
                 capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
                 capturePaymentResponse.SettleId = paymentsResponse.Id;
-                capturePaymentResponse.Value = paymentsResponse.ErrorInformation != null ? 0m : decimal.Parse(paymentsResponse.OrderInformation.amountDetails.totalAmount);
 
-                decimal authAmount = 0m;
+                decimal captureAmount = 0m;
                 if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
                 {
-                    decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.authorizedAmount, out authAmount);
+                    decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.totalAmount, out captureAmount);
+                }
+                else
+                {
+                    // Try to get transaction from Cybersource
+                    //RetrieveTransaction retrieveTransaction = await _cybersourceApi.RetrieveTransaction(paymentData.AuthorizationId);
+                    CreateSearchRequest searchRequest = new CreateSearchRequest
+                    {
+                        Query = $"clientReferenceInformation.code:{referenceNumber}",
+                        Sort = "submitTimeUtc:desc",
+                        Limit = 2000
+                    };
+
+                    SearchResponse searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest);
+                    if (searchResponse != null)
+                    {
+                        _context.Vtex.Logger.Debug("SearchResponse", null, "SearchResponse", new[] { ("orderId", paymentData.OrderId), ("paymentId", paymentData.PaymentId), ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });
+                        foreach(TransactionSummary transactionSummary in searchResponse.Embedded.TransactionSummaries)
+                        {
+                            if (transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals("ics_bill") && ai.ReasonCode.Equals("100")))
+                            {
+                                string captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
+                                decimal captureValue = 0m;
+                                if(decimal.TryParse(captureValueString, out captureValue))
+                                {
+                                    capturePaymentResponse.Code = "100";
+                                    capturePaymentResponse.Message = "Transaction retrieved from Cybersource.";
+                                    capturePaymentResponse.SettleId = transactionSummary.Id;
+                                    decimal.TryParse(transactionSummary.OrderInformation.amountDetails.totalAmount, out captureAmount);
+                                }
+                            }
+                        }
+                    }
                 }
 
+                capturePaymentResponse.Value = captureAmount;
                 paymentData.CaptureId = capturePaymentResponse.SettleId;
                 paymentData.Value = capturePaymentResponse.Value;
+                paymentData.TransactionId = capturePaymentResponse.PaymentId;
 
                 await _cybersourceRepository.SavePaymentData(capturePaymentRequest.PaymentId, paymentData);
             }

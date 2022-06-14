@@ -663,6 +663,20 @@ namespace Cybersource.Services
 
             return retrieveTransaction;
         }
+
+        public async Task<SearchResponse> CreateSearchRequest(CreateSearchRequest createSearchRequest)
+        {
+            SearchResponse searchResponse = null;
+            string json = JsonConvert.SerializeObject(createSearchRequest);
+            string endpoint = $"{CybersourceConstants.TRANSACTIONS}searches";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                searchResponse = JsonConvert.DeserializeObject<SearchResponse>(response.Message);
+            }
+
+            return searchResponse;
+        }
         #endregion Reporting
 
         public async Task<CybersourceBinLookupResponse> BinLookup(string cardNumber)
