@@ -109,11 +109,14 @@ namespace Cybersource.Data
 
         public static class ManifestCustomField
         {
-            public const string CompanyName = "CompanyName";
-            public const string CompanyTaxId = "CompanyTaxId";
+            public const string CompanyName = "Company Name";
+            public const string CompanyTaxId = "Company Tax Id";
             public const string CaptureSetting = "Capture Setting";
             public const string DelayedCapture = "Delayed Capture";
             public const string ImmediateCapture = "Immediate Capture";
+            public const string MerchantId = "Merchant Id";
+            public const string MerchantKey = "Merchant Key";
+            public const string SharedSecretKey = "Shared Secret Key";
         }
 
         public static class CaptureSetting

@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- If capture fails check for previous capture
+- Remove region code from administrative area
+
+### Added
+- (CYBRSOURCE-32) Allow setting different credentials on Gateway
+
 ## [1.2.0] - 2022-06-10
 
 ### Added

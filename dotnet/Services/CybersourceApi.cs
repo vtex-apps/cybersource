@@ -410,13 +410,14 @@ namespace Cybersource.Services
             
             if (response != null)
             {
+                //Console.WriteLine($"ProcessPayment [{response.StatusCode}] {response.Message}");
                 if (response.Success)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
                 }
                 else
                 {
-                    _context.Vtex.Logger.Error("ProcessPayment", null, $"[{response.StatusCode}] {response.Message}");
+                    _context.Vtex.Logger.Error("ProcessPayment", null, $"[{response.StatusCode}] {response.Message}", null, new[] { ("Request", JsonConvert.SerializeObject(payments)) });
                 }
             }
             else
@@ -425,7 +426,7 @@ namespace Cybersource.Services
             }
 
             //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new [] { ("Request", JsonConvert.SerializeObject(payments)), ("Response", JsonConvert.SerializeObject(paymentsResponse)) });
-            _context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
+            //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
 
             return paymentsResponse;
         }
@@ -663,6 +664,20 @@ namespace Cybersource.Services
 
             return retrieveTransaction;
         }
+
+        public async Task<SearchResponse> CreateSearchRequest(CreateSearchRequest createSearchRequest)
+        {
+            SearchResponse searchResponse = null;
+            string json = JsonConvert.SerializeObject(createSearchRequest);
+            string endpoint = $"{CybersourceConstants.TRANSACTIONS}searches";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                searchResponse = JsonConvert.DeserializeObject<SearchResponse>(response.Message);
+            }
+
+            return searchResponse;
+        }
         #endregion Reporting
 
         public async Task<CybersourceBinLookupResponse> BinLookup(string cardNumber)
@@ -679,13 +694,20 @@ namespace Cybersource.Services
                 }
             };
 
-            string json = JsonConvert.SerializeObject(cybersourceBinLookupRequest);
-            string endpoint = $"{CybersourceConstants.BIN}binlookup";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            _context.Vtex.Logger.Debug("BinLookup", null, null, new[] { ("Bin", cardNumber), ("request", json), ("response", JsonConvert.SerializeObject(response)) });
-            if (response != null)
+            try
             {
-                cybersourceBinLookupResponse = JsonConvert.DeserializeObject<CybersourceBinLookupResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(cybersourceBinLookupRequest);
+                string endpoint = $"{CybersourceConstants.BIN}binlookup";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                _context.Vtex.Logger.Debug("BinLookup", null, null, new[] { ("Bin", cardNumber), ("request", json), ("response", JsonConvert.SerializeObject(response)) });
+                if (response != null)
+                {
+                    cybersourceBinLookupResponse = JsonConvert.DeserializeObject<CybersourceBinLookupResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("BinLookup", null, "Error", ex, new[] { ("Bin", cardNumber) });
             }
 
             return cybersourceBinLookupResponse;

@@ -87,6 +87,28 @@ namespace Cybersource.Services
                             }
 
                             break;
+
+                        case CybersourceConstants.ManifestCustomField.MerchantId:
+                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
+                            {
+                                merchantSettings.MerchantId = merchantSetting.Value;
+                            }
+
+                            break;
+                        case CybersourceConstants.ManifestCustomField.MerchantKey:
+                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
+                            {
+                                merchantSettings.MerchantKey = merchantSetting.Value;
+                            }
+
+                            break;
+                        case CybersourceConstants.ManifestCustomField.SharedSecretKey:
+                            if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
+                            {
+                                merchantSettings.SharedSecretKey = merchantSetting.Value;
+                            }
+
+                            break;
                     }
                 }
             }
@@ -139,7 +161,7 @@ namespace Cybersource.Services
                         address1 = $"{createPaymentRequest.MiniCart.BillingAddress.Number} {createPaymentRequest.MiniCart.BillingAddress.Street}",
                         address2 = createPaymentRequest.MiniCart.BillingAddress.Complement,
                         locality = createPaymentRequest.MiniCart.BillingAddress.City,
-                        administrativeArea = createPaymentRequest.MiniCart.BillingAddress.State,
+                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.BillingAddress.State),
                         postalCode = createPaymentRequest.MiniCart.BillingAddress.PostalCode,
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country),
                         email = createPaymentRequest.MiniCart.Buyer.Email,
@@ -149,7 +171,7 @@ namespace Cybersource.Services
                     {
                         address1 = $"{createPaymentRequest.MiniCart.ShippingAddress.Number} {createPaymentRequest.MiniCart.ShippingAddress.Street}",
                         address2 = createPaymentRequest.MiniCart.ShippingAddress.Complement,
-                        administrativeArea = createPaymentRequest.MiniCart.ShippingAddress.State,
+                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.ShippingAddress.State),
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode,
                         locality = createPaymentRequest.MiniCart.ShippingAddress.City,
@@ -615,7 +637,7 @@ namespace Cybersource.Services
             if (paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 _context.Vtex.Logger.Debug("CapturePayment", null, "Loaded PaymentData", new[] { ("orderId", paymentData.OrderId), ("paymentId", paymentData.PaymentId), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
-                if(paymentData.ImmediateCapture)
+                if(paymentData.ImmediateCapture) // || !string.IsNullOrEmpty(paymentData.CaptureId))
                 {
                     capturePaymentResponse = new CapturePaymentResponse();
                     capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
@@ -629,11 +651,13 @@ namespace Cybersource.Services
                 }
             }
 
+            string referenceNumber = await _vtexApiService.GetOrderId(paymentData.OrderId);
+
             Payments payment = new Payments
             {
                 clientReferenceInformation = new ClientReferenceInformation
                 {
-                    code = await _vtexApiService.GetOrderId(paymentData.OrderId), //capturePaymentRequest.PaymentId,
+                    code = referenceNumber,
                     applicationName = _context.Vtex.App.Name,
                     applicationVersion = _context.Vtex.App.Version,
                     applicationUser = _context.Vtex.App.Vendor,
@@ -650,7 +674,7 @@ namespace Cybersource.Services
                     }
                 }
             };
-            
+
             PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, paymentData.AuthorizationId);
             if (paymentsResponse != null)
             {
@@ -660,16 +684,48 @@ namespace Cybersource.Services
                 capturePaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
                 capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
                 capturePaymentResponse.SettleId = paymentsResponse.Id;
-                capturePaymentResponse.Value = paymentsResponse.ErrorInformation != null ? 0m : decimal.Parse(paymentsResponse.OrderInformation.amountDetails.totalAmount);
 
-                decimal authAmount = 0m;
+                decimal captureAmount = 0m;
                 if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
                 {
-                    decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.authorizedAmount, out authAmount);
+                    decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.totalAmount, out captureAmount);
+                }
+                else
+                {
+                    // Try to get transaction from Cybersource
+                    CreateSearchRequest searchRequest = new CreateSearchRequest
+                    {
+                        Query = $"clientReferenceInformation.code:{referenceNumber}",
+                        Sort = "submitTimeUtc:desc",
+                        Limit = 2000
+                    };
+
+                    SearchResponse searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest);
+                    if (searchResponse != null)
+                    {
+                        _context.Vtex.Logger.Debug("SearchResponse", null, "SearchResponse", new[] { ("orderId", paymentData.OrderId), ("paymentId", paymentData.PaymentId), ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });
+                        foreach(TransactionSummary transactionSummary in searchResponse.Embedded.TransactionSummaries)
+                        {
+                            if (transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals("ics_bill") && ai.ReasonCode.Equals("100")))
+                            {
+                                string captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
+                                decimal captureValue = 0m;
+                                if (decimal.TryParse(captureValueString, out captureValue) && captureValue == capturePaymentRequest.Value)
+                                {
+                                    capturePaymentResponse.Code = "100";
+                                    capturePaymentResponse.Message = "Transaction retrieved from Cybersource.";
+                                    capturePaymentResponse.SettleId = transactionSummary.Id;
+                                    captureAmount = captureValue;
+                                }
+                            }
+                        }
+                    }
                 }
 
+                capturePaymentResponse.Value = captureAmount;
                 paymentData.CaptureId = capturePaymentResponse.SettleId;
                 paymentData.Value = capturePaymentResponse.Value;
+                paymentData.TransactionId = capturePaymentResponse.PaymentId;
 
                 await _cybersourceRepository.SavePaymentData(capturePaymentRequest.PaymentId, paymentData);
             }
@@ -795,7 +851,6 @@ namespace Cybersource.Services
 
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(sendAntifraudDataRequest);
-                requestWrapper.MerchantId = merchantSettings.MerchantId;
                 string merchantName = string.Empty;
                 string merchantTaxId = string.Empty;
                 if (sendAntifraudDataRequest.MerchantSettings != null)
@@ -804,16 +859,38 @@ namespace Cybersource.Services
                     {
                         switch (merchantSetting.Name)
                         {
-                            case "Company Name":
+                            case CybersourceConstants.ManifestCustomField.CompanyName:
                                 merchantName = merchantSetting.Value;
                                 break;
-                            case "Company Tax Id":
+                            case CybersourceConstants.ManifestCustomField.CompanyTaxId:
                                 merchantTaxId = merchantSetting.Value;
+                                break;
+                            case CybersourceConstants.ManifestCustomField.MerchantId:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
+                                {
+                                    merchantSettings.MerchantId = merchantSetting.Value;
+                                }
+
+                                break;
+                            case CybersourceConstants.ManifestCustomField.MerchantKey:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
+                                {
+                                    merchantSettings.MerchantKey = merchantSetting.Value;
+                                }
+
+                                break;
+                            case CybersourceConstants.ManifestCustomField.SharedSecretKey:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
+                                {
+                                    merchantSettings.SharedSecretKey = merchantSetting.Value;
+                                }
+
                                 break;
                         }
                     }
                 }
 
+                requestWrapper.MerchantId = merchantSettings.MerchantId;
                 requestWrapper.CompanyName = merchantName;
                 requestWrapper.CompanyTaxId = merchantTaxId;
                 payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
@@ -1001,6 +1078,22 @@ namespace Cybersource.Services
             SendAntifraudDataResponse sendAntifraudDataResponse = await SendAntifraudData(sendAntifraudDataRequest);
 
             return sendAntifraudDataResponse != null;
+        }
+
+        public string GetAdministrativeArea(string region)
+        {
+            try
+            {
+                string pattern = @"\s*\([^()]+\)(?!.*\([^()]+\))";  // This will match the last instance of text inside parenthesis. `Región del Biobío (VIII)` -> `Región del Biobío`
+                Regex regex = new Regex(pattern);
+                region = regex.Replace(region, string.Empty);
+            }
+            catch(Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetAdministrativeArea", null, $"Error on region '{region}'", ex);
+            }
+
+            return region;
         }
 
         public string GetCountryCode(string country)

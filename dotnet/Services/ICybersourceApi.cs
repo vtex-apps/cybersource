@@ -21,6 +21,7 @@ namespace Cybersource.Services
         Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime);
         Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime);
         Task<RetrieveTransaction> RetrieveTransaction(string transactionId);
+        Task<SearchResponse> CreateSearchRequest(CreateSearchRequest createSearchRequest);
 
         Task<CybersourceBinLookupResponse> BinLookup(string cardNumber);
     }
