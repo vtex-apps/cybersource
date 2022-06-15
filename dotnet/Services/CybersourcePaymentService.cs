@@ -1084,7 +1084,7 @@ namespace Cybersource.Services
         {
             try
             {
-                string pattern = @"\s*\([^()]+\)(?!.*\([^()]+\))";
+                string pattern = @"\s*\([^()]+\)(?!.*\([^()]+\))";  // This will match the last instance of text inside parenthesis. `Región del Biobío (VIII)` -> `Región del Biobío`
                 Regex regex = new Regex(pattern);
                 region = regex.Replace(region, string.Empty);
             }
