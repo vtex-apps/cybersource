@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Cybersource.Data;
@@ -161,7 +163,7 @@ namespace Cybersource.Services
                         address1 = $"{createPaymentRequest.MiniCart.BillingAddress.Number} {createPaymentRequest.MiniCart.BillingAddress.Street}",
                         address2 = createPaymentRequest.MiniCart.BillingAddress.Complement,
                         locality = createPaymentRequest.MiniCart.BillingAddress.City,
-                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.BillingAddress.State),
+                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.BillingAddress.State, this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country)),
                         postalCode = createPaymentRequest.MiniCart.BillingAddress.PostalCode,
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country),
                         email = createPaymentRequest.MiniCart.Buyer.Email,
@@ -171,7 +173,7 @@ namespace Cybersource.Services
                     {
                         address1 = $"{createPaymentRequest.MiniCart.ShippingAddress.Number} {createPaymentRequest.MiniCart.ShippingAddress.Street}",
                         address2 = createPaymentRequest.MiniCart.ShippingAddress.Complement,
-                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.ShippingAddress.State),
+                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.ShippingAddress.State, this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country)),
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode,
                         locality = createPaymentRequest.MiniCart.ShippingAddress.City,
@@ -1080,20 +1082,116 @@ namespace Cybersource.Services
             return sendAntifraudDataResponse != null;
         }
 
-        public string GetAdministrativeArea(string region)
+        public string GetAdministrativeArea(string region, string countryCode)
         {
+            string regionCode = region;
             try
             {
-                string pattern = @"\s*\([^()]+\)(?!.*\([^()]+\))";  // This will match the last instance of text inside parenthesis. `Región del Biobío (VIII)` -> `Región del Biobío`
-                Regex regex = new Regex(pattern);
-                region = regex.Replace(region, string.Empty);
+                if (!string.IsNullOrEmpty(region))
+                {
+                    switch (countryCode)
+                    {
+                        case "CL": // Chile
+                            regionCode = GetAdministrativeAreaChile(region);
+                            break;
+                    }
+
+                    _context.Vtex.Logger.Debug("GetAdministrativeArea", null, $"'{region}', '{countryCode}' = '{regionCode}'");
+                }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("GetAdministrativeArea", null, $"Error on region '{region}'", ex);
             }
+            
+            return regionCode;
+        }
 
-            return region;
+        public string GetAdministrativeAreaChile(string region)
+        {
+            string regionCode = "RM"; // Default to Región Metropolitana
+            if (region.Contains("(") && region.Contains(")"))
+            {
+                string regionumber = region.Split('(', ')')[1];
+                Console.WriteLine($"regionumber ({regionumber}) ");
+                switch (regionumber)
+                {
+                    case "I": // Region de Tarapaca
+                        regionCode = "TA";
+                        break;
+                    case "II": // Región de Antofagasta
+                        regionCode = "AN";
+                        break;
+                    case "III": // Región de Atacama
+                        regionCode = "AT";
+                        break;
+                    case "IV": // Región de Coquimbo
+                        regionCode = "CO";
+                        break;
+                    case "V": // Región de Valparaíso
+                        regionCode = "VS";
+                        break;
+                    case "VI": // Región del Libertador General Bernardo O’Higgins
+                        regionCode = "LI";
+                        break;
+                    case "VII": // Región del Maule
+                        regionCode = "ML";
+                        break;
+                    case "VIII": // Región del Biobío
+                        regionCode = "BI";
+                        break;
+                    case "IX": // Región de La Araucanía
+                        regionCode = "AR";
+                        break;
+                    case "X": // Región de Los Lagos
+                        regionCode = "LL";
+                        break;
+                    case "XI": // Region de Aysen del General Carlos Ibanez del Campo
+                        regionCode = "AI";
+                        break;
+                    case "XII": // Región de Magallanes y la Antártica Chilena
+                        regionCode = "MA";
+                        break;
+                    case "":
+                    case "XIII": // Región Metropolitana de Santiago
+                        regionCode = "RM";
+                        break;
+                    case "XIV": // Región de Los Ríos
+                        regionCode = "LR";
+                        break;
+                    case "XV": // Region de Arica y Parinacota
+                        regionCode = "AP";
+                        break;
+                    case "XVI": // Región del Ñuble
+                        regionCode = region;
+                        break;
+                    default:
+                        regionCode = region;
+                        break;
+                }
+            }
+
+            return regionCode;
+        }
+
+        public string RemoveDiacritics(string text)
+        {
+            var normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
+
+            for (int i = 0; i < normalizedString.Length; i++)
+            {
+                char c = normalizedString[i];
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder
+                .ToString()
+                .Normalize(NormalizationForm.FormC);
         }
 
         public string GetCountryCode(string country)
