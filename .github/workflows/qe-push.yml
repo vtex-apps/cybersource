@@ -10,10 +10,10 @@ jobs:
     name: QE
     uses: vtex-apps/usqa/.github/workflows/quality-engineering.yml@next-version
     with:
-      nodeLint: false
-      nodeTest: false
+      nodeLint: true
+      nodeTest: true
       dotnetLint: true
-      dotnetVersion: 3.1
+      # dotnetVersion: 3.1
       dotnetSonar: false
       dotnetSonarProjectKey: vtex-apps_cybersource
       dotnetSonarOrganization: vtex-apps
