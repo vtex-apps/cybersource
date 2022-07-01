@@ -1,4 +1,4 @@
-import { configureTaxConfigurationInOrderForm } from '../support/orderFormConfiguration.js'
+import { configureTaxConfigurationInOrderForm } from '../support/common/testcase.js'
 import { ENTITIES } from '../support/common/constants.js'
 
 describe('Wiping the environment', () => {
