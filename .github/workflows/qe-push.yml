@@ -3,7 +3,7 @@ name: '[PSH] Quality Engineering'
 on:
   push:
     branches: 
-      - action-improvements
+      - test/action-improvements
 
 jobs:
   quality-engineering:
