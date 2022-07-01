@@ -3,25 +3,18 @@ name: '[PSH] Quality Engineering'
 on:
   push:
     branches: 
-      - master
-      - main
-      - bugfix/*
-      - chore/*
-      - enhancement/*
-      - feature/*
-      - fix/*
-      - hotfix/*
-      - translation/*
-      - actions/*
+      - action-improvements
 
 jobs:
   quality-engineering:
     name: QE
     uses: vtex-apps/usqa/.github/workflows/quality-engineering.yml@main
     with:
-      nodeLint: true
+      nodeLint: false
       nodeTest: false
-      dotnetSonar: true
+      dotnetLint: true
+      dotnnetVersion: 3.1
+      dotnetSonar: false
       dotnetSonarProjectKey: vtex-apps_cybersource
       dotnetSonarOrganization: vtex-apps
     secrets:
