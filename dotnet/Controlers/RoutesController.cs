@@ -209,6 +209,21 @@
                                 Value = CybersourceConstants.CaptureSetting.ImmediateCapture
                             }
                         }
+                    },
+                    new CustomField
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.MerchantId,
+                        Type = "text"
+                    },
+                    new CustomField
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.MerchantKey,
+                        Type = "text"
+                    },
+                    new CustomField
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.SharedSecretKey,
+                        Type = "text"
                     }
                 }
             };

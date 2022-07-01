@@ -55,6 +55,18 @@
       ],
       "name": "Capture Setting",
       "type": "select"
+    },
+    {
+      "name": "Merchant Id",
+      "type": "text"
+    },
+    {
+      "name": "Merchant Key",
+      "type": "text"
+    },
+    {
+      "name": "Shared Secret Key",
+      "type": "text"
     }
   ]
 }
