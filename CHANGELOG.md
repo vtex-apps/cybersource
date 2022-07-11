@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Updated ReadMe
+
 ## [1.3.1] - 2022-06-22
 
 - (CYBRSOURCE-33) Convert Chile region name to iso code
