@@ -31,6 +31,22 @@
             this._context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        public RoutesController2(ICybersourcePaymentService cybersourcePaymentService, ICybersourceRepository cybersourceRepository, IVtexApiService vtexApiService, IIOServiceContext context)
+        {
+            this._cybersourcePaymentService = cybersourcePaymentService ?? throw new ArgumentNullException(nameof(cybersourcePaymentService));
+            this._cybersourceRepository = cybersourceRepository ?? throw new ArgumentNullException(nameof(cybersourceRepository));
+            this._vtexApiService = vtexApiService ?? throw new ArgumentNullException(nameof(vtexApiService));
+            this._context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        public RoutesController3(ICybersourcePaymentService cybersourcePaymentService, ICybersourceRepository cybersourceRepository, IVtexApiService vtexApiService, IIOServiceContext context)
+        {
+            this._cybersourcePaymentService = cybersourcePaymentService ?? throw new ArgumentNullException(nameof(cybersourcePaymentService));
+            this._cybersourceRepository = cybersourceRepository ?? throw new ArgumentNullException(nameof(cybersourceRepository));
+            this._vtexApiService = vtexApiService ?? throw new ArgumentNullException(nameof(vtexApiService));
+            this._context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
         /// <summary>
         /// https://{{providerApiEndpoint}}/payments
         /// Creates a new payment and/or initiates the payment flow.
@@ -147,6 +163,11 @@
                     new PaymentMethod
                     {
                         Name = "Visa",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "aaa",
                         AllowsSplit = "onCapture"
                     },
                     new PaymentMethod
