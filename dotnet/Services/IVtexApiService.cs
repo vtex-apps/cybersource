@@ -26,6 +26,8 @@ namespace Cybersource.Services
         Task<string> GetSequence(string orderId);
         Task<string> GetOrderId(string reference);
         Task<List<string>> GetPropertyList();
+        Task<PersonalData> GetPersonalData(string userProfileId);
+        Task<VtexOrderList> ListOrders(string queryString);
 
         Task<BinLookup> BinLookup(string bin);
     }

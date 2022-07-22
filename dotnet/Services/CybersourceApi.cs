@@ -521,6 +521,39 @@ namespace Cybersource.Services
         }
         #endregion
 
+        #region Payer Authentication
+        public async Task<PaymentsResponse> SetupPayerAuth(Payments payments, string proxyUrl, string proxyTokensUrl)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            _context.Vtex.Logger.Debug("SetupPayerAuth", "request", json);
+            string endpoint = $"{CybersourceConstants.RISK}authentication-setups";
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            _context.Vtex.Logger.Debug("SetupPayerAuth", "response", response.Message);
+            if (response != null)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+            }
+
+            return paymentsResponse;
+        }
+
+        public async Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, json);
+            string endpoint = $"{CybersourceConstants.RISK}authentications";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+            }
+
+            return paymentsResponse;
+        }
+        #endregion
+
         #region Tax
         public async Task<PaymentsResponse> CalculateTaxes(Payments payments)
         {

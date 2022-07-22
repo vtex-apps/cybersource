@@ -106,7 +106,64 @@ namespace Cybersource.Models
     public class ConsumerAuthenticationInformation
     {
         [JsonProperty("strongAuthentication")]
-        public BuyerInformation StrongAuthentication { get; set; }
+        public StrongAuthentication StrongAuthentication { get; set; }
+
+        [JsonProperty("transactionMode")]
+        public string TransactionMode { get; set; }
+
+        [JsonProperty("accessToken")]
+        public string AccessToken { get; set; }
+
+        [JsonProperty("deviceDataCollectionUrl")]
+        public string DeviceDataCollectionUrl { get; set; }
+
+        [JsonProperty("referenceId")]
+        public string ReferenceId { get; set; }
+
+        [JsonProperty("token")]
+        public string Token { get; set; }
+
+        [JsonProperty("authenticationTransactionId")]
+        public string AuthenticationTransactionId { get; set; }
+
+        [JsonProperty("eciRaw")]
+        public string EciRaw { get; set; }
+
+        [JsonProperty("eci")]
+        public string Eci { get; set; }
+
+        [JsonProperty("proofXml")]
+        public string ProofXml { get; set; }
+
+        [JsonProperty("cavv")]
+        public string Cavv { get; set; }
+
+        [JsonProperty("paresStatus")]
+        public string ParesStatus { get; set; }
+
+        [JsonProperty("xid")]
+        public string Xid { get; set; }
+
+        [JsonProperty("cavvAlgorithm")]
+        public string CavvAlgorithm { get; set; }
+
+        [JsonProperty("veresEnrolled")]
+        public string VeresEnrolled { get; set; }
+
+        [JsonProperty("authenticationPath")]
+        public string AuthenticationPath { get; set; }
+
+        [JsonProperty("ecommerceIndicator")]
+        public string EcommerceIndicator { get; set; }
+
+        [JsonProperty("specificationVersion")]
+        public string SpecificationVersion { get; set; }
+    }
+
+    public partial class StrongAuthentication
+    {
+        [JsonProperty("authenticationIndicator")]
+        public string AuthenticationIndicator { get; set; }
     }
 
     public class Profile

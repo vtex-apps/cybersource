@@ -19,5 +19,6 @@ namespace Cybersource.Models
         public TaxInformation taxInformation { get; set; }
         public MerchantInformation merchantInformation { get; set; }
         public List<MerchantDefinedInformation> merchantDefinedInformation { get; set; }
+        public ConsumerAuthenticationInformation ConsumerAuthenticationInformation { get; set; }
     }
 }

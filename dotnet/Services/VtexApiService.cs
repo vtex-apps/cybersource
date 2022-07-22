@@ -47,17 +47,21 @@ namespace Cybersource.Services
                 $"{this._environmentVariableProvider.ApplicationVendor}.{this._environmentVariableProvider.ApplicationName}";
         }
 
-        public async Task<VtexOrder> GetOrderInformation(string orderId)
+        public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData)
         {
-            VtexOrder vtexOrder = null;
-
+            SendResponse sendResponse = null;
             try
             {
                 var request = new HttpRequestMessage
                 {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/orders/{orderId}")
+                    Method = method,
+                    RequestUri = new Uri(endpoint)
                 };
+
+                if (!string.IsNullOrEmpty(jsonSerializedData))
+                {
+                    request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
+                }
 
                 request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
                 string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
@@ -71,19 +75,32 @@ namespace Cybersource.Services
                 var client = _clientFactory.CreateClient();
                 var response = await client.SendAsync(request);
                 string responseContent = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
+                sendResponse = new SendResponse
                 {
-                    vtexOrder = JsonConvert.DeserializeObject<VtexOrder>(responseContent);
-                }
-                else
-                {
-                    _context.Vtex.Logger.Info("GetOrderInformation", null, $"Order# {orderId} [{response.StatusCode}] '{responseContent}'");
-                }
+                    StatusCode = response.StatusCode.ToString(),
+                    Success = response.IsSuccessStatusCode,
+                    Message = responseContent
+                };
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetOrderInformation", null, $"Order# {orderId} Error", ex);
+                _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex, new[] { ("method", method.ToString()), ("endpoint", endpoint), ("jsonSerializedData", jsonSerializedData) });
+            }
+
+            return sendResponse;
+        }
+
+        public async Task<VtexOrder> GetOrderInformation(string orderId)
+        {
+            VtexOrder vtexOrder = null;
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/orders/{orderId}", null);
+            if (sendResponse.Success)
+            {
+                vtexOrder = JsonConvert.DeserializeObject<VtexOrder>(sendResponse.Message);
+            }
+            else
+            {
+                _context.Vtex.Logger.Info("GetOrderInformation", null, $"Order# {orderId} [{sendResponse.StatusCode}] '{sendResponse.Message}'");
             }
 
             return vtexOrder;
@@ -92,40 +109,14 @@ namespace Cybersource.Services
         public async Task<VtexOrder[]> GetOrderGroup(string orderId)
         {
             VtexOrder[] vtexOrders = null;
-
-            try
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pub/orders/order-group/{orderId}", null);
+            if (sendResponse.Success)
             {
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pub/orders/order-group/{orderId}")
-                };
-
-                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                if (authToken != null)
-                {
-                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-                }
-
-                var client = _clientFactory.CreateClient();
-                var response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
-                {
-                    vtexOrders = JsonConvert.DeserializeObject<VtexOrder[]>(responseContent);
-                }
-                else
-                {
-                    _context.Vtex.Logger.Info("GetOrderGroup", null, $"Order# {orderId} [{response.StatusCode}] '{responseContent}'");
-                }
+                vtexOrders = JsonConvert.DeserializeObject<VtexOrder[]>(sendResponse.Message);
             }
-            catch (Exception ex)
+            else
             {
-                _context.Vtex.Logger.Error("GetOrderGroup", null, $"Order# {orderId} Error", ex);
+                _context.Vtex.Logger.Info("GetOrderGroup", null, $"Order# {orderId} [{sendResponse.StatusCode}] '{sendResponse.Message}'");
             }
 
             return vtexOrders;
@@ -201,39 +192,14 @@ namespace Cybersource.Services
         public async Task<VtexOrderList> SearchOrders(string query)
         {
             VtexOrderList vtexOrderList = null;
-            try
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?q={query}", null);
+            if (sendResponse.Success)
             {
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?q={query}")
-                };
-
-                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                if (authToken != null)
-                {
-                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-                }
-
-                var client = _clientFactory.CreateClient();
-                var response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
-                {
-                    vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(responseContent);
-                }
-                else
-                {
-                    _context.Vtex.Logger.Info("SearchOrders", null, $"Query:{query} [{response.StatusCode}] '{responseContent}'");
-                }
+                vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(sendResponse.Message);
             }
-            catch (Exception ex)
+            else
             {
-                _context.Vtex.Logger.Error("SearchOrders", null, $"Query:{query} Error", ex);
+                _context.Vtex.Logger.Info("SearchOrders", null, $"Query:{query} [{sendResponse.StatusCode}] '{sendResponse.Message}'");
             }
 
             return vtexOrderList;
@@ -242,27 +208,10 @@ namespace Cybersource.Services
         public async Task<VtexDockResponse[]> ListVtexDocks()
         {
             VtexDockResponse[] listVtexDocks = null;
-            var request = new HttpRequestMessage
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.vtexcommercestable.com.br/api/logistics/pvt/configuration/docks", null);
+            if (sendResponse.Success)
             {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.vtexcommercestable.com.br/api/logistics/pvt/configuration/docks")
-            };
-
-            request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            if (authToken != null)
-            {
-                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-            }
-
-            var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode)
-            {
-                listVtexDocks = JsonConvert.DeserializeObject<VtexDockResponse[]>(responseContent);
+                listVtexDocks = JsonConvert.DeserializeObject<VtexDockResponse[]>(sendResponse.Message);
             }
 
             return listVtexDocks;
@@ -271,27 +220,10 @@ namespace Cybersource.Services
         public async Task<VtexDockResponse> ListDockById(string dockId)
         {
             VtexDockResponse dockResponse = null;
-            var request = new HttpRequestMessage
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.vtexcommercestable.com.br/api/logistics/pvt/configuration/docks/{dockId}", null);
+            if (sendResponse.Success)
             {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.vtexcommercestable.com.br/api/logistics/pvt/configuration/docks/{dockId}")
-            };
-
-            request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            if (authToken != null)
-            {
-                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-            }
-
-            var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode)
-            {
-                dockResponse = JsonConvert.DeserializeObject<VtexDockResponse>(responseContent);
+                dockResponse = JsonConvert.DeserializeObject<VtexDockResponse>(sendResponse.Message);
             }
 
             return dockResponse;
@@ -300,27 +232,10 @@ namespace Cybersource.Services
         public async Task<PickupPoints> ListPickupPoints()
         {
             PickupPoints pickupPoints = null;
-            var request = new HttpRequestMessage
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://logistics.vtexcommercestable.com.br/api/logistics/pvt/configuration/pickuppoints/_search?an={this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}&pageSize=100", null);
+            if (sendResponse.Success)
             {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri($"http://logistics.vtexcommercestable.com.br/api/logistics/pvt/configuration/pickuppoints/_search?an={this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}&pageSize=100")
-            };
-
-            request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            if (authToken != null)
-            {
-                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-            }
-
-            var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode)
-            {
-                pickupPoints = JsonConvert.DeserializeObject<PickupPoints>(responseContent);
+                pickupPoints = JsonConvert.DeserializeObject<PickupPoints>(sendResponse.Message);
             }
 
             return pickupPoints;
@@ -329,41 +244,15 @@ namespace Cybersource.Services
         public async Task<GetSkuContextResponse> GetSku(string skuId)
         {
             // GET https://{accountName}.{environment}.com.br/api/catalog_system/pvt/sku/stockkeepingunitbyid/skuId
-
             GetSkuContextResponse getSkuResponse = null;
-
-            try
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/catalog_system/pvt/sku/stockkeepingunitbyid/{skuId}", null);
+            if (sendResponse.Success)
             {
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/catalog_system/pvt/sku/stockkeepingunitbyid/{skuId}")
-                };
-
-                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                if (authToken != null)
-                {
-                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-                }
-
-                var client = _clientFactory.CreateClient();
-                var response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    getSkuResponse = JsonConvert.DeserializeObject<GetSkuContextResponse>(responseContent);
-                }
-                else
-                {
-                    _context.Vtex.Logger.Warn("GetSku", null, $"Did not get context for skuid '{skuId}'");
-                }
+                getSkuResponse = JsonConvert.DeserializeObject<GetSkuContextResponse>(sendResponse.Message);
             }
-            catch (Exception ex)
+            else
             {
-                _context.Vtex.Logger.Error("GetSku", null, $"Error getting context for skuid '{skuId}'", ex);
+                _context.Vtex.Logger.Warn("GetSku", null, $"Did not get context for skuid '{skuId}'");
             }
 
             return getSkuResponse;
@@ -447,44 +336,15 @@ namespace Cybersource.Services
         public async Task<TaxFallbackResponse> GetFallbackRate(string country, string postalCode, string provider = "avalara")
         {
             // GET https://vtexus.myvtex.com/_v/tax-fallback/{country}/{provider}/{postalCode}
-
             TaxFallbackResponse fallbackResponse = null;
-
-            try
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://vtexus.myvtex.com/_v/tax-fallback/{country}/{provider}/{postalCode}", null);
+            if (sendResponse.Success)
             {
-                if (country.Length > 2)
-                    country = this.GetCountryCode(country);
-
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri($"http://vtexus.myvtex.com/_v/tax-fallback/{country}/{provider}/{postalCode}")
-                };
-
-                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                if (authToken != null)
-                {
-                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.VTEX_ID_HEADER_NAME, authToken);
-                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-                }
-
-                var client = _clientFactory.CreateClient();
-                var response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    fallbackResponse = JsonConvert.DeserializeObject<TaxFallbackResponse>(responseContent);
-                }
-                else
-                {
-                    _context.Vtex.Logger.Warn("GetFallbackRate", null, $"Did not get rates for {country} {postalCode} ({provider}) : '{response.Content}'");
-                }
+                fallbackResponse = JsonConvert.DeserializeObject<TaxFallbackResponse>(sendResponse.Message);
             }
-            catch (Exception ex)
+            else
             {
-                _context.Vtex.Logger.Error("GetFallbackRate", null, $"Error getting rates for {country} {postalCode} ({provider})", ex);
+                _context.Vtex.Logger.Warn("GetFallbackRate", null, $"Did not get rates for {country} {postalCode} ({provider}) : '{sendResponse.Message}'");
             }
 
             return fallbackResponse;
@@ -1274,46 +1134,13 @@ namespace Cybersource.Services
         public async Task<SendResponse> CancelOrder(string orderId, string reason)
         {
             // POST https://apiexamples.vtexcommercestable.com.br/api/oms/pvt/orders/{orderId}/cancel
-            SendResponse sendResponse = null;
-
-            try
+            CancelOrderRequest cancelOrderRequest = new CancelOrderRequest
             {
-                CancelOrderRequest cancelOrderRequest = new CancelOrderRequest
-                {
-                    Reason = reason
-                };
+                Reason = reason
+            };
 
-                string jsonSerializedData = JsonConvert.SerializeObject(cancelOrderRequest);
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Post,
-                    RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders/{orderId}/cancel"),
-                    Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
-                };
-
-                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                if (authToken != null)
-                {
-                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                }
-
-                var client = _clientFactory.CreateClient();
-                var response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-
-                sendResponse = new SendResponse
-                {
-                    Message = responseContent,
-                    StatusCode = response.StatusCode.ToString(),
-                    Success = response.IsSuccessStatusCode
-                };
-
-            }
-            catch (Exception ex)
-            {
-                _context.Vtex.Logger.Error("CancelOrder", null, $"{orderId}", ex);
-            }
+            string json = JsonConvert.SerializeObject(cancelOrderRequest);
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Post, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders/{orderId}/cancel", json);
 
             return sendResponse;
         }
@@ -1329,33 +1156,10 @@ namespace Cybersource.Services
             // GET https://lookup.binlist.net/{{BIN}}
 
             BinLookup binLookup = null;
-
-            try
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"https://lookup.binlist.net/{bin}", null);
+            if (sendResponse.Success)
             {
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri($"https://lookup.binlist.net/{bin}")
-                };
-
-                request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                if (authToken != null)
-                {
-                    request.Headers.Add(CybersourceConstants.PROXY_AUTHORIZATION_HEADER_NAME, authToken);
-                }
-
-                var client = _clientFactory.CreateClient();
-                var response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    binLookup = JsonConvert.DeserializeObject<BinLookup>(responseContent);
-                }
-            }
-            catch (Exception ex)
-            {
-                _context.Vtex.Logger.Error("BinLookup", null, null, ex);
+                binLookup = JsonConvert.DeserializeObject<BinLookup>(sendResponse.Message);
             }
 
             return binLookup;
@@ -1394,6 +1198,48 @@ namespace Cybersource.Services
             }
 
             return propertyList;
+        }
+
+        public async Task<PersonalData> GetPersonalData(string userProfileId)
+        {
+
+            PersonalData personalData = null;
+            if (string.IsNullOrEmpty(userProfileId))
+            {
+                _context.Vtex.Logger.Warn("GetPersonalData", null, "User Profile Id is Empty.");
+            }
+            else
+            {
+                SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/profile-system/pvt/profiles/{userProfileId}/personalData", null);
+                if (sendResponse.Success)
+                {
+                    personalData = JsonConvert.DeserializeObject<PersonalData>(sendResponse.Message);
+                }
+                else
+                {
+                    _context.Vtex.Logger.Warn("GetPersonalData", null, $"User Profile Id: {userProfileId} Error: [{sendResponse.StatusCode}] '{sendResponse.Message}'");
+                }
+            }
+
+            return personalData;
+        }
+
+        public async Task<VtexOrderList> ListOrders(string queryString)
+        {
+            VtexOrderList vtexOrderList = new VtexOrderList();
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?{queryString}", null);
+
+            if (sendResponse.Success)
+            {
+                vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(sendResponse.Message);
+            }
+
+            return vtexOrderList;
+        }
+
+        public async Task<VtexOrderList> ListOrdersForShopperId(string shopperId)
+        {
+            return await this.ListOrders($"orderBy=creationDate,asc&q={shopperId}");
         }
     }
 }
