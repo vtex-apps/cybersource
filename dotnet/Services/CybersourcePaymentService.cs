@@ -1768,6 +1768,11 @@ namespace Cybersource.Services
                                                                 }
 
                                                                 break;
+                                                            case "EQUALS":
+                                                                bool match = string.Equals(propValue, valueSubStrArr[2], StringComparison.OrdinalIgnoreCase);
+                                                                propValue = match.ToString();
+
+                                                                break;
                                                             default:
                                                                 _context.Vtex.Logger.Warn("GetMerchantDefinedInformation", null, $"Invalid operation '{operation}'");
                                                                 break;
