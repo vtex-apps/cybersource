@@ -104,5 +104,20 @@ namespace Cybersource.Models
         /// </summary>
         [JsonProperty("delayToCancel")]
         public int DelayToCancel { get; set; }
+
+        /// <summary>
+        /// Indicate the app that will handle the payment flow at Checkout
+        /// </summary>
+        [JsonProperty("paymentAppData")]
+        public PaymentAppData PaymentAppData { get; set; }
+    }
+
+    public class PaymentAppData
+    {
+        [JsonProperty("appName")]
+        public string AppName { get; set; }
+
+        [JsonProperty("payload")]
+        public string Payload { get; set; }
     }
 }

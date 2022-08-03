@@ -552,6 +552,21 @@ namespace Cybersource.Services
 
             return paymentsResponse;
         }
+
+        public async Task<PaymentsResponse> ValidateAuthenticationResults(Payments payments)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, json);
+            string endpoint = $"{CybersourceConstants.RISK}authentication-results";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+            }
+
+            return paymentsResponse;
+        }
         #endregion
 
         #region Tax

@@ -47,7 +47,15 @@
                 try
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
-                    paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                    MerchantSettings merchantSettings = await this._cybersourceRepository.GetMerchantSettings();
+                    if (merchantSettings.UsePayerAuthentication)
+                    {
+                        paymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
+                    }
+                    else
+                    {
+                        paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                    }
                 }
                 catch (Exception ex)
                 {

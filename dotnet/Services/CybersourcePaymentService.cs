@@ -1112,8 +1112,9 @@ namespace Cybersource.Services
         #endregion Antifraud
 
         #region Payer Authentication
-        public async Task<PaymentsResponse> SetupPayerAuth(CreatePaymentRequest createPaymentRequest)
+        public async Task<CreatePaymentResponse> SetupPayerAuth(CreatePaymentRequest createPaymentRequest)
         {
+            CreatePaymentResponse createPaymentResponse = null;
             PaymentsResponse paymentsResponse = null;
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string merchantName = createPaymentRequest.MerchantName;
@@ -1254,12 +1255,23 @@ namespace Cybersource.Services
             {
                 paymentsResponse = await _cybersourceApi.SetupPayerAuth(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
             }
-            catch
+            catch(Exception ex)
             {
-                // testing
+                _context.Vtex.Logger.Error("SetupPayerAuth", null, "Error", ex);
             }
 
-            return paymentsResponse;
+            createPaymentResponse = new CreatePaymentResponse
+            {
+                PaymentAppData = new PaymentAppData
+                {
+                    AppName = CybersourceConstants.PaymentFlowAppName,
+                    Payload = JsonConvert.SerializeObject(paymentsResponse.ConsumerAuthenticationInformation)
+                },
+                PaymentId = createPaymentRequest.PaymentId,
+                Status = CybersourceConstants.VtexAuthStatus.Undefined
+            };
+
+            return createPaymentResponse;
         }
         #endregion
 
