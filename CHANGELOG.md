@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added more merchant defined fields
 - Added Payer Auth Services
 - Send neighborhood as district
+- If city is null, use neighborhood
 
 ## [1.3.2] - 2022-07-11
 

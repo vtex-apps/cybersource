@@ -166,7 +166,7 @@ namespace Cybersource.Services
                         lastName = createPaymentRequest.MiniCart.Buyer.LastName,
                         address1 = $"{createPaymentRequest.MiniCart.BillingAddress.Number} {createPaymentRequest.MiniCart.BillingAddress.Street}",
                         address2 = createPaymentRequest.MiniCart.BillingAddress.Complement,
-                        locality = createPaymentRequest.MiniCart.BillingAddress.City,
+                        locality = createPaymentRequest.MiniCart.BillingAddress.City ?? createPaymentRequest.MiniCart.BillingAddress.Neighborhood,
                         administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.BillingAddress.State, this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country)),
                         postalCode = createPaymentRequest.MiniCart.BillingAddress.PostalCode,
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country),
@@ -181,7 +181,7 @@ namespace Cybersource.Services
                         administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.ShippingAddress.State, this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country)),
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode,
-                        locality = createPaymentRequest.MiniCart.ShippingAddress.City,
+                        locality = createPaymentRequest.MiniCart.ShippingAddress.City ?? createPaymentRequest.MiniCart.ShippingAddress.Neighborhood,
                         district = createPaymentRequest.MiniCart.ShippingAddress.Neighborhood,
                         phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone, // Note that this is the buyer's number, we do not have a number for the shipping destination
                         firstName = createPaymentRequest.MiniCart.Buyer.FirstName, // defaulting to buyer info.  This should be ovverridden from the order data
