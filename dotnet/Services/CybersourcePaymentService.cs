@@ -170,6 +170,7 @@ namespace Cybersource.Services
                         administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.BillingAddress.State, this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country)),
                         postalCode = createPaymentRequest.MiniCart.BillingAddress.PostalCode,
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country),
+                        district = createPaymentRequest.MiniCart.BillingAddress.Neighborhood,
                         email = createPaymentRequest.MiniCart.Buyer.Email,
                         phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone
                     },
@@ -181,6 +182,7 @@ namespace Cybersource.Services
                         country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
                         postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode,
                         locality = createPaymentRequest.MiniCart.ShippingAddress.City,
+                        district = createPaymentRequest.MiniCart.ShippingAddress.Neighborhood,
                         phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone, // Note that this is the buyer's number, we do not have a number for the shipping destination
                         firstName = createPaymentRequest.MiniCart.Buyer.FirstName, // defaulting to buyer info.  This should be ovverridden from the order data
                         lastName = createPaymentRequest.MiniCart.Buyer.LastName,

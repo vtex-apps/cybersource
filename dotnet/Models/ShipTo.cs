@@ -13,6 +13,8 @@ namespace Cybersource.Models
 
         public string country { get; set; }
 
+        public string district { get; set; }
+
         public string destinationTypes { get; set; }
 
         public string locality { get; set; }
