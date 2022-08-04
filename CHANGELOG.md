@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- If city is null, use neighborhood value for locality
+
 ## [1.3.2] - 2022-07-11
 
 ### Changed
