@@ -503,22 +503,34 @@ namespace Cybersource.Services
                         requestWrapper.Shipping.CourierName = string.Join(", ", selectedSla.DeliveryIds.Select(d => d.CourierName).Distinct().ToArray());
                     }
 
-                    if (requestWrapper.Totals != null)
-                    {
-                        requestWrapper.Totals.Discounts += (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Discounts")).Sum(t => t.Value)) / 100;
-                        requestWrapper.Totals.Items += (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Items")).Sum(t => t.Value)) / 100;
-                        requestWrapper.Totals.Shipping += (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Shipping")).Sum(t => t.Value)) / 100;
-                        requestWrapper.Totals.Tax += (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Tax")).Sum(t => t.Value)) / 100;
-                    }
-                    else
+                    if (requestWrapper.Totals == null)
                     {
                         requestWrapper.Totals = new Totals
                         {
-                            Discounts = (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Discounts")).Sum(t => t.Value)) / 100,
-                            Items = (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Items")).Sum(t => t.Value)) / 100,
-                            Shipping = (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Shipping")).Sum(t => t.Value)) / 100,
-                            Tax = (decimal)(vtexOrder.Totals.Where(i => i.Id.Equals("Tax")).Sum(t => t.Value)) / 100
+                            Discounts = 0m,
+                            Items = 0m,
+                            Shipping = 0m,
+                            Tax = 0m,
                         };
+                    }
+
+                        foreach (VtexTotal vtexTotal in vtexOrder.Totals)
+                    {
+                        switch(vtexTotal.Id)
+                        {
+                            case "Discounts":
+                                requestWrapper.Totals.Discounts += (decimal)vtexTotal.Value / 100;
+                                break;
+                            case "Items":
+                                requestWrapper.Totals.Items += (decimal)vtexTotal.Value / 100;
+                                break;
+                            case "Shipping":
+                                requestWrapper.Totals.Shipping += (decimal)vtexTotal.Value / 100;
+                                break;
+                            case "Tax":
+                                requestWrapper.Totals.Tax += (decimal)vtexTotal.Value / 100;
+                                break;
+                        }
                     }
                 }
             }
@@ -1160,6 +1172,9 @@ namespace Cybersource.Services
                                 merchantSettings.SharedSecretKey = merchantSetting.Value;
                             }
 
+                            break;
+                        default:
+                            _context.Vtex.Logger.Warn("SetupPayerAuth", "merchantSetting", $"Unhandled Merchant Setting '{merchantSetting.Name}'");
                             break;
                     }
                 }
