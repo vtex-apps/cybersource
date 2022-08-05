@@ -1,4 +1,4 @@
-import { testSetup, updateRetry } from '../support/common/support.js'
+import { loginViaCookies, updateRetry } from '../support/common/support.js'
 import { multiProduct, requestRefund } from '../support/outputvalidation'
 import selectors from '../support/common/selectors.js'
 import {
@@ -8,7 +8,7 @@ import {
 import { getTestVariables } from '../support/utils.js'
 
 describe('Multi Product Testcase', () => {
-  testSetup()
+  loginViaCookies()
 
   const { prefix, product1Name, product2Name, tax, totalAmount, postalCode } =
     multiProduct
