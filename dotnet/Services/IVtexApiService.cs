@@ -1,6 +1,7 @@
 ﻿using Cybersource.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace Cybersource.Services
 {
@@ -28,5 +29,7 @@ namespace Cybersource.Services
         Task<List<string>> GetPropertyList();
 
         Task<BinLookup> BinLookup(string bin);
+        Task<HttpStatusCode> IsValidAuthUser();
+        Task<ValidatedUser> ValidateUserToken(string token);
     }
 }

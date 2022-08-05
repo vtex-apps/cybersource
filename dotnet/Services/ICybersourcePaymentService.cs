@@ -18,11 +18,11 @@ namespace Cybersource.Services
         Task<List<MerchantDefinedInformation>> GetMerchantDefinedInformation(MerchantSettings merchantSettings, PaymentRequestWrapper requestWrapper);
 
         Task<ConversionReportResponse> ConversionDetailReport(DateTime dtStartTime, DateTime dtEndTime);
-        Task<ConversionReportResponse> ConversionDetailReport(string atartTime, string endTime);
+        Task<ConversionReportResponse> ConversionDetailReport(string startTime, string endTime);
         Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime);
-        Task<string> RetrieveAvailableReports(string atartTime, string endTime);
+        Task<string> RetrieveAvailableReports(string startTime, string endTime);
         Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime);
-        Task<string> GetPurchaseAndRefundDetails(string atartTime, string endTime);
+        Task<string> GetPurchaseAndRefundDetails(string startTime, string endTime);
         Task<string> GetAuthUrl();
     }
 }
