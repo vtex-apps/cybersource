@@ -271,13 +271,13 @@ namespace Cybersource.Services
                     {
                         if (CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.Visa) || CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.MasterCard))
                         {
-                            plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
+                            plan = "0";  // 0: no deferred payment, 1: 30 dï¿½as, 2: 60 dï¿½as, 3: 90 dï¿½as
                             payment.issuerInformation = new IssuerInformation
                             {
                                 //POS 1 - 6:014001
                                 //POS 7 - 8: # of installments
                                 //POS 9 - 16:00000000
-                                //POS 17: plan(0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días)
+                                //POS 17: plan(0: no deferred payment, 1: 30 dï¿½as, 2: 60 dï¿½as, 3: 90 dï¿½as)
                                 discretionaryData = $"14001{numberOfInstallments}00000000{plan}"
                             };
                         }
@@ -972,7 +972,7 @@ namespace Cybersource.Services
                             lastName = sendAntifraudDataRequest.MiniCart.Buyer.LastName,
                             address1 = $"{sendAntifraudDataRequest.MiniCart.Buyer.Address.Number} {sendAntifraudDataRequest.MiniCart.Buyer.Address.Street}",
                             address2 = sendAntifraudDataRequest.MiniCart.Buyer.Address.Complement,
-                            locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City,
+                            locality = sendAntifraudDataRequest.MiniCart.Buyer.Address.City ?? sendAntifraudDataRequest.MiniCart.Buyer.Address.Neighborhood,
                             administrativeArea = sendAntifraudDataRequest.MiniCart.Buyer.Address.State,
                             postalCode = sendAntifraudDataRequest.MiniCart.Buyer.Address.PostalCode,
                             country = this.GetCountryCode(sendAntifraudDataRequest.MiniCart.Buyer.Address.Country),
@@ -1435,7 +1435,7 @@ namespace Cybersource.Services
 
         public string GetAdministrativeAreaChile(string region)
         {
-            string regionCode = "RM"; // Default to Región Metropolitana
+            string regionCode = "RM"; // Default to Regiï¿½n Metropolitana
             if (region.Contains("(") && region.Contains(")"))
             {
                 string regionumber = region.Split('(', ')')[1];
@@ -1444,50 +1444,50 @@ namespace Cybersource.Services
                     case "I": // Region de Tarapaca
                         regionCode = "TA";
                         break;
-                    case "II": // Región de Antofagasta
+                    case "II": // Regiï¿½n de Antofagasta
                         regionCode = "AN";
                         break;
-                    case "III": // Región de Atacama
+                    case "III": // Regiï¿½n de Atacama
                         regionCode = "AT";
                         break;
-                    case "IV": // Región de Coquimbo
+                    case "IV": // Regiï¿½n de Coquimbo
                         regionCode = "CO";
                         break;
-                    case "V": // Región de Valparaíso
+                    case "V": // Regiï¿½n de Valparaï¿½so
                         regionCode = "VS";
                         break;
-                    case "VI": // Región del Libertador General Bernardo O’Higgins
+                    case "VI": // Regiï¿½n del Libertador General Bernardo Oï¿½Higgins
                         regionCode = "LI";
                         break;
-                    case "VII": // Región del Maule
+                    case "VII": // Regiï¿½n del Maule
                         regionCode = "ML";
                         break;
-                    case "VIII": // Región del Biobío
+                    case "VIII": // Regiï¿½n del Biobï¿½o
                         regionCode = "BI";
                         break;
-                    case "IX": // Región de La Araucanía
+                    case "IX": // Regiï¿½n de La Araucanï¿½a
                         regionCode = "AR";
                         break;
-                    case "X": // Región de Los Lagos
+                    case "X": // Regiï¿½n de Los Lagos
                         regionCode = "LL";
                         break;
                     case "XI": // Region de Aysen del General Carlos Ibanez del Campo
                         regionCode = "AI";
                         break;
-                    case "XII": // Región de Magallanes y la Antártica Chilena
+                    case "XII": // Regiï¿½n de Magallanes y la Antï¿½rtica Chilena
                         regionCode = "MA";
                         break;
                     case "":
-                    case "XIII": // Región Metropolitana de Santiago
+                    case "XIII": // Regiï¿½n Metropolitana de Santiago
                         regionCode = "RM";
                         break;
-                    case "XIV": // Región de Los Ríos
+                    case "XIV": // Regiï¿½n de Los Rï¿½os
                         regionCode = "LR";
                         break;
                     case "XV": // Region de Arica y Parinacota
                         regionCode = "AP";
                         break;
-                    case "XVI": // Región del Ñuble
+                    case "XVI": // Regiï¿½n del ï¿½uble
                         regionCode = region;
                         break;
                     default:
