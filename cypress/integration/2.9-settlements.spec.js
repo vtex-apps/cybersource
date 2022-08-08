@@ -3,13 +3,13 @@ import {
   paymentAndAPITestCases,
 } from '../support/testcase.js'
 import { promotionProduct } from '../support/outputvalidation.js'
-import { testSetup } from '../support/common/support.js'
+import { loginViaCookies } from '../support/common/support.js'
 import { getTestVariables } from '../support/utils.js'
 
 describe('Verify settlements for promotional product', () => {
   const { prefix, env } = promotionProduct
 
-  testSetup()
+  loginViaCookies()
 
   paymentAndAPITestCases(
     null,

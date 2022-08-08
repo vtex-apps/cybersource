@@ -1,5 +1,5 @@
 import { requestRefund, multiProduct } from '../support/outputvalidation.js'
-import { testSetup } from '../support/common/support.js'
+import { loginViaCookies } from '../support/common/support.js'
 import { refund } from '../support/common/refund_apis.js'
 import { getRefundPayload } from '../support/refund_payload.js'
 import { getTestVariables } from '../support/utils.js'
@@ -7,7 +7,7 @@ import { verifyRefundTid } from '../support/testcase.js'
 
 describe('Testing Cybersource transaction API for partial refund', () => {
   // Load test setup
-  testSetup()
+  loginViaCookies()
 
   const { prefix } = multiProduct
   const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)

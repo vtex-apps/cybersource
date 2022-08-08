@@ -1,4 +1,4 @@
-import { testSetup, updateRetry } from '../support/common/support.js'
+import { loginViaCookies, updateRetry } from '../support/common/support.js'
 import { discountShipping } from '../support/outputvalidation.js'
 import selectors from '../support/common/selectors.js'
 import { getTestVariables } from '../support/utils.js'
@@ -8,7 +8,7 @@ import {
 } from '../support/testcase.js'
 
 describe('Discount Shipping Testcase', () => {
-  testSetup()
+  loginViaCookies()
 
   const { prefix, productName, tax, totalAmount, postalCode, env } =
     discountShipping
