@@ -478,7 +478,6 @@ namespace Cybersource.Services
                 
                 if (response != null)
                 {
-                    //Console.WriteLine($"ProcessPayment [{response.StatusCode}] {response.Message}");
                     if (response.Success)
                     {
                         paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -492,9 +491,6 @@ namespace Cybersource.Services
                 {
                     _context.Vtex.Logger.Error("ProcessPayment", null, "Null Response");
                 }
-
-                //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new [] { ("Request", JsonConvert.SerializeObject(payments)), ("Response", JsonConvert.SerializeObject(paymentsResponse)) });
-                //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
             }
             catch (Exception ex)
             {

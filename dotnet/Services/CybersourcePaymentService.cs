@@ -50,20 +50,12 @@ namespace Cybersource.Services
         }
 
         #region Payments
-        public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
+        public async Task<Payments> BuildPayment(CreatePaymentRequest createPaymentRequest)
         {
-            CreatePaymentResponse createPaymentResponse = null;
+            Payments payment = null;
             try
             {
-                PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
-                if(paymentData != null && paymentData.CreatePaymentResponse != null)
-                {
-                    _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
-                    await _vtexApiService.ProcessConversions();
-                    return paymentData.CreatePaymentResponse;
-                }
-
-                _context.Vtex.Logger.Debug("CreatePayment", null, "Creating Payment", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)) });
+                _context.Vtex.Logger.Debug("BuildPayment", null, "Creating Payment", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)) });
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string merchantName = createPaymentRequest.MerchantName;
                 string merchantTaxId = string.Empty;
@@ -115,7 +107,7 @@ namespace Cybersource.Services
 
                 this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName);
 
-                Payments payment = new Payments
+                payment = new Payments
                 {
                     merchantInformation = new MerchantInformation
                     {
@@ -248,8 +240,8 @@ namespace Cybersource.Services
                         break;
                     case CybersourceConstants.Processors.VPC:
                         if (
-                            merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia) && 
-                            CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.Visa) && 
+                            merchantSettings.Region.Equals(CybersourceConstants.Regions.Colombia) &&
+                            CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.Visa) &&
                             !isDebit
                         )
                         {
@@ -266,14 +258,13 @@ namespace Cybersource.Services
                         {
                             if (CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.Visa) || CybersourceConstants.CardType.Unknown.Equals(CybersourceConstants.CardType.MasterCard))
                             {
-                                plan = "0";  // 0: no deferred payment, 1: 30 d�as, 2: 60 d�as, 3: 90 d�as
-                                
+                                plan = "0";  // 0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días
                                 payment.issuerInformation = new IssuerInformation
                                 {
                                     //POS 1 - 6:014001
                                     //POS 7 - 8: # of installments
                                     //POS 9 - 16:00000000
-                                    //POS 17: plan(0: no deferred payment, 1: 30 d�as, 2: 60 d�as, 3: 90 d�as)
+                                    //POS 17: plan(0: no deferred payment, 1: 30 días, 2: 60 días, 3: 90 días)
                                     discretionaryData = $"14001{numberOfInstallments}00000000{plan}"
                                 };
                             }
@@ -326,7 +317,7 @@ namespace Cybersource.Services
                             planType = plan,
                             gracePeriodDuration = "12"
                         };
-                        
+
                         break;
                     default:
                         payment.installmentInformation = new InstallmentInformation
@@ -334,7 +325,7 @@ namespace Cybersource.Services
                             totalAmount = createPaymentRequest.InstallmentsValue.ToString(),
                             totalCount = numberOfInstallments
                         };
-                        
+
                         break;
                 }
 
@@ -399,7 +390,7 @@ namespace Cybersource.Services
                             if (!string.IsNullOrEmpty(response))
                             {
                                 // A response indicates an error.
-                                _context.Vtex.Logger.Error("CreatePayment", "FlattenCustomData", response, null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                                _context.Vtex.Logger.Error("BuildPayment", "FlattenCustomData", response, null, new[] { ("vtexOrder.CustomData", JsonConvert.SerializeObject(vtexOrder.CustomData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
                             }
                         }
 
@@ -409,7 +400,7 @@ namespace Cybersource.Services
                             if (!string.IsNullOrEmpty(response))
                             {
                                 // A response indicates an error.
-                                _context.Vtex.Logger.Error("CreatePayment", "SetMarketingData", response, null, new[] { ("vtexOrder.MarketingData", JsonConvert.SerializeObject(vtexOrder.MarketingData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
+                                _context.Vtex.Logger.Error("BuildPayment", "SetMarketingData", response, null, new[] { ("vtexOrder.MarketingData", JsonConvert.SerializeObject(vtexOrder.MarketingData)), ("requestWrapper", JsonConvert.SerializeObject(requestWrapper)) });
                             }
                         }
 
@@ -573,7 +564,7 @@ namespace Cybersource.Services
 
                     payment.orderInformation.lineItems.Add(lineItem);
                 }
-                
+
                 if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("AdditionalData")))
                 {
                     // Get last order date and number of orders
@@ -586,20 +577,42 @@ namespace Cybersource.Services
                             {
                                 requestWrapper.AdditionalData = new AdditionalData();
                             }
-    
+
                             requestWrapper.AdditionalData.NumberOfPreviousPurchases = vtexOrderList.Paging.Total;
                             requestWrapper.AdditionalData.DateOfLastPurchase = vtexOrderList.List.Select(o => o.CreationDate).FirstOrDefault();
                         }
                         catch (Exception ex)
                         {
-                            _context.Vtex.Logger.Error("CreatePayment", "OrderList", "Error", ex);
+                            _context.Vtex.Logger.Error("BuildPayment", "OrderList", "Error", ex);
                         }
                     }
                 }
 
                 // Set Merchant Defined Information fields
                 payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("BuildPayment", "OrderList", "Error", ex);
+            }
 
+            return payment;
+        }
+
+        public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
+        {
+            CreatePaymentResponse createPaymentResponse = null;
+            try
+            {
+                PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
+                if (paymentData != null && paymentData.CreatePaymentResponse != null)
+                {
+                    _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
+                    await _vtexApiService.ProcessConversions();
+                    return paymentData.CreatePaymentResponse;
+                }
+
+                Payments payment = await this.BuildPayment(createPaymentRequest);
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
                 if (paymentsResponse != null)
                 {
@@ -609,12 +622,12 @@ namespace Cybersource.Services
                     createPaymentResponse.Tid = paymentsResponse.Id;
                     createPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message ?? paymentsResponse.Status;
 
-                    var errorInformation = paymentsResponse.ErrorInformation != null 
-                        ? paymentsResponse.ErrorInformation.Reason 
+                    var errorInformation = paymentsResponse.ErrorInformation != null
+                        ? paymentsResponse.ErrorInformation.Reason
                         : paymentsResponse.Status;
 
-                    createPaymentResponse.Code = paymentsResponse.ProcessorInformation != null 
-                        ? paymentsResponse.ProcessorInformation.ResponseCode 
+                    createPaymentResponse.Code = paymentsResponse.ProcessorInformation != null
+                        ? paymentsResponse.ProcessorInformation.ResponseCode
                         : errorInformation;
 
                     string paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
@@ -630,8 +643,8 @@ namespace Cybersource.Services
                     {
                         case "AUTHORIZED":
                         case "PARTIAL_AUTHORIZED":
+                            // Check for pre-auth fraud status
                             SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
-
                             if (antifraudDataResponse != null)
                             {
                                 paymentStatus = antifraudDataResponse.Status;
@@ -705,10 +718,10 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("CreatePayment", null, 
-                "Error ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("CreatePayment", null,
+                "Error ", ex,
+                new[]
+                {
                     ( "PaymentId", createPaymentRequest.PaymentId )
                 });
             }
@@ -723,7 +736,7 @@ namespace Cybersource.Services
             try
             {
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(cancelPaymentRequest.PaymentId);
-                if(paymentData.ImmediateCapture)
+                if (paymentData.ImmediateCapture)
                 {
                     // If transaction was auth & bill must refund, not reverse
                     RefundPaymentRequest refundPaymentRequest = new RefundPaymentRequest
@@ -782,10 +795,10 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("CancelPayment", null, 
-                "Error ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("CancelPayment", null,
+                "Error ", ex,
+                new[]
+                {
                     ( "PaymentId", cancelPaymentRequest.PaymentId )
                 });
             }
@@ -801,22 +814,23 @@ namespace Cybersource.Services
             {
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(capturePaymentRequest.PaymentId);
 
-                if (paymentData == null) {
+                if (paymentData == null)
+                {
                     return capturePaymentResponse;
                 }
 
                 if (paymentData.CreatePaymentResponse != null)
                 {
-                    _context.Vtex.Logger.Debug("CapturePayment", null, 
-                    "Loaded PaymentData", 
-                    new[] 
-                    { 
+                    _context.Vtex.Logger.Debug("CapturePayment", null,
+                    "Loaded PaymentData",
+                    new[]
+                    {
                         ( "orderId", paymentData.OrderId ),
                         ( "paymentId", paymentData.PaymentId ),
                         ( "paymentData", JsonConvert.SerializeObject(paymentData) )
                     });
 
-                    if(paymentData.ImmediateCapture) // || !string.IsNullOrEmpty(paymentData.CaptureId))
+                    if (paymentData.ImmediateCapture) // || !string.IsNullOrEmpty(paymentData.CaptureId))
                     {
                         capturePaymentResponse = new CapturePaymentResponse();
                         capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
@@ -883,7 +897,7 @@ namespace Cybersource.Services
                         if (searchResponse != null)
                         {
                             _context.Vtex.Logger.Debug("SearchResponse", null, "SearchResponse", new[] { ("orderId", paymentData.OrderId), ("paymentId", paymentData.PaymentId), ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });
-                            foreach(TransactionSummary transactionSummary in searchResponse.Embedded.TransactionSummaries)
+                            foreach (TransactionSummary transactionSummary in searchResponse.Embedded.TransactionSummaries)
                             {
                                 if (transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals("ics_bill") && ai.ReasonCode.Equals("100")))
                                 {
@@ -911,10 +925,10 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("CapturePayment", null, 
-                "Error ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("CapturePayment", null,
+                "Error ", ex,
+                new[]
+                {
                     ( "PaymentId", capturePaymentRequest.PaymentId )
                 });
             }
@@ -969,10 +983,10 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("RefundPayment", null, 
-                "Error ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("RefundPayment", null,
+                "Error ", ex,
+                new[]
+                {
                     ( "PaymentId", refundPaymentRequest.PaymentId )
                 });
             }
@@ -1146,18 +1160,19 @@ namespace Cybersource.Services
 
                     sendAntifraudDataResponse.Responses = flatten(riskDictionary).ToDictionary(x => x.Key, x => x.Value.ToString());
 
-                    sendAntifraudDataResponse.Score = 
-                        sendAntifraudDataResponse.Status.Equals(CybersourceConstants.VtexAntifraudStatus.Denied) 
-                            ? 99d 
+                    sendAntifraudDataResponse.Score =
+                        sendAntifraudDataResponse.Status.Equals(CybersourceConstants.VtexAntifraudStatus.Denied)
+                            ? 99d
                             : 1d;
 
-                    if(paymentsResponse.ErrorInformation != null)
+                    if (paymentsResponse.ErrorInformation != null)
                     {
                         sendAntifraudDataResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
                         sendAntifraudDataResponse.Message = paymentsResponse.ErrorInformation.Message;
                     }
 
-                    if (sendAntifraudDataRequest != null) {
+                    if (sendAntifraudDataRequest != null)
+                    {
                         await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
                     }
                 }
@@ -1168,10 +1183,10 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendAntifraudData", null, 
-                "Error ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("SendAntifraudData", null,
+                "Error ", ex,
+                new[]
+                {
                     ( "sendAntifraudDataRequest", JsonConvert.SerializeObject(sendAntifraudDataRequest) )
                 });
             }
@@ -1190,149 +1205,13 @@ namespace Cybersource.Services
         {
             CreatePaymentResponse createPaymentResponse = null;
             PaymentsResponse paymentsResponse = null;
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            string merchantName = createPaymentRequest.MerchantName;
-            string merchantTaxId = string.Empty;
-            bool doCapture = false;
-            if (createPaymentRequest.MerchantSettings != null)
-            {
-                foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
-                {
-                    switch (merchantSetting.Name)
-                    {
-                        case CybersourceConstants.ManifestCustomField.CompanyName:
-                            merchantName = merchantSetting.Value;
-                            break;
-                        case CybersourceConstants.ManifestCustomField.CompanyTaxId:
-                            merchantTaxId = merchantSetting.Value;
-                            break;
-                        case CybersourceConstants.ManifestCustomField.CaptureSetting:
-                            if (merchantSetting.Value != null)
-                            {
-                                doCapture = merchantSetting.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture);
-                            }
-
-                            break;
-
-                        case CybersourceConstants.ManifestCustomField.MerchantId:
-                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
-                            {
-                                merchantSettings.MerchantId = merchantSetting.Value;
-                            }
-
-                            break;
-                        case CybersourceConstants.ManifestCustomField.MerchantKey:
-                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
-                            {
-                                merchantSettings.MerchantKey = merchantSetting.Value;
-                            }
-
-                            break;
-                        case CybersourceConstants.ManifestCustomField.SharedSecretKey:
-                            if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
-                            {
-                                merchantSettings.SharedSecretKey = merchantSetting.Value;
-                            }
-
-                            break;
-                        default:
-                            _context.Vtex.Logger.Warn("SetupPayerAuth", "merchantSetting", $"Unhandled Merchant Setting '{merchantSetting.Name}'");
-                            break;
-                    }
-                }
-            }
-
-            this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName);
-
-            Payments payment = new Payments
-            {
-                merchantInformation = new MerchantInformation
-                {
-                    merchantName = merchantName,
-                    taxId = merchantTaxId
-                },
-                clientReferenceInformation = new ClientReferenceInformation
-                {
-                    code = createPaymentRequest.OrderId, // Use Reference to have a consistent number with Fraud?
-                    //transactionId = createPaymentRequest.TransactionId,
-                    applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
-                    applicationVersion = _context.Vtex.App.Version,
-                    applicationUser = _context.Vtex.Account,
-                    partner = new Partner
-                    {
-                        solutionId = CybersourceConstants.SOLUTION_ID
-                    }
-                },
-                paymentInformation = new PaymentInformation
-                {
-                    card = new Card
-                    {
-                        number = createPaymentRequest.Card.NumberToken ?? createPaymentRequest.Card.Number,
-                        securityCode = createPaymentRequest.Card.CscToken ?? createPaymentRequest.Card.Csc,
-                        expirationMonth = createPaymentRequest.Card.Expiration.Month,
-                        expirationYear = createPaymentRequest.Card.Expiration.Year,
-                        type = cardType
-                    }
-                },
-                orderInformation = new OrderInformation
-                {
-                    amountDetails = new AmountDetails
-                    {
-                        totalAmount = createPaymentRequest.Value.ToString(),
-                        currency = createPaymentRequest.Currency,
-                        taxAmount = createPaymentRequest.MiniCart.TaxValue.ToString(),
-                        freightAmount = createPaymentRequest.MiniCart.ShippingValue.ToString()
-                    },
-                    billTo = new BillTo
-                    {
-                        firstName = createPaymentRequest.MiniCart.Buyer.FirstName,
-                        lastName = createPaymentRequest.MiniCart.Buyer.LastName,
-                        address1 = $"{createPaymentRequest.MiniCart.BillingAddress.Number} {createPaymentRequest.MiniCart.BillingAddress.Street}",
-                        address2 = createPaymentRequest.MiniCart.BillingAddress.Complement,
-                        locality = createPaymentRequest.MiniCart.BillingAddress.City,
-                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.BillingAddress.State, this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country)),
-                        postalCode = createPaymentRequest.MiniCart.BillingAddress.PostalCode,
-                        country = this.GetCountryCode(createPaymentRequest.MiniCart.BillingAddress.Country),
-                        email = createPaymentRequest.MiniCart.Buyer.Email,
-                        phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone
-                    },
-                    shipTo = new ShipTo
-                    {
-                        address1 = $"{createPaymentRequest.MiniCart.ShippingAddress.Number} {createPaymentRequest.MiniCart.ShippingAddress.Street}",
-                        address2 = createPaymentRequest.MiniCart.ShippingAddress.Complement,
-                        administrativeArea = GetAdministrativeArea(createPaymentRequest.MiniCart.ShippingAddress.State, this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country)),
-                        country = this.GetCountryCode(createPaymentRequest.MiniCart.ShippingAddress.Country),
-                        postalCode = createPaymentRequest.MiniCart.ShippingAddress.PostalCode,
-                        locality = createPaymentRequest.MiniCart.ShippingAddress.City,
-                        phoneNumber = createPaymentRequest.MiniCart.Buyer.Phone, // Note that this is the buyer's number, we do not have a number for the shipping destination
-                        firstName = createPaymentRequest.MiniCart.Buyer.FirstName, // defaulting to buyer info.  This should be ovverridden from the order data
-                        lastName = createPaymentRequest.MiniCart.Buyer.LastName,
-                    },
-                    lineItems = new List<LineItem>()
-                },
-                deviceInformation = new DeviceInformation
-                {
-                    ipAddress = createPaymentRequest.IpAddress,
-                    fingerprintSessionId = createPaymentRequest.DeviceFingerprint
-                },
-                buyerInformation = new BuyerInformation
-                {
-                    personalIdentification = new List<PersonalIdentification>
-                    {
-                        new PersonalIdentification
-                        {
-                            id = createPaymentRequest.MiniCart.Buyer.Document,
-                            type = createPaymentRequest.MiniCart.Buyer.DocumentType
-                        }
-                    }
-                }
-            };
+            Payments payment = await this.BuildPayment(createPaymentRequest);
 
             try
             {
                 paymentsResponse = await _cybersourceApi.SetupPayerAuth(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("SetupPayerAuth", null, "Error", ex);
             }
@@ -1495,21 +1374,21 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetAdministrativeArea", null, 
-                "Error ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("GetAdministrativeArea", null,
+                "Error ", ex,
+                new[]
+                {
                     ( "region", region ),
                     ( "countryCode", countryCode )
                 });
             }
-            
+
             return regionCode;
         }
 
         public string GetAdministrativeAreaChile(string region)
         {
-            string regionCode = "RM"; // Default to Regi�n Metropolitana
+            string regionCode = "RM"; // Default to Región Metropolitana
             if (region.Contains("(") && region.Contains(")"))
             {
                 string regionumber = region.Split('(', ')')[1];
@@ -1518,50 +1397,50 @@ namespace Cybersource.Services
                     case "I": // Region de Tarapaca
                         regionCode = "TA";
                         break;
-                    case "II": // Regi�n de Antofagasta
+                    case "II": // Región de Antofagasta
                         regionCode = "AN";
                         break;
-                    case "III": // Regi�n de Atacama
+                    case "III": // Región de Atacama
                         regionCode = "AT";
                         break;
-                    case "IV": // Regi�n de Coquimbo
+                    case "IV": // Región de Coquimbo
                         regionCode = "CO";
                         break;
-                    case "V": // Regi�n de Valpara�so
+                    case "V": // Región de Valparaíso
                         regionCode = "VS";
                         break;
-                    case "VI": // Regi�n del Libertador General Bernardo O�Higgins
+                    case "VI": // Región del Libertador General Bernardo O’Higgins
                         regionCode = "LI";
                         break;
-                    case "VII": // Regi�n del Maule
+                    case "VII": // Región del Maule
                         regionCode = "ML";
                         break;
-                    case "VIII": // Regi�n del Biob�o
+                    case "VIII": // Región del Biobío
                         regionCode = "BI";
                         break;
-                    case "IX": // Regi�n de La Araucan�a
+                    case "IX": // Región de La Araucanía
                         regionCode = "AR";
                         break;
-                    case "X": // Regi�n de Los Lagos
+                    case "X": // Región de Los Lagos
                         regionCode = "LL";
                         break;
                     case "XI": // Region de Aysen del General Carlos Ibanez del Campo
                         regionCode = "AI";
                         break;
-                    case "XII": // Regi�n de Magallanes y la Ant�rtica Chilena
+                    case "XII": // Región de Magallanes y la Antártica Chilena
                         regionCode = "MA";
                         break;
                     case "":
-                    case "XIII": // Regi�n Metropolitana de Santiago
+                    case "XIII": // Región Metropolitana de Santiago
                         regionCode = "RM";
                         break;
-                    case "XIV": // Regi�n de Los R�os
+                    case "XIV": // Región de Los Ríos
                         regionCode = "LR";
                         break;
                     case "XV": // Region de Arica y Parinacota
                         regionCode = "AP";
                         break;
-                    case "XVI": // Regi�n del �uble
+                    case "XVI": // Región del Ñuble
                         regionCode = region;
                         break;
                     default:
@@ -1601,7 +1480,7 @@ namespace Cybersource.Services
         private string GetCardType(string cardTypeText)
         {
             string cardType = null;
-            switch(cardTypeText.ToLower())
+            switch (cardTypeText.ToLower())
             {
                 case "visa":
                     cardType = "001";
@@ -1760,10 +1639,10 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetPropertyValue", null, 
-                "Error: ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("GetPropertyValue", null,
+                "Error: ", ex,
+                new[]
+                {
                     ( "Could not get value of ", propertyName ),
                     ( "object", JsonConvert.SerializeObject(obj) )
                 });
@@ -1857,7 +1736,7 @@ namespace Cybersource.Services
                                                                     string dateFormat = valueSubStrArr[2];
                                                                     propValue = dt.ToString(dateFormat);
                                                                 }
-                                                                catch(Exception ex)
+                                                                catch (Exception ex)
                                                                 {
                                                                     _context.Vtex.Logger.Error("GetMerchantDefinedInformation", "Date", JsonConvert.SerializeObject(valueSubStrArr), ex);
                                                                 }
@@ -1907,7 +1786,7 @@ namespace Cybersource.Services
                                         while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
                                     }
                                 }
-                                catch(Exception ex)
+                                catch (Exception ex)
                                 {
                                     _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, $"Error parsing MDV '{merchantDefinedValue}'", ex);
                                 }
@@ -1949,10 +1828,10 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null, 
-                "Error: ", ex, 
+                _context.Vtex.Logger.Error("GetMerchantDefinedInformation", null,
+                "Error: ", ex,
                 new[]
-                { 
+                {
                     ( "requestWrapper", JsonConvert.SerializeObject(requestWrapper) )
                 });
             }

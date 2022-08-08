@@ -1257,31 +1257,7 @@ namespace Cybersource.Services
                 {
                     callbackUrl = callbackUrl.Replace("https:", "http:", StringComparison.InvariantCultureIgnoreCase);
                     var jsonSerializedPaymentResponse = JsonConvert.SerializeObject(createPaymentResponse);
-                    var request = new HttpRequestMessage
-                    {
-                        Method = HttpMethod.Post,
-                        RequestUri = new Uri(callbackUrl),
-                        Content = new StringContent(jsonSerializedPaymentResponse, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
-                    };
-
-                    request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
-                    string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-                    if (authToken != null)
-                    {
-                        request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-                    }
-
-                    var client = _clientFactory.CreateClient();
-                    var response = await client.SendAsync(request);
-                    string responseContent = await response.Content.ReadAsStringAsync();
-
-                    sendResponse = new SendResponse
-                    {
-                        Message = responseContent,
-                        StatusCode = response.StatusCode.ToString(),
-                        Success = response.IsSuccessStatusCode
-                    };
-
+                    sendResponse = await this.SendRequest(HttpMethod.Post, callbackUrl, jsonSerializedPaymentResponse);
                 }
             }
             catch (Exception ex)
@@ -1383,30 +1359,17 @@ namespace Cybersource.Services
             };
 
             var jsonSerializedToken = JsonConvert.SerializeObject(validateToken);
-            var request = new HttpRequestMessage
-            {
-                Method = HttpMethod.Post,
-                RequestUri = new Uri($"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.vtexcommercestable.com.br/api/vtexid/credential/validate"),
-                Content = new StringContent(jsonSerializedToken, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
-            };
-
-            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-
-            if (authToken != null)
-            {
-                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
-            }
-
-            var client = _clientFactory.CreateClient();
 
             try
             {
-                var response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
+                SendResponse sendResponse = await this.SendRequest(HttpMethod.Post, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.vtexcommercestable.com.br/api/vtexid/credential/validate", jsonSerializedToken);
+                if (sendResponse.Success)
                 {
-                    validatedUser = JsonConvert.DeserializeObject<ValidatedUser>(responseContent);
+                    validatedUser = JsonConvert.DeserializeObject<ValidatedUser>(sendResponse.Message);
+                }
+                else
+                {
+                    _context.Vtex.Logger.Warn("ValidateUserToken", null, $"Error validating user token: [{sendResponse.StatusCode}] '{sendResponse.Message}'");
                 }
             }
             catch (Exception ex)
