@@ -688,7 +688,7 @@ namespace Cybersource.Services
             string endpoint = $"{CybersourceConstants.RISK}authentication-setups";
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
             _context.Vtex.Logger.Debug("SetupPayerAuth", "response", response.Message);
-            if (response != null)
+            if (response.Success)
             {
                 paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
             }
@@ -696,14 +696,14 @@ namespace Cybersource.Services
             return paymentsResponse;
         }
 
-        public async Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments)
+        public async Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, json);
             string endpoint = $"{CybersourceConstants.RISK}authentications";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            if (response.Success)
             {
                 paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
             }

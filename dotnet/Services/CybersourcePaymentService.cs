@@ -1229,6 +1229,24 @@ namespace Cybersource.Services
 
             return createPaymentResponse;
         }
+
+        public async Task<CreatePaymentResponse> CheckPayerAuthEnrollment(CreatePaymentRequest createPaymentRequest)
+        {
+            CreatePaymentResponse createPaymentResponse = null;
+            PaymentsResponse paymentsResponse = null;
+            Payments payment = await this.BuildPayment(createPaymentRequest);
+
+            try
+            {
+                paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CheckPayerAuthEnrollment", null, "Error", ex);
+            }
+
+            return createPaymentResponse;
+        }
         #endregion
 
         #region Reporting

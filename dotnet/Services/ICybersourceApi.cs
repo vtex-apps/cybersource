@@ -24,7 +24,7 @@ namespace Cybersource.Services
         Task<SearchResponse> CreateSearchRequest(CreateSearchRequest createSearchRequest);
 
         Task<PaymentsResponse> SetupPayerAuth(Payments payments, string proxyUrl, string proxyTokensUrl);
-        Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments);
+        Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments, string proxyUrl, string proxyTokensUrl);
         Task<PaymentsResponse> ValidateAuthenticationResults(Payments payments);
 
         Task<CybersourceBinLookupResponse> BinLookup(string cardNumber);
