@@ -80,51 +80,80 @@
 
         public async Task<bool> SetMerchantSettings(MerchantSettings merchantSettings)
         {
-            var jsonSerializedMerchantSettings = JsonConvert.SerializeObject(merchantSettings);
-            var request = new HttpRequestMessage
-            {
-                Method = HttpMethod.Put,
-                RequestUri = new Uri($"http://apps.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/apps/{CybersourceConstants.APP_SETTINGS}/settings"),
-                Content = new StringContent(jsonSerializedMerchantSettings, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
-            };
+            bool IsSuccess = false;
 
-            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            if (authToken != null)
+            try
             {
-                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                var jsonSerializedMerchantSettings = JsonConvert.SerializeObject(merchantSettings);
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Put,
+                    RequestUri = new Uri($"http://apps.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/apps/{CybersourceConstants.APP_SETTINGS}/settings"),
+                    Content = new StringContent(jsonSerializedMerchantSettings, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON)
+                };
+
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                IsSuccess = response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SetMerchantSettings", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "merchantSettings", JsonConvert.SerializeObject(merchantSettings) ),
+                });
             }
 
-            var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-
-            return response.IsSuccessStatusCode;
+            return IsSuccess;
         }
 
         public async Task<PaymentData> GetPaymentData(string paymentIdentifier)
         {
-            var request = new HttpRequestMessage
-            {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri($"http://vbase.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/buckets/{this._applicationName}/{CybersourceConstants.BUCKET_PAYMENT}/files/{paymentIdentifier}"),
-            };
+            PaymentData paymentData =  null;
 
-            string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
-            if (authToken != null)
+            try
             {
-                request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri($"http://vbase.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/buckets/{this._applicationName}/{CybersourceConstants.BUCKET_PAYMENT}/files/{paymentIdentifier}"),
+                };
+
+                string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+                if (authToken != null)
+                {
+                    request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
+                }
+
+                var client = _clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    _context.Vtex.Logger.Warn("GetPaymentData", null, $"Payment Id '{paymentIdentifier}' Not Found.");
+                    return null;
+                }
+
+                paymentData = JsonConvert.DeserializeObject<PaymentData>(responseContent);
             }
-
-            var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            catch (Exception ex)
             {
-                _context.Vtex.Logger.Warn("GetPaymentData", null, $"Payment Id '{paymentIdentifier}' Not Found.");
-                return null;
+                _context.Vtex.Logger.Error("GetPaymentData", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "paymentIdentifier", paymentIdentifier )
+                });
             }
-
-            PaymentData paymentData =  JsonConvert.DeserializeObject<PaymentData>(responseContent);
 
             return paymentData;
         }
@@ -151,9 +180,23 @@
             }
 
             var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
 
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SavePaymentData", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "paymentIdentifier", paymentIdentifier ),
+                    ( "paymentData", JsonConvert.SerializeObject(paymentData) )
+                });
+            }
+
         }
 
         public async Task<SendAntifraudDataResponse> GetAntifraudData(string id)
@@ -171,17 +214,31 @@
             }
 
             var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
+            SendAntifraudDataResponse antifraudDataResponse = null;
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            try
             {
-                _context.Vtex.Logger.Warn("GetAntifraudData", null, $"Id '{id}' Not Found.");
-                return null;
-            }
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
 
-            SendAntifraudDataResponse antifraudDataResponse =  JsonConvert.DeserializeObject<SendAntifraudDataResponse>(responseContent);
-            _context.Vtex.Logger.Debug("GetAntifraudData", null, id, new[] { ("responseContent", responseContent) });
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    _context.Vtex.Logger.Warn("GetAntifraudData", null, $"Id '{id}' Not Found.");
+                    return null;
+                }
+
+                antifraudDataResponse = JsonConvert.DeserializeObject<SendAntifraudDataResponse>(responseContent);
+                _context.Vtex.Logger.Debug("GetAntifraudData", null, id, new[] { ("responseContent", responseContent) });
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetAntifraudData", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "id", id )
+                });
+            }
 
             return antifraudDataResponse;
         }
@@ -208,16 +265,29 @@
             }
 
             var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                _context.Vtex.Logger.Error("SaveAntifraudData", null, "Did not save Antifraud Data.", null, new[] { ("Id", id), ("AntifraudDataResponse", jsonSerializedCreatePaymentRequest) });
+                await client.SendAsync(request);
             }
-            else
+            catch (Exception ex)
             {
-                _context.Vtex.Logger.Debug("SaveAntifraudData", null, "Saved Antifraud Data.", new[] { ("Id", id), ("AntifraudDataResponse", jsonSerializedCreatePaymentRequest) });
+                _context.Vtex.Logger.Error("SaveAntifraudData", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "id", id ),
+                    ( "antifraudDataResponse", jsonSerializedCreatePaymentRequest )
+                });
             }
+
+            _context.Vtex.Logger.Debug("SaveAntifraudData", null, 
+            "Saved Antifraud Data.", 
+            new[] 
+            { 
+                ( "Id", id ), 
+                ( "AntifraudDataResponse", jsonSerializedCreatePaymentRequest ) 
+            });
         }
 
         public async Task<bool> CacheTaxResponse(VtexTaxResponse vtexTaxResponse, int cacheKey)
@@ -238,9 +308,25 @@
             }
 
             var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
+            bool IsSuccessStatusCode = false;
 
-            return response.IsSuccessStatusCode;
+            try
+            {
+                var response = await client.SendAsync(request);
+                IsSuccessStatusCode = response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CacheTaxResponse", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "vtexTaxResponse", jsonSerializedTaxResponse ),
+                    ( "cacheKey", cacheKey.ToString() )
+                });
+            }
+
+            return IsSuccessStatusCode;
         }
 
         public async Task<VtexTaxResponse> GetCachedTaxResponse(int cacheKey)
@@ -261,11 +347,25 @@
             }
 
             var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode)
+
+            try
             {
-                vtexTaxResponse = JsonConvert.DeserializeObject<VtexTaxResponse>(responseContent);
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    vtexTaxResponse = JsonConvert.DeserializeObject<VtexTaxResponse>(responseContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetCachedTaxResponse", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "cacheKey", cacheKey.ToString() )
+                });
             }
 
             return vtexTaxResponse;
@@ -282,7 +382,12 @@
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("TryGetCache", null, "Error getting cache", ex);
+                _context.Vtex.Logger.Error("TryGetCache", null, 
+                "Error getting cache:", ex,
+                new[]
+                {
+                    ( "cacheKey", cacheKey.ToString() )
+                });
             }
 
             return success;
@@ -309,7 +414,12 @@
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("TryGetCache", null, "Error setting cache", ex);
+                _context.Vtex.Logger.Error("SetCache", null, 
+                "Error setting cache:", ex,
+                new[]
+                {
+                    ( "cacheKey", cacheKey.ToString() )
+                });
             }
 
             return success;
@@ -326,6 +436,7 @@
 
             request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
             string authToken = this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_CREDENTIAL];
+            
             if (authToken != null)
             {
                 request.Headers.Add(CybersourceConstants.AUTHORIZATION_HEADER_NAME, authToken);
@@ -333,16 +444,26 @@
             }
 
             var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            string responseContent = string.Empty;
+
+            try
             {
-                return null;
+                var response = await client.SendAsync(request);
+                responseContent = await response.Content.ReadAsStringAsync();
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    return null;
+                }
+
+                // A helper method is in order for this as it does not return the stack trace etc.
+                response.EnsureSuccessStatusCode();
+
             }
-
-            // A helper method is in order for this as it does not return the stack trace etc.
-            response.EnsureSuccessStatusCode();
-
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetOrderConfiguration", null, "Error:", ex);
+            }
+            
             return responseContent;
         }
 
@@ -365,11 +486,33 @@
             }
 
             var client = _clientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            _context.Vtex.Logger.Info("SetOrderConfiguration", null, $"Request:\r{jsonSerializedOrderConfig}\rResponse: [{response.StatusCode}]\r{responseContent}");
+            bool IsSuccessStatusCode = false;
 
-            return response.IsSuccessStatusCode;
+            try
+            {
+                var response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _context.Vtex.Logger.Info("SetOrderConfiguration", null,
+                JsonConvert.SerializeObject(new[]
+                {
+                    ( "Request", jsonSerializedOrderConfig ),
+                    ( "StatusCode", response.StatusCode.ToString() ),
+                    ( "responseContent", responseContent )
+                }));
+
+                IsSuccessStatusCode = response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SetOrderConfiguration", null, 
+                "Error: ", ex,
+                new[]
+                {
+                    ( "jsonSerializedOrderConfig", jsonSerializedOrderConfig )
+                });
+            }
+
+            return IsSuccessStatusCode;
         }
     }
 }
