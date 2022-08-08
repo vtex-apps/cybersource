@@ -352,37 +352,37 @@ namespace Cybersource.Services
                             {
                                 LoggedIn = vtexCheckoutOrder?.ContextData?.LoggedIn ?? false,
                                 HasAccessToOrderFormEnabledByLicenseManager = vtexCheckoutOrder?.ContextData?.HasAccessToOrderFormEnabledByLicenseManager,
-                                UserAgent = vtexCheckoutOrder?.ContextData ?.UserAgent,
-                                UserId = vtexCheckoutOrder?.ContextData ?.UserId
+                                UserAgent = vtexCheckoutOrder?.ContextData?.UserAgent,
+                                UserId = vtexCheckoutOrder?.ContextData?.UserId
                             };
-                        }
-                        
-                        PersonalData personalData = await _vtexApiService.GetPersonalData(vtexCheckoutOrder.UserProfileId);
-                        if (personalData != null)
-                        {
-                            requestWrapper.PersonalData = new PersonalData
+
+                            PersonalData personalData = await _vtexApiService.GetPersonalData(vtexCheckoutOrder.UserProfileId);
+                            if (personalData != null)
                             {
-                                BirthDate = personalData.BirthDate,
-                                BusinessDocument = personalData.BusinessDocument,
-                                BusinessPhone = personalData.BusinessPhone,
-                                CellPhone = personalData.CellPhone,
-                                CorporateName = personalData.CorporateName,
-                                CreatedIn = personalData.CreatedIn,
-                                CustomerClass = personalData.CustomerClass,
-                                Document = personalData.Document,
-                                DocumentType = personalData.DocumentType,
-                                Email = personalData.Email,
-                                FancyName = personalData.FancyName,
-                                FirstName = personalData.FirstName,
-                                Gender = personalData.Gender,
-                                HomePhone = personalData.HomePhone,
-                                IsFreeStateRegistration = personalData.IsFreeStateRegistration,
-                                IsPj = personalData.IsPj,
-                                LastName = personalData.LastName,
-                                NickName = personalData.NickName,
-                                StateRegistration = personalData.StateRegistration,
-                                UserId = personalData.UserId
-                            };
+                                requestWrapper.PersonalData = new PersonalData
+                                {
+                                    BirthDate = personalData.BirthDate,
+                                    BusinessDocument = personalData.BusinessDocument,
+                                    BusinessPhone = personalData.BusinessPhone,
+                                    CellPhone = personalData.CellPhone,
+                                    CorporateName = personalData.CorporateName,
+                                    CreatedIn = personalData.CreatedIn,
+                                    CustomerClass = personalData.CustomerClass,
+                                    Document = personalData.Document,
+                                    DocumentType = personalData.DocumentType,
+                                    Email = personalData.Email,
+                                    FancyName = personalData.FancyName,
+                                    FirstName = personalData.FirstName,
+                                    Gender = personalData.Gender,
+                                    HomePhone = personalData.HomePhone,
+                                    IsFreeStateRegistration = personalData.IsFreeStateRegistration,
+                                    IsPj = personalData.IsPj,
+                                    LastName = personalData.LastName,
+                                    NickName = personalData.NickName,
+                                    StateRegistration = personalData.StateRegistration,
+                                    UserId = personalData.UserId
+                                };
+                            }
                         }
 
                         foreach (VtexOrderItem vtexItem in vtexOrder.Items)
@@ -403,7 +403,7 @@ namespace Cybersource.Services
                             }
                         }
 
-                        if(vtexOrder.MarketingData != null)
+                        if (vtexOrder.MarketingData != null)
                         {
                             string response = requestWrapper.SetMarketingData(vtexOrder.MarketingData);
                             if (!string.IsNullOrEmpty(response))
@@ -413,10 +413,10 @@ namespace Cybersource.Services
                             }
                         }
 
-                        if(!string.IsNullOrEmpty(vtexOrder.ShippingData.Address.ReceiverName))
+                        if (!string.IsNullOrEmpty(vtexOrder.ShippingData.Address.ReceiverName))
                         {
                             string[] nameArr = vtexOrder.ShippingData.Address.ReceiverName.Split(' ', 2);
-                            if(nameArr.Length <= 1)
+                            if (nameArr.Length <= 1)
                             {
                                 payment.orderInformation.shipTo.firstName = string.Empty;
                                 payment.orderInformation.shipTo.lastName = vtexOrder.ShippingData.Address.ReceiverName;
@@ -427,107 +427,107 @@ namespace Cybersource.Services
                                 payment.orderInformation.shipTo.lastName = nameArr[1];
                             }
                         }
-                    }
 
-                    if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("ClientProfileData")))
-                    {
-                        requestWrapper.ClientProfileData = new ClientProfileData
+                        if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("ClientProfileData")))
                         {
-                            CorporateDocument = vtexOrder.ClientProfileData.CorporateDocument,
-                            CorporateName = vtexOrder.ClientProfileData.CorporateName,
-                            CorporatePhone = vtexOrder.ClientProfileData.CorporatePhone,
-                            CustomerClass = vtexOrder.ClientProfileData.CustomerClass,
-                            Document = vtexOrder.ClientProfileData.Document,
-                            DocumentType = vtexOrder.ClientProfileData.DocumentType,
-                            Email = vtexOrder.ClientProfileData.Email,
-                            FirstName = vtexOrder.ClientProfileData.FirstName,
-                            IsCorporate = vtexOrder.ClientProfileData.IsCorporate,
-                            LastName = vtexOrder.ClientProfileData.LastName,
-                            Phone = vtexOrder.ClientProfileData.Phone,
-                            StateInscription = vtexOrder.ClientProfileData.StateInscription,
-                            TradeName = vtexOrder.ClientProfileData.TradeName
-                        };
-                    }
-
-                    if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("Shipping")))
-                    {
-                        LogisticsInfo logisticsInfo = vtexOrder.ShippingData.LogisticsInfo.FirstOrDefault();
-                        Sla selectedSla = logisticsInfo.Slas.FirstOrDefault(s => s.Id.Equals(logisticsInfo.SelectedSla, StringComparison.InvariantCultureIgnoreCase));
-                        requestWrapper.Shipping = new SlaWrapper
-                        {
-                            AvailableDeliveryWindows = selectedSla.AvailableDeliveryWindows,
-                            DeliveryChannel = selectedSla.DeliveryChannel,
-                            DeliveryIds = new List<DeliveryId>(),
-                            DeliveryWindow = selectedSla.DeliveryWindow,
-                            Id = selectedSla.Id,
-                            ListPrice = selectedSla.ListPrice,
-                            LockTtl = selectedSla.LockTtl,
-                            Name = selectedSla.Name,
-                            PickupDistance = selectedSla.PickupDistance,
-                            PickupPointId = selectedSla.PickupPointId,
-                            PickupStoreInfo = new PickupStoreInfo
+                            requestWrapper.ClientProfileData = new ClientProfileData
                             {
-                                AdditionalInfo = selectedSla.PickupStoreInfo.AdditionalInfo,
-                                Address = selectedSla.PickupStoreInfo.Address != null ? new VtexAddress
-                                {
-                                    AddressId = selectedSla.PickupStoreInfo.Address.AddressId,
-                                    AddressType = selectedSla.PickupStoreInfo.Address.AddressType,
-                                    City = selectedSla.PickupStoreInfo.Address.City,
-                                    Complement = selectedSla.PickupStoreInfo.Address.Complement,
-                                    Country = selectedSla.PickupStoreInfo.Address.Country,
-                                    GeoCoordinates = selectedSla.PickupStoreInfo.Address.GeoCoordinates,
-                                    IsDisposable = selectedSla.PickupStoreInfo.Address.IsDisposable,
-                                    Neighborhood = selectedSla.PickupStoreInfo.Address.Neighborhood,
-                                    Number = selectedSla.PickupStoreInfo.Address.Number,
-                                    PostalCode = selectedSla.PickupStoreInfo.Address.PostalCode,
-                                    ReceiverName = selectedSla.PickupStoreInfo.Address.ReceiverName,
-                                    Reference = selectedSla.PickupStoreInfo.Address.Reference,
-                                    State = selectedSla.PickupStoreInfo.Address.State,
-                                    Street = selectedSla.PickupStoreInfo.Address.Street
-                                } : null,
-                                DockId = selectedSla.PickupStoreInfo.DockId,
-                                FriendlyName = selectedSla.PickupStoreInfo.FriendlyName,
-                                IsPickupStore = selectedSla.PickupStoreInfo.IsPickupStore
-                            },
-                            PolygonName = selectedSla.PolygonName,
-                            ShippingEstimate = selectedSla.ShippingEstimate,
-                            ShippingEstimateDate = selectedSla.ShippingEstimateDate,
-                            Price = selectedSla.Price,
-                            Tax = selectedSla.Tax,
-                            TransitTime = selectedSla.TransitTime
-                        };
+                                CorporateDocument = vtexOrder.ClientProfileData.CorporateDocument,
+                                CorporateName = vtexOrder.ClientProfileData.CorporateName,
+                                CorporatePhone = vtexOrder.ClientProfileData.CorporatePhone,
+                                CustomerClass = vtexOrder.ClientProfileData.CustomerClass,
+                                Document = vtexOrder.ClientProfileData.Document,
+                                DocumentType = vtexOrder.ClientProfileData.DocumentType,
+                                Email = vtexOrder.ClientProfileData.Email,
+                                FirstName = vtexOrder.ClientProfileData.FirstName,
+                                IsCorporate = vtexOrder.ClientProfileData.IsCorporate,
+                                LastName = vtexOrder.ClientProfileData.LastName,
+                                Phone = vtexOrder.ClientProfileData.Phone,
+                                StateInscription = vtexOrder.ClientProfileData.StateInscription,
+                                TradeName = vtexOrder.ClientProfileData.TradeName
+                            };
+                        }
 
-                        requestWrapper.Shipping.DeliveryIds.AddRange(selectedSla.DeliveryIds);
-                        requestWrapper.Shipping.CourierName = string.Join(", ", selectedSla.DeliveryIds.Select(d => d.CourierName).Distinct().ToArray());
-                    }
-
-                    if (requestWrapper.Totals == null)
-                    {
-                        requestWrapper.Totals = new Totals
+                        if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("Shipping")))
                         {
-                            Discounts = 0m,
-                            Items = 0m,
-                            Shipping = 0m,
-                            Tax = 0m,
-                        };
-                    }
+                            LogisticsInfo logisticsInfo = vtexOrder.ShippingData.LogisticsInfo.FirstOrDefault();
+                            Sla selectedSla = logisticsInfo.Slas.FirstOrDefault(s => s.Id.Equals(logisticsInfo.SelectedSla, StringComparison.InvariantCultureIgnoreCase));
+                            requestWrapper.Shipping = new SlaWrapper
+                            {
+                                AvailableDeliveryWindows = selectedSla.AvailableDeliveryWindows,
+                                DeliveryChannel = selectedSla.DeliveryChannel,
+                                DeliveryIds = new List<DeliveryId>(),
+                                DeliveryWindow = selectedSla.DeliveryWindow,
+                                Id = selectedSla.Id,
+                                ListPrice = selectedSla.ListPrice,
+                                LockTtl = selectedSla.LockTtl,
+                                Name = selectedSla.Name,
+                                PickupDistance = selectedSla.PickupDistance,
+                                PickupPointId = selectedSla.PickupPointId,
+                                PickupStoreInfo = new PickupStoreInfo
+                                {
+                                    AdditionalInfo = selectedSla.PickupStoreInfo.AdditionalInfo,
+                                    Address = selectedSla.PickupStoreInfo.Address != null ? new VtexAddress
+                                    {
+                                        AddressId = selectedSla.PickupStoreInfo.Address.AddressId,
+                                        AddressType = selectedSla.PickupStoreInfo.Address.AddressType,
+                                        City = selectedSla.PickupStoreInfo.Address.City,
+                                        Complement = selectedSla.PickupStoreInfo.Address.Complement,
+                                        Country = selectedSla.PickupStoreInfo.Address.Country,
+                                        GeoCoordinates = selectedSla.PickupStoreInfo.Address.GeoCoordinates,
+                                        IsDisposable = selectedSla.PickupStoreInfo.Address.IsDisposable,
+                                        Neighborhood = selectedSla.PickupStoreInfo.Address.Neighborhood,
+                                        Number = selectedSla.PickupStoreInfo.Address.Number,
+                                        PostalCode = selectedSla.PickupStoreInfo.Address.PostalCode,
+                                        ReceiverName = selectedSla.PickupStoreInfo.Address.ReceiverName,
+                                        Reference = selectedSla.PickupStoreInfo.Address.Reference,
+                                        State = selectedSla.PickupStoreInfo.Address.State,
+                                        Street = selectedSla.PickupStoreInfo.Address.Street
+                                    } : null,
+                                    DockId = selectedSla.PickupStoreInfo.DockId,
+                                    FriendlyName = selectedSla.PickupStoreInfo.FriendlyName,
+                                    IsPickupStore = selectedSla.PickupStoreInfo.IsPickupStore
+                                },
+                                PolygonName = selectedSla.PolygonName,
+                                ShippingEstimate = selectedSla.ShippingEstimate,
+                                ShippingEstimateDate = selectedSla.ShippingEstimateDate,
+                                Price = selectedSla.Price,
+                                Tax = selectedSla.Tax,
+                                TransitTime = selectedSla.TransitTime
+                            };
+
+                            requestWrapper.Shipping.DeliveryIds.AddRange(selectedSla.DeliveryIds);
+                            requestWrapper.Shipping.CourierName = string.Join(", ", selectedSla.DeliveryIds.Select(d => d.CourierName).Distinct().ToArray());
+                        }
+
+                        if (requestWrapper.Totals == null)
+                        {
+                            requestWrapper.Totals = new Totals
+                            {
+                                Discounts = 0m,
+                                Items = 0m,
+                                Shipping = 0m,
+                                Tax = 0m,
+                            };
+                        }
 
                         foreach (VtexTotal vtexTotal in vtexOrder.Totals)
-                    {
-                        switch(vtexTotal.Id)
                         {
-                            case "Discounts":
-                                requestWrapper.Totals.Discounts += (decimal)vtexTotal.Value / 100;
-                                break;
-                            case "Items":
-                                requestWrapper.Totals.Items += (decimal)vtexTotal.Value / 100;
-                                break;
-                            case "Shipping":
-                                requestWrapper.Totals.Shipping += (decimal)vtexTotal.Value / 100;
-                                break;
-                            case "Tax":
-                                requestWrapper.Totals.Tax += (decimal)vtexTotal.Value / 100;
-                                break;
+                            switch (vtexTotal.Id)
+                            {
+                                case "Discounts":
+                                    requestWrapper.Totals.Discounts += (decimal)vtexTotal.Value / 100;
+                                    break;
+                                case "Items":
+                                    requestWrapper.Totals.Items += (decimal)vtexTotal.Value / 100;
+                                    break;
+                                case "Shipping":
+                                    requestWrapper.Totals.Shipping += (decimal)vtexTotal.Value / 100;
+                                    break;
+                                case "Tax":
+                                    requestWrapper.Totals.Tax += (decimal)vtexTotal.Value / 100;
+                                    break;
+                            }
                         }
                     }
                 }

@@ -102,10 +102,11 @@ namespace Cybersource.Services
             else
             {
                 _context.Vtex.Logger.Error("GetOrderInformation", null, 
-                "Error:", ex,
+                "Error:", null,
                 new[]
                 {
-                    ( "orderId", orderId )
+                    ( "orderId", orderId ),
+                    ( "Message", sendResponse.Message )
                 });
             }
 
@@ -123,10 +124,11 @@ namespace Cybersource.Services
             else
             {
                 _context.Vtex.Logger.Error("GetOrderGroup", null, 
-                "Error:", ex,
+                "Error:", null,
                 new[]
                 {
-                    ( "orderId", orderId )
+                    ( "orderId", orderId ),
+                    ( "Message", sendResponse.Message )
                 });
             }
 
@@ -226,10 +228,11 @@ namespace Cybersource.Services
             else
             {
                 _context.Vtex.Logger.Error("SearchOrders", null, 
-                "Error:", ex,
+                "Error:", null,
                 new[]
                 {
-                    ( "query", query )
+                    ( "query", query ),
+                    ( "Message", sendResponse.Message )
                 });
             }
 
@@ -310,10 +313,11 @@ namespace Cybersource.Services
             else
             {
                 _context.Vtex.Logger.Error("GetSku", null, 
-                "Error:", ex,
+                "Error:", null,
                 new[]
                 {
-                    ( "skuId", skuId )
+                    ( "skuId", skuId ),
+                    ( "Message", sendResponse.Message )
                 });
             }
 
@@ -421,12 +425,13 @@ namespace Cybersource.Services
             else
             {
                 _context.Vtex.Logger.Error("GetFallbackRate", null, 
-                "Error:", ex,
+                "Error:", null,
                 new[]
                 {
                     ( "country", country ),
                     ( "postalCode", postalCode ),
-                    ( "provider", provider )
+                    ( "provider", provider ),
+                    ( "Message", sendResponse.Message )
                 });
             }
 
