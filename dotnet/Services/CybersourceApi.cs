@@ -45,15 +45,17 @@ namespace Cybersource.Services
         public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData)
         {
             SendResponse sendResponse = null;
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            string urlBase = CybersourceConstants.ProductionApiEndpoint;
-            if (!merchantSettings.IsLive)
-            {
-                urlBase = CybersourceConstants.SandboxApiEndpoint;
-            }
 
             try
             {
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string urlBase = CybersourceConstants.ProductionApiEndpoint;
+                if (!merchantSettings.IsLive)
+                {
+                    urlBase = CybersourceConstants.SandboxApiEndpoint;
+                }
+
+            
                 var request = new HttpRequestMessage
                 {
                     Method = method,
@@ -103,7 +105,14 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendRequest", null, $"Error ", ex, new [] { ("method", method.ToString()), ("endpoint", endpoint), ("jsonSerializedData", jsonSerializedData) });
+                _context.Vtex.Logger.Error("SendRequest", null, 
+                "Error ", ex, 
+                new[] 
+                { 
+                    ( "method", method.ToString() ),
+                    ( "endpoint", endpoint ), 
+                    ( "jsonSerializedData", jsonSerializedData ) 
+                });
             }
 
             return sendResponse;
@@ -112,15 +121,17 @@ namespace Cybersource.Services
         public async Task<SendResponse> SendReportRequest(HttpMethod method, string endpoint, string jsonSerializedData)
         {
             SendResponse sendResponse = null;
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            string urlBase = CybersourceConstants.ProductionApiEndpoint;
-            if (!merchantSettings.IsLive)
-            {
-                urlBase = CybersourceConstants.SandboxApiEndpoint;
-            }
 
             try
             {
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string urlBase = CybersourceConstants.ProductionApiEndpoint;
+                if (!merchantSettings.IsLive)
+                {
+                    urlBase = CybersourceConstants.SandboxApiEndpoint;
+                }
+
+            
                 var request = new HttpRequestMessage
                 {
                     Method = method,
@@ -158,7 +169,14 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendReportRequest", null, $"Error ", ex);
+                _context.Vtex.Logger.Error("SendReportRequest", null, 
+                "Error ", ex, 
+                new[] 
+                { 
+                    ( "method", method.ToString() ),
+                    ( "endpoint", endpoint ), 
+                    ( "jsonSerializedData", jsonSerializedData ) 
+                });
             }
 
             return sendResponse;
@@ -167,19 +185,21 @@ namespace Cybersource.Services
         public async Task<SendResponse> SendProxyRequest(HttpMethod method, string endpoint, string jsonSerializedData, string proxyUrl, string proxyTokenUrl)
         {
             SendResponse sendResponse = null;
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            string urlBase = CybersourceConstants.ProductionApiEndpoint;
-            if (!merchantSettings.IsLive)
-            {
-                urlBase = CybersourceConstants.SandboxApiEndpoint;
-            }
-
-            string requestUri = $"https://{urlBase}{endpoint}";
-
-            proxyUrl = proxyUrl.Replace("https:", "http:", StringComparison.InvariantCultureIgnoreCase);
 
             try
             {
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string urlBase = CybersourceConstants.ProductionApiEndpoint;
+                if (!merchantSettings.IsLive)
+                {
+                    urlBase = CybersourceConstants.SandboxApiEndpoint;
+                }
+
+                string requestUri = $"https://{urlBase}{endpoint}";
+
+                proxyUrl = proxyUrl.Replace("https:", "http:", StringComparison.InvariantCultureIgnoreCase);
+
+            
                 var request = new HttpRequestMessage
                 {
                     Method = method,
@@ -258,7 +278,15 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendRequest", "Proxy", $"Error ", ex);
+                _context.Vtex.Logger.Error("SendProxyRequest", null, 
+                "Error ", ex, 
+                new[] 
+                { 
+                    ( "method", method.ToString() ),
+                    ( "endpoint", endpoint ), 
+                    ( "jsonSerializedData", jsonSerializedData ),
+                    ( "proxyUrl", proxyUrl )
+                });
             }
 
             return sendResponse;
@@ -267,32 +295,47 @@ namespace Cybersource.Services
         public async Task<SendResponse> SendProxyDigestRequest(string jsonSerializedData, string proxyTokenUrl)
         {
             SendResponse sendResponse = null;
-            ProxyTokenRequest proxyTokenRequest = new ProxyTokenRequest
+
+            try
             {
-                Tokens = new RequestToken[]
+                ProxyTokenRequest proxyTokenRequest = new ProxyTokenRequest
                 {
-                    new RequestToken
+                    Tokens = new RequestToken[]
                     {
-                        Name = "digest",
-                        Value = new Value
+                        new RequestToken
                         {
-                            Sha256 = new object[]
+                            Name = "digest",
+                            Value = new Value
                             {
-                                new Sha256
+                                Sha256 = new object[]
                                 {
-                                    ReplaceTokens = new string[]
+                                    new Sha256
                                     {
-                                        jsonSerializedData
-                                    }
-                                },
-                                CybersourceConstants.SIGNATURE_ENCODING
+                                        ReplaceTokens = new string[]
+                                        {
+                                            jsonSerializedData
+                                        }
+                                    },
+                                    CybersourceConstants.SIGNATURE_ENCODING
+                                }
                             }
                         }
                     }
-                }
-            };
+                };
 
-            sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
+                sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendProxyDigestRequest", "Proxy", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "jsonSerializedData", jsonSerializedData ),
+                    ( "proxyTokenUrl", proxyTokenUrl )
+                });
+            }
+            
 
             //_context.Vtex.Logger.Debug("SendProxyDigestRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
 
@@ -302,36 +345,51 @@ namespace Cybersource.Services
         public async Task<SendResponse> SendProxySignatureRequest(string jsonSerializedData, string proxyTokenUrl, string key)
         {
             SendResponse sendResponse = null;
-            ProxyTokenRequest proxyTokenRequest = new ProxyTokenRequest
+            try
             {
-                Tokens = new RequestToken[]
+                ProxyTokenRequest proxyTokenRequest = new ProxyTokenRequest
                 {
-                    new RequestToken
+                    Tokens = new RequestToken[]
                     {
-                        Name = "signature",
-                        Value = new Value
+                        new RequestToken
                         {
-                            HmacSha256 = new object[]
+                            Name = "signature",
+                            Value = new Value
                             {
-                                key,
-                                new HmacSha256Class
+                                HmacSha256 = new object[]
                                 {
-                                    ReplaceTokens = new string[]
+                                    key,
+                                    new HmacSha256Class
                                     {
-                                        jsonSerializedData
-                                    }
-                                },
-                                CybersourceConstants.SIGNATURE_ENCODING,
-                                CybersourceConstants.SIGNATURE_KEY_FORMAT
+                                        ReplaceTokens = new string[]
+                                        {
+                                            jsonSerializedData
+                                        }
+                                    },
+                                    CybersourceConstants.SIGNATURE_ENCODING,
+                                    CybersourceConstants.SIGNATURE_KEY_FORMAT
+                                }
                             }
                         }
                     }
-                }
-            };
+                };
 
-            sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
+                sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
 
-            //_context.Vtex.Logger.Debug("SendProxySignatureRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
+                //_context.Vtex.Logger.Debug("SendProxySignatureRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendProxySignatureRequest", "Proxy", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "jsonSerializedData", jsonSerializedData ),
+                    ( "proxyTokenUrl", proxyTokenUrl ),
+                    ( "key", key )
+                });
+            }
+            
 
             return sendResponse;
         }
@@ -394,7 +452,14 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, $"Error {proxyTokenUrl} {tokenName}", ex);
+                _context.Vtex.Logger.Error("SendProxyTokenRequest", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "proxyTokenUrl", proxyTokenUrl ),
+                    ( "tokenName", tokenName ),
+                    ( "proxyTokenRequest", JsonConvert.SerializeObject(proxyTokenRequest) )
+                });
             }
 
             return sendResponse;
@@ -404,29 +469,44 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-            
-            if (response != null)
+
+            try
             {
-                //Console.WriteLine($"ProcessPayment [{response.StatusCode}] {response.Message}");
-                if (response.Success)
+                string json = JsonConvert.SerializeObject(payments);
+                string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
+                SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+                
+                if (response != null)
                 {
-                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                    //Console.WriteLine($"ProcessPayment [{response.StatusCode}] {response.Message}");
+                    if (response.Success)
+                    {
+                        paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                    }
+                    else
+                    {
+                        _context.Vtex.Logger.Error("ProcessPayment", null, $"[{response.StatusCode}] {response.Message}", null, new[] { ("Request", JsonConvert.SerializeObject(payments)) });
+                    }
                 }
                 else
                 {
-                    _context.Vtex.Logger.Error("ProcessPayment", null, $"[{response.StatusCode}] {response.Message}", null, new[] { ("Request", JsonConvert.SerializeObject(payments)) });
+                    _context.Vtex.Logger.Error("ProcessPayment", null, "Null Response");
                 }
-            }
-            else
-            {
-                _context.Vtex.Logger.Error("ProcessPayment", null, "Null Response");
-            }
 
-            //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new [] { ("Request", JsonConvert.SerializeObject(payments)), ("Response", JsonConvert.SerializeObject(paymentsResponse)) });
-            //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
+                //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new [] { ("Request", JsonConvert.SerializeObject(payments)), ("Response", JsonConvert.SerializeObject(paymentsResponse)) });
+                //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ProcessPayment", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "proxyUrl", proxyUrl ),
+                    ( "proxyTokensUrl", proxyTokensUrl ),
+                    ( "payments", JsonConvert.SerializeObject(payments) )
+                });
+            }
 
             return paymentsResponse;
         }
@@ -434,12 +514,26 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessReversal(Payments payments, string paymentId)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/reversals";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(payments);
+                string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/reversals";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ProcessReversal", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "paymentId", paymentId ),
+                    ( "payments", JsonConvert.SerializeObject(payments) )
+                });
             }
 
             return paymentsResponse;
@@ -448,12 +542,26 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessCapture(Payments payments, string paymentId)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/captures";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(payments);
+                string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/captures";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ProcessCapture", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "payments", JsonConvert.SerializeObject(payments) ),
+                    ( "paymentId", paymentId )
+                });
             }
 
             return paymentsResponse;
@@ -463,12 +571,26 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> RefundPayment(Payments payments, string paymentId)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/refunds";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(payments);
+                string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/refunds";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("RefundPayment", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "payments", JsonConvert.SerializeObject(payments) ),
+                    ( "paymentId", paymentId )
+                });
             }
 
             return paymentsResponse;
@@ -478,12 +600,26 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> RefundCapture(Payments payments, string captureId)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.PAYMENTS}captures/{captureId}/refunds";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(payments);
+                string endpoint = $"{CybersourceConstants.PAYMENTS}captures/{captureId}/refunds";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("RefundCapture", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "captureId", captureId ),
+                    ( "payments", JsonConvert.SerializeObject(payments) )
+                });
             }
 
             return paymentsResponse;
@@ -492,12 +628,25 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessCredit(Payments payments)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.PAYMENTS}credits";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(payments);
+                string endpoint = $"{CybersourceConstants.PAYMENTS}credits";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ProcessCredit", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "payments", JsonConvert.SerializeObject(payments) )
+                });
             }
 
             return paymentsResponse;
@@ -508,13 +657,26 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> CreateDecisionManager(Payments payments)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            _context.Vtex.Logger.Debug("CreateDecisionManager", null, json);
-            string endpoint = $"{CybersourceConstants.RISK}decisions";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(payments);
+                _context.Vtex.Logger.Debug("CreateDecisionManager", null, json);
+                string endpoint = $"{CybersourceConstants.RISK}decisions";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CreateDecisionManager", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "payments", JsonConvert.SerializeObject(payments) )
+                });
             }
 
             return paymentsResponse;
@@ -573,12 +735,25 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> CalculateTaxes(Payments payments)
         {
             PaymentsResponse paymentsResponse = null;
-            string json = JsonConvert.SerializeObject(payments);
-            string endpoint = $"{CybersourceConstants.TAX}tax";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(payments);
+                string endpoint = $"{CybersourceConstants.TAX}tax";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CalculateTaxes", "Payments", 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "payments", JsonConvert.SerializeObject(payments) )
+                });
             }
 
             return paymentsResponse;
@@ -600,20 +775,34 @@ namespace Cybersource.Services
             ConversionReportResponse retval = null;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
             string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            string organizationId = merchantSettings.MerchantId;
-            string endpoint = $"{CybersourceConstants.REPORTING}conversion-details?startTime={startTime}&endTime={endTime}&organizationId={organizationId}&";
-            SendResponse response = await this.SendReportRequest(HttpMethod.Get, endpoint, null);
-            if (response != null)
+
+            try
             {
-                if (response.Success)
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string organizationId = merchantSettings.MerchantId;
+                string endpoint = $"{CybersourceConstants.REPORTING}conversion-details?startTime={startTime}&endTime={endTime}&organizationId={organizationId}&";
+                SendResponse response = await this.SendReportRequest(HttpMethod.Get, endpoint, null);
+                if (response != null)
                 {
-                    retval = JsonConvert.DeserializeObject<ConversionReportResponse>(response.Message);
+                    if (response.Success)
+                    {
+                        retval = JsonConvert.DeserializeObject<ConversionReportResponse>(response.Message);
+                    }
+                    else
+                    {
+                        ReportErrorResponse reportErrorResponse = JsonConvert.DeserializeObject<ReportErrorResponse>(response.Message);
+                    }
                 }
-                else
-                {
-                    ReportErrorResponse reportErrorResponse = JsonConvert.DeserializeObject<ReportErrorResponse>(response.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ConversionDetailReport", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "startTime", startTime ),
+                    ( "endTime", endTime )
+                });
             }
 
             return retval;
@@ -632,10 +821,24 @@ namespace Cybersource.Services
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
             string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
             string endpoint = $"{CybersourceConstants.REPORTING}notification-of-changes&startTime={startTime}&endTime={endTime}";
-            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
-            if (response != null)
+
+            try
             {
-                retval = $"[{response.StatusCode}] {response.Message}";
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                if (response != null)
+                {
+                    retval = $"[{response.StatusCode}] {response.Message}";
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("NotificationOfChangesReport", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "startTime", startTime ),
+                    ( "endTime", endTime )
+                });
             }
 
             return retval;
@@ -651,13 +854,27 @@ namespace Cybersource.Services
         {
             string retval = string.Empty;
             string reportDate = dtReportDate.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            string organizationId = merchantSettings.MerchantId;
-            string endpoint = $"{CybersourceConstants.REPORTING}report-downloads?reportDate={reportDate}&organizationId={organizationId}&reportName={reportName}";
-            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
-            if (response != null)
+
+            try
             {
-                retval = $"[{response.StatusCode}] {response.Message}";
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string organizationId = merchantSettings.MerchantId;
+                string endpoint = $"{CybersourceConstants.REPORTING}report-downloads?reportDate={reportDate}&organizationId={organizationId}&reportName={reportName}";
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                if (response != null)
+                {
+                    retval = $"[{response.StatusCode}] {response.Message}";
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("DownloadReport", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "reportDate", reportDate ),
+                    ( "reportName", reportName )
+                });
             }
 
             return retval;
@@ -675,11 +892,25 @@ namespace Cybersource.Services
             string retval = string.Empty;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
             string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
-            string endpoint = $"{CybersourceConstants.REPORTING}reports?startTime={startTime}&endTime={endTime}&timeQueryType=executedTime";
-            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
-            if (response != null)
+
+            try
             {
-                retval = $"[{response.StatusCode}] {response.Message}";
+                string endpoint = $"{CybersourceConstants.REPORTING}reports?startTime={startTime}&endTime={endTime}&timeQueryType=executedTime";
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                if (response != null)
+                {
+                    retval = $"[{response.StatusCode}] {response.Message}";
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("RetrieveAvailableReports", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "startTime", startTime ),
+                    ( "endTime", endTime )
+                });
             }
 
             return retval;
@@ -690,11 +921,26 @@ namespace Cybersource.Services
             string retval = string.Empty;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
             string endTime = dtEndTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
-            string endpoint = $"{CybersourceConstants.REPORTING}purchase-refund-details?startTime={startTime}&endTime={endTime}";
-            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
-            if (response != null)
+
+            try
             {
-                retval = $"[{response.StatusCode}] {response.Message}";
+                string endpoint = $"{CybersourceConstants.REPORTING}purchase-refund-details?startTime={startTime}&endTime={endTime}";
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                if (response != null)
+                {
+                    retval = $"[{response.StatusCode}] {response.Message}";
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetPurchaseAndRefundDetails", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "startTime", startTime ),
+                    ( "endTime", endTime )
+                });
             }
 
             return retval;
@@ -703,11 +949,24 @@ namespace Cybersource.Services
         public async Task<RetrieveTransaction> RetrieveTransaction(string transactionId)
         {
             RetrieveTransaction retrieveTransaction = null;
-            string endpoint = $"{CybersourceConstants.TRANSACTIONS}transactions/{transactionId}";
-            SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
-            if (response != null)
+
+            try
             {
-                retrieveTransaction = JsonConvert.DeserializeObject<RetrieveTransaction>(response.Message);
+                string endpoint = $"{CybersourceConstants.TRANSACTIONS}transactions/{transactionId}";
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                if (response != null)
+                {
+                    retrieveTransaction = JsonConvert.DeserializeObject<RetrieveTransaction>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("RetrieveTransaction", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "transactionId", transactionId )
+                });
             }
 
             return retrieveTransaction;
@@ -716,12 +975,25 @@ namespace Cybersource.Services
         public async Task<SearchResponse> CreateSearchRequest(CreateSearchRequest createSearchRequest)
         {
             SearchResponse searchResponse = null;
-            string json = JsonConvert.SerializeObject(createSearchRequest);
-            string endpoint = $"{CybersourceConstants.TRANSACTIONS}searches";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+
+            try
             {
-                searchResponse = JsonConvert.DeserializeObject<SearchResponse>(response.Message);
+                string json = JsonConvert.SerializeObject(createSearchRequest);
+                string endpoint = $"{CybersourceConstants.TRANSACTIONS}searches";
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                if (response != null)
+                {
+                    searchResponse = JsonConvert.DeserializeObject<SearchResponse>(response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CreateSearchRequest", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "createSearchRequest", JsonConvert.SerializeObject(createSearchRequest) )
+                });
             }
 
             return searchResponse;
@@ -755,7 +1027,12 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("BinLookup", null, "Error", ex, new[] { ("Bin", cardNumber) });
+                _context.Vtex.Logger.Error("BinLookup", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "cardNumber", cardNumber )
+                });
             }
 
             return cybersourceBinLookupResponse;
@@ -875,24 +1152,41 @@ namespace Cybersource.Services
             signatureString.Append(merchantSettings.MerchantId);
             signatureString.Remove(0, 1);
             string base64EncodedSignature = string.Empty;
-            SendResponse proxyTokenSendResponse = await this.SendProxySignatureRequest(signatureString.ToString(), proxyTokenUrl, merchantSettings.SharedSecretKey);
-            if (proxyTokenSendResponse.Success)
-            {
-                ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
-                base64EncodedSignature = proxyToken.Tokens[0].Placeholder;
-            }
-            else
-            {
-                _context.Vtex.Logger.Error("GenerateProxySignatureString", null, "Did not calculate signature");
-                return null;
-            }
 
-            signatureHeaderValue.Append("keyid=\"" + merchantSettings.MerchantKey + "\"");
-            signatureHeaderValue.Append(", algorithm=\"" + CybersourceConstants.SignatureAlgorithm + "\"");
-            signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
-            signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
+            try
+            {
+                SendResponse proxyTokenSendResponse = await this.SendProxySignatureRequest(signatureString.ToString(), proxyTokenUrl, merchantSettings.SharedSecretKey);
+                if (proxyTokenSendResponse.Success)
+                {
+                    ProxyTokenResponse proxyToken = JsonConvert.DeserializeObject<ProxyTokenResponse>(proxyTokenSendResponse.Message);
+                    base64EncodedSignature = proxyToken.Tokens[0].Placeholder;
+                }
+                else
+                {
+                    _context.Vtex.Logger.Error("GenerateProxySignatureString", null, "Did not calculate signature");
+                    return null;
+                }
 
-            //_context.Vtex.Logger.Debug("GenerateProxySignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
+                signatureHeaderValue.Append("keyid=\"" + merchantSettings.MerchantKey + "\"");
+                signatureHeaderValue.Append(", algorithm=\"" + CybersourceConstants.SignatureAlgorithm + "\"");
+                signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
+                signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
+
+                //_context.Vtex.Logger.Debug("GenerateProxySignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GenerateProxySignatureString", null, 
+                "Error:", ex,
+                new[]
+                {
+                    ( "hostName", hostName ),
+                    ( "gmtDateTime", gmtDateTime ),
+                    ( "requestTarget", requestTarget ),
+                    ( "digest", digest ),
+                    ( "proxyTokenUrl", proxyTokenUrl ),
+                });
+            }
 
             return signatureHeaderValue.ToString();
         }

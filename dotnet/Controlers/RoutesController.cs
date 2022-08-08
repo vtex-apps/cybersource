@@ -43,7 +43,6 @@
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                //_context.Vtex.Logger.Debug("CreatePayment", "bodyAsText", bodyAsText);
                 try
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
@@ -59,7 +58,12 @@
                 }
                 catch (Exception ex)
                 {
-                    _context.Vtex.Logger.Error("CreatePayment", null, "Payment Error", ex, new[] { ("body", bodyAsText) });
+                    _context.Vtex.Logger.Error("CreatePayment", null, 
+                    "Payment Error: ", ex, 
+                    new[] 
+                    { 
+                        ("body", bodyAsText)
+                    });
                 }
             }
 
@@ -77,12 +81,25 @@
         public async Task<IActionResult> CancelPayment(string paymentId)
         {
             CancelPaymentResponse cancelResponse = null;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                _context.Vtex.Logger.Debug("CancelPayment", "bodyAsText", bodyAsText);
-                CancelPaymentRequest cancelPaymentRequest = JsonConvert.DeserializeObject<CancelPaymentRequest>(bodyAsText);
-                cancelResponse = await this._cybersourcePaymentService.CancelPayment(cancelPaymentRequest);
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    _context.Vtex.Logger.Debug("CancelPayment", "bodyAsText", bodyAsText);
+                    CancelPaymentRequest cancelPaymentRequest = JsonConvert.DeserializeObject<CancelPaymentRequest>(bodyAsText);
+                    cancelResponse = await this._cybersourcePaymentService.CancelPayment(cancelPaymentRequest);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CancelPayment", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ("paymentId", paymentId)
+                });
             }
 
             return Json(cancelResponse);
@@ -97,12 +114,25 @@
         public async Task<IActionResult> CapturePayment(string paymentId)
         {
             CapturePaymentResponse captureResponse = null;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                _context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
-                CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
-                captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    _context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
+                    CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
+                    captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CapturePayment", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ("paymentId", paymentId)
+                });
             }
 
             return Json(captureResponse);
@@ -117,12 +147,25 @@
         public async Task<IActionResult> RefundPayment(string paymentId)
         {
             RefundPaymentResponse refundResponse = null;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                _context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
-                RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
-                refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    _context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
+                    RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
+                    refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("RefundPayment", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ("paymentId", paymentId)
+                });
             }
 
             return Json(refundResponse);
@@ -247,15 +290,23 @@
         public async Task<IActionResult> SendAntifraudData()
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = null;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
-                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
-                sw.Stop();
-                _context.Vtex.Logger.Debug("SendAntifraudData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
+                    sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                    sw.Stop();
+                    _context.Vtex.Logger.Debug("SendAntifraudData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendAntifraudData", null, "Error: ", ex);
             }
 
             return Json(sendAntifraudDataResponse);
@@ -268,15 +319,23 @@
         public async Task<IActionResult> SendAntifraudPreAnalysisData()
         {
             SendAntifraudDataResponse sendAntifraudDataResponse = new SendAntifraudDataResponse { Status = CybersourceConstants.VtexAntifraudStatus.Received };
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
-                sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
-                sw.Stop();
-                _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
+                    sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
+                    sw.Stop();
+                    _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("SendAntifraudPreAnalysisData", null, "Error: ", ex);
             }
 
             return Json(sendAntifraudDataResponse);
@@ -289,20 +348,33 @@
         public async Task<IActionResult> GetAntifraudStatus(string transactionId)
         {
             SendAntifraudDataResponse getAntifraudStatusResponse = null;
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            getAntifraudStatusResponse = await this._cybersourcePaymentService.GetAntifraudStatus(transactionId);
-            if (getAntifraudStatusResponse == null)
-            {
-                getAntifraudStatusResponse = new SendAntifraudDataResponse
-                {
-                    Id = transactionId,
-                    Status = CybersourceConstants.VtexAntifraudStatus.Undefined
-                };
-            }
 
-            sw.Stop();
-            _context.Vtex.Logger.Debug("GetAntifraudStatus", transactionId, $"Returned {getAntifraudStatusResponse.Status} in {sw.Elapsed.TotalMilliseconds} ms ", new[] { ("getAntifraudStatusResponse", JsonConvert.SerializeObject(getAntifraudStatusResponse)) });
+            try
+            {
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                getAntifraudStatusResponse = await this._cybersourcePaymentService.GetAntifraudStatus(transactionId);
+                if (getAntifraudStatusResponse == null)
+                {
+                    getAntifraudStatusResponse = new SendAntifraudDataResponse
+                    {
+                        Id = transactionId,
+                        Status = CybersourceConstants.VtexAntifraudStatus.Undefined
+                    };
+                }
+
+                sw.Stop();
+                _context.Vtex.Logger.Debug("GetAntifraudStatus", transactionId, $"Returned {getAntifraudStatusResponse.Status} in {sw.Elapsed.TotalMilliseconds} ms ", new[] { ("getAntifraudStatusResponse", JsonConvert.SerializeObject(getAntifraudStatusResponse)) });
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetAntifraudStatus", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ("transactionId", transactionId)
+                });
+            }
 
             return Json(getAntifraudStatusResponse);
         }
@@ -319,48 +391,55 @@
                 ItemTaxResponse = new List<ItemTaxResponse>()
             };
 
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
-
-            Response.Headers.Add("Cache-Control", "private");
-            Response.Headers.Add(CybersourceConstants.CONTENT_TYPE, CybersourceConstants.MINICART);
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                if (!string.IsNullOrEmpty(bodyAsText))
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+
+                Response.Headers.Add("Cache-Control", "private");
+                Response.Headers.Add(CybersourceConstants.CONTENT_TYPE, CybersourceConstants.MINICART);
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
-                    taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
-                    taxRequestOriginal = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
-                    if (taxRequest != null)
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    if (!string.IsNullOrEmpty(bodyAsText))
                     {
-                        orderFormId = taxRequest.OrderFormId;
-                        totalItems = taxRequest.Items.Sum(i => i.Quantity).ToString();
-                        decimal total = taxRequest.Totals.Sum(t => t.Value);
-                        int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}".GetHashCode();
-                        if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
+                        taxRequest = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
+                        taxRequestOriginal = JsonConvert.DeserializeObject<VtexTaxRequest>(bodyAsText);
+                        if (taxRequest != null)
                         {
-                            fromCache = true;
-                            _context.Vtex.Logger.Debug("CybersourceOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
-                        }
-                        else
-                        {
-                            vtexTaxResponse = await _vtexApiService.GetTaxes(taxRequest, taxRequestOriginal);
-                            if (vtexTaxResponse != null)
+                            orderFormId = taxRequest.OrderFormId;
+                            totalItems = taxRequest.Items.Sum(i => i.Quantity).ToString();
+                            decimal total = taxRequest.Totals.Sum(t => t.Value);
+                            int cacheKey = $"{_context.Vtex.App.Version}{taxRequest.ShippingDestination.PostalCode}{totalItems}{total}".GetHashCode();
+                            if (_cybersourceRepository.TryGetCache(cacheKey, out vtexTaxResponse))
                             {
-                                await _cybersourceRepository.SetCache(cacheKey, vtexTaxResponse);
+                                fromCache = true;
+                                _context.Vtex.Logger.Debug("CybersourceOrderTaxHandler", null, $"Taxes for '{cacheKey}' fetched from cache. {JsonConvert.SerializeObject(vtexTaxResponse)}");
                             }
                             else
                             {
-                                vtexTaxResponse = await _vtexApiService.GetFallbackTaxes(taxRequestOriginal);
-                                _context.Vtex.Logger.Error("TaxHandler", "Fallback", "Using Fallback Rates", null, new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+                                vtexTaxResponse = await _vtexApiService.GetTaxes(taxRequest, taxRequestOriginal);
+                                if (vtexTaxResponse != null)
+                                {
+                                    await _cybersourceRepository.SetCache(cacheKey, vtexTaxResponse);
+                                }
+                                else
+                                {
+                                    vtexTaxResponse = await _vtexApiService.GetFallbackTaxes(taxRequestOriginal);
+                                    _context.Vtex.Logger.Error("TaxHandler", "Fallback", "Using Fallback Rates", null, new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            timer.Stop();
-            _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+                timer.Stop();
+                _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("TaxHandler", null, "Error: ", ex);
+            }
 
             return Json(vtexTaxResponse);
         }
@@ -369,13 +448,26 @@
         {
             Response.Headers.Add("Cache-Control", "no-cache");
             string result = string.Empty;
-            if(useCyberTax)
+
+            try
             {
-                result = await _vtexApiService.InitConfiguration();
+                if(useCyberTax)
+                {
+                    result = await _vtexApiService.InitConfiguration();
+                }
+                else
+                {
+                    result = await _vtexApiService.RemoveConfiguration();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                result = await _vtexApiService.RemoveConfiguration();
+                _context.Vtex.Logger.Error("ToggleTax", null, 
+                "Error: ", ex, 
+                new[] 
+                { 
+                    ( "useCyberTax", useCyberTax.ToString() )
+                });
             }
 
             return Json(result);
@@ -384,11 +476,19 @@
         public async Task<IActionResult> CybersourceResponseToVtexResponse()
         {
             VtexTaxResponse vtexTaxResponse = null;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                PaymentsResponse taxResponse = JsonConvert.DeserializeObject<PaymentsResponse>(bodyAsText);
-                vtexTaxResponse = await this._vtexApiService.CybersourceResponseToVtexResponse(taxResponse, null);
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    PaymentsResponse taxResponse = JsonConvert.DeserializeObject<PaymentsResponse>(bodyAsText);
+                    vtexTaxResponse = await this._vtexApiService.CybersourceResponseToVtexResponse(taxResponse, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("CybersourceResponseToVtexResponse", null, "Error: ", ex);
             }
 
             return Json(vtexTaxResponse);
@@ -402,6 +502,7 @@
         public async Task<IActionResult> ConversionDetailReport()
         {
             Response.Headers.Add("Cache-Control", "no-cache");
+
             return Json(await _cybersourcePaymentService.ConversionDetailReport(DateTime.Now.AddDays(-1), DateTime.Now.AddDays(0)));
         }
 
@@ -475,21 +576,29 @@
         {
             string response = null;
             PaymentRequestWrapper requestWrapper = null;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                try
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
-                    VtexOrder vtexOrder = JsonConvert.DeserializeObject<VtexOrder>(bodyAsText);
-                    CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest();
-                    requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
-                    response = requestWrapper.FlattenCustomData(vtexOrder.CustomData);
-                    Console.WriteLine(response);
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    try
+                    {
+                        VtexOrder vtexOrder = JsonConvert.DeserializeObject<VtexOrder>(bodyAsText);
+                        CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest();
+                        requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+                        response = requestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                        Console.WriteLine(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("TestFlattenCustomData", "FlattenCustomData", "Error", ex, new[] { ("body", bodyAsText) });
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _context.Vtex.Logger.Error("TestFlattenCustomData", "FlattenCustomData", "Error", ex, new[] { ("body", bodyAsText) });
-                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("TestFlattenCustomData", "FlattenCustomData", "Error: ", ex);
             }
 
             return Json(requestWrapper);
@@ -498,41 +607,49 @@
         public async Task<IActionResult> TestMerchantDefinedData()
         {
             List<MerchantDefinedInformation> mdd = null;
-            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+
+            try
             {
-                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-                CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
-                PaymentRequestWrapper paymentRequestWrapper = new PaymentRequestWrapper(createPaymentRequest);
-                VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}");
-                if (vtexOrder != null)
+                if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
+                    string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                    MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                    CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
+                    PaymentRequestWrapper paymentRequestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+                    VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation($"{createPaymentRequest.OrderId}");
+                    if (vtexOrder != null)
                     {
-                        string response = paymentRequestWrapper.FlattenCustomData(vtexOrder.CustomData);
-                        if (!string.IsNullOrWhiteSpace(response))
+                        if (vtexOrder.CustomData != null && vtexOrder.CustomData.CustomApps != null)
                         {
-                            // A response indicates an error.
-                            Console.WriteLine($"ERROR: {response}");
+                            string response = paymentRequestWrapper.FlattenCustomData(vtexOrder.CustomData);
+                            if (!string.IsNullOrWhiteSpace(response))
+                            {
+                                // A response indicates an error.
+                                Console.WriteLine($"ERROR: {response}");
+                            }
+                        }
+
+                        if (vtexOrder.MarketingData != null)
+                        {
+                            string response = paymentRequestWrapper.SetMarketingData(vtexOrder.MarketingData);
+                            if (!string.IsNullOrWhiteSpace(response))
+                            {
+                                // A response indicates an error.
+                                Console.WriteLine($"ERROR: {response}");
+                            }
                         }
                     }
-
-                    if (vtexOrder.MarketingData != null)
+                    else
                     {
-                        string response = paymentRequestWrapper.SetMarketingData(vtexOrder.MarketingData);
-                        if (!string.IsNullOrWhiteSpace(response))
-                        {
-                            // A response indicates an error.
-                            Console.WriteLine($"ERROR: {response}");
-                        }
+                        Console.WriteLine($"ERROR: {createPaymentRequest.OrderId} is NULL!");
                     }
-                }
-                else
-                {
-                    Console.WriteLine($"ERROR: {createPaymentRequest.OrderId} is NULL!");
-                }
 
-                mdd = await _cybersourcePaymentService.GetMerchantDefinedInformation(merchantSettings, paymentRequestWrapper);
+                    mdd = await _cybersourcePaymentService.GetMerchantDefinedInformation(merchantSettings, paymentRequestWrapper);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("TestMerchantDefinedData", null, "Error: ", ex);
             }
 
             return Json(mdd);

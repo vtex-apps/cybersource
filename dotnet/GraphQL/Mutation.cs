@@ -5,6 +5,7 @@ using Cybersource.Services;
 using GraphQL;
 using GraphQL.Types;
 using System;
+using System.Net;
 
 namespace Cybersource.GraphQL
 {
@@ -15,17 +16,41 @@ namespace Cybersource.GraphQL
         {
             Name = "Mutation";
 
-            Field<StringGraphType>(
+            FieldAsync<StringGraphType>(
                 "initConfiguration",
-                resolve: context =>
+                resolve: async context =>
                 {
+                    HttpStatusCode isValidAuthUser = await vtexApiService.IsValidAuthUser();
+
+                    if (isValidAuthUser != HttpStatusCode.OK)
+                    {
+                        context.Errors.Add(new ExecutionError(isValidAuthUser.ToString())
+                        {
+                            Code = isValidAuthUser.ToString()
+                        });
+
+                        return default;
+                    }
+
                     return vtexApiService.InitConfiguration();
                 });
 
-            Field<StringGraphType>(
+            FieldAsync<StringGraphType>(
                 "removeConfiguration",
-                resolve: context =>
+                resolve: async context =>
                 {
+                    HttpStatusCode isValidAuthUser = await vtexApiService.IsValidAuthUser();
+
+                    if (isValidAuthUser != HttpStatusCode.OK)
+                    {
+                        context.Errors.Add(new ExecutionError(isValidAuthUser.ToString())
+                        {
+                            Code = isValidAuthUser.ToString()
+                        });
+
+                        return default;
+                    }
+
                     return vtexApiService.RemoveConfiguration();
                 });
         }

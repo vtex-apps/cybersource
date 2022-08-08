@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added Payer Auth Services
 - Send neighborhood as district
 
+## [1.3.4] - 2022-08-05
+
+### Added
+- GraphQL mutation security.
+- Logging optimization.
+
 ## [1.3.3] - 2022-08-05
 
 ### Changed

@@ -1,6 +1,7 @@
 ﻿using Cybersource.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace Cybersource.Services
 {
@@ -30,5 +31,7 @@ namespace Cybersource.Services
         Task<VtexOrderList> ListOrders(string queryString);
 
         Task<BinLookup> BinLookup(string bin);
+        Task<HttpStatusCode> IsValidAuthUser();
+        Task<ValidatedUser> ValidateUserToken(string token);
     }
 }
