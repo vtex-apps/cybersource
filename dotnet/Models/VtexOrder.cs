@@ -220,10 +220,10 @@ namespace Cybersource.Models
         public string LastName { get; set; }
 
         [JsonProperty("document")]
-        public object Document { get; set; }
+        public string Document { get; set; }
 
         [JsonProperty("documentType")]
-        public object DocumentType { get; set; }
+        public string DocumentType { get; set; }
 
         [JsonProperty("phone")]
         public string Phone { get; set; }

@@ -25,6 +25,9 @@ namespace Cybersource.Models
         [JsonProperty("region")]
         public string Region { get; set; }
 
+        [JsonProperty("usePayerAuthentication")]
+        public bool UsePayerAuthentication { get; set; }
+
         // Taxes
         [JsonProperty("enableTax")]
         public bool EnableTax { get; set; }

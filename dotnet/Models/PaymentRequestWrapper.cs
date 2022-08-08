@@ -2,6 +2,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Reflection;
 
 namespace Cybersource.Models
@@ -19,7 +20,11 @@ namespace Cybersource.Models
         public CustomDataWrapper CustomData { get; private set; }
         public MarketingDataWrapper MarketingData { get; set; }
         public ContextData ContextData { get; set; }
-
+        public ClientProfileData ClientProfileData { get; set; }
+        public PersonalData PersonalData { get; set; }
+        public AdditionalData AdditionalData { get; set; }
+        public SlaWrapper Shipping { get; set; }
+        public Totals Totals { get; set; }
 
         public string FlattenCustomData(CustomData customData)
         {
@@ -80,7 +85,7 @@ namespace Cybersource.Models
         public PaymentRequestWrapper(CreatePaymentRequest createPaymentRequest)
         {
             this.Currency = createPaymentRequest.Currency;
-            this.Card = new VtexCard{ Bin = createPaymentRequest?.Card?.Bin };
+            this.Card = new VtexCard { Bin = createPaymentRequest?.Card?.Bin };
             this.DeviceFingerprint = createPaymentRequest.DeviceFingerprint;
             this.Installments = createPaymentRequest.Installments;
             this.InstallmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
@@ -96,6 +101,10 @@ namespace Cybersource.Models
             this.TransactionId = createPaymentRequest.TransactionId;
             this.Value = createPaymentRequest.Value;
             this.MiniCart = createPaymentRequest.MiniCart;
+            this.AdditionalData = new AdditionalData
+            {
+                TotalItemQuantity = (createPaymentRequest.MiniCart != null && createPaymentRequest.MiniCart.Items != null) ? createPaymentRequest.MiniCart.Items.Sum(c => c.Quantity) : 0
+            };
         }
 
         public PaymentRequestWrapper(SendAntifraudDataRequest sendAntifraudDataRequest)
@@ -159,11 +168,12 @@ namespace Cybersource.Models
             list.AddRange(this.ListProperties(new MiniCart(), "MiniCart"));
             list.AddRange(this.ListProperties(new VtexBillingAddress(), "MiniCart.BillingAddress"));
             list.AddRange(this.ListProperties(new Buyer(), "MiniCart.Buyer"));
-            list.AddRange(this.ListProperties(new VtexItem(), "MiniCart.Items[]"));
+            //list.AddRange(this.ListProperties(new VtexItem(), "MiniCart.Items[]"));
             list.AddRange(this.ListProperties(new VtexShippingAddress(), "MiniCart.ShippingAddress"));
             //list.AddRange(this.ListProperties(new MiniCart().ShippingValue, "MiniCart.ShippingValue"));
             //list.AddRange(this.ListProperties(new MiniCart().TaxRate, "MiniCart.TaxRate"));
             //list.AddRange(this.ListProperties(new MiniCart().TaxValue, "MiniCart.TaxValue"));
+            list.AddRange(this.ListProperties(new ClientProfileData(), "ClientProfileData"));
             return list;
         }
 
@@ -211,10 +221,10 @@ namespace Cybersource.Models
                 "MiniCart.ShippingValue",
                 "MiniCart.TaxValue",
                 "MiniCart.TaxRate",
-                "MiniCart.Buyer",
-                "MiniCart.ShippingAddress",
-                "MiniCart.BillingAddress",
-                "MiniCart.Items",
+                //"MiniCart.Buyer",
+                //"MiniCart.ShippingAddress",
+                //"MiniCart.BillingAddress",
+                //"MiniCart.Items",
                 "MiniCart.BillingAddress.Country",
                 "MiniCart.BillingAddress.Street",
                 "MiniCart.BillingAddress.Number",
@@ -262,7 +272,56 @@ namespace Cybersource.Models
                 "MarketingData.Utmipage",
                 "MarketingData.UtmiPart",
                 "MarketingData.MarketingTags",
-                "ContextData.LoggedIn"
+                "ContextData.LoggedIn",
+                "ClientProfileData.CorporateDocument",
+                "ClientProfileData.CorporateName",
+                "ClientProfileData.CorporatePhone",
+                "ClientProfileData.CustomerClass",
+                "ClientProfileData.Document",
+                "ClientProfileData.DocumentType",
+                "ClientProfileData.Email",
+                "ClientProfileData.FirstName",
+                "ClientProfileData.IsCorporate",
+                "ClientProfileData.LastName",
+                "ClientProfileData.Phone",
+                "ClientProfileData.StateInscription",
+                "ClientProfileData.TradeName",
+                "PersonalData.BirthDate",
+                "PersonalData.BusinessDocument",
+                "PersonalData.BusinessPhone",
+                "PersonalData.CellPhone",
+                "PersonalData.CorporateName",
+                "PersonalData.CreatedIn",
+                "PersonalData.CustomerClass",
+                "PersonalData.Document",
+                "PersonalData.DocumentType",
+                "PersonalData.Email",
+                "PersonalData.FancyName",
+                "PersonalData.FirstName",
+                "PersonalData.Gender",
+                "PersonalData.HomePhone",
+                "PersonalData.IsFreeStateRegistration",
+                "PersonalData.IsPj",
+                "PersonalData.LastName",
+                "PersonalData.NickName",
+                "PersonalData.StateRegistration",
+                "PersonalData.UserId",
+                "AdditionalData.TotalItemQuantity",
+                "AdditionalData.NumberOfPreviousPurchases",
+                "AdditionalData.DateOfLastPurchase",
+                "Shipping.DeliveryChannel",
+                "Shipping.Name",
+                "Shipping.Id",
+                "Shipping.CourierName",
+                "Shipping.ShippingEstimate",
+                "Shipping.ShippingEstimateDate",
+                "Shipping.PickupStoreInfo.IsPickupStore",
+                "Shipping.PickupStoreInfo.FriendlyName",
+                "Shipping.PickupStoreInfo.DockId",
+                "Totals.Items",
+                "Totals.Discounts",
+                "Totals.Shipping",
+                "Totals.Tax",
             };
         }
     }
@@ -278,8 +337,23 @@ namespace Cybersource.Models
         public new string MarketingTags { get; set; }
     }
 
-    public class ContextDataWrapper
+    public class SlaWrapper : Sla
     {
-        public bool? LoggedIn { get; set; }
+        public string CourierName { get; set; }
+    }
+
+    public class AdditionalData
+    {
+        public int TotalItemQuantity { get; set; }
+        public long NumberOfPreviousPurchases { get; set; }
+        public string DateOfLastPurchase { get; set; }
+    }
+
+    public class Totals
+    {
+        public decimal Items { get; set; }
+        public decimal Discounts { get; set; }
+        public decimal Shipping { get; set; }
+        public decimal Tax { get; set; }
     }
 }

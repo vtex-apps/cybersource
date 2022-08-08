@@ -478,7 +478,6 @@ namespace Cybersource.Services
                 
                 if (response != null)
                 {
-                    //Console.WriteLine($"ProcessPayment [{response.StatusCode}] {response.Message}");
                     if (response.Success)
                     {
                         paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -492,9 +491,6 @@ namespace Cybersource.Services
                 {
                     _context.Vtex.Logger.Error("ProcessPayment", null, "Null Response");
                 }
-
-                //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new [] { ("Request", JsonConvert.SerializeObject(payments)), ("Response", JsonConvert.SerializeObject(paymentsResponse)) });
-                //_context.Vtex.Logger.Debug("ProcessPayment", "ProcessPayment", "ProcessPayment", new[] { ("Request", JsonConvert.SerializeObject(payments)) });
             }
             catch (Exception ex)
             {
@@ -677,6 +673,54 @@ namespace Cybersource.Services
                 { 
                     ( "payments", JsonConvert.SerializeObject(payments) )
                 });
+            }
+
+            return paymentsResponse;
+        }
+        #endregion
+
+        #region Payer Authentication
+        public async Task<PaymentsResponse> SetupPayerAuth(Payments payments, string proxyUrl, string proxyTokensUrl)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            _context.Vtex.Logger.Debug("SetupPayerAuth", "request", json);
+            string endpoint = $"{CybersourceConstants.RISK}authentication-setups";
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            _context.Vtex.Logger.Debug("SetupPayerAuth", "response", response.Message);
+            if (response.Success)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+            }
+
+            return paymentsResponse;
+        }
+
+        public async Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments, string proxyUrl, string proxyTokensUrl)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, json);
+            string endpoint = $"{CybersourceConstants.RISK}authentications";
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            if (response.Success)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
+            }
+
+            return paymentsResponse;
+        }
+
+        public async Task<PaymentsResponse> ValidateAuthenticationResults(Payments payments)
+        {
+            PaymentsResponse paymentsResponse = null;
+            string json = JsonConvert.SerializeObject(payments);
+            _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, json);
+            string endpoint = $"{CybersourceConstants.RISK}authentication-results";
+            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+            if (response != null)
+            {
+                paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
             }
 
             return paymentsResponse;

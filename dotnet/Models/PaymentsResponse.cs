@@ -55,6 +55,9 @@ namespace Cybersource.Models
 
         [JsonProperty("riskInformation")]
         public RiskInformation RiskInformation { get; set; }
+
+        [JsonProperty("consumerAuthenticationInformation")]
+        public ConsumerAuthenticationInformation ConsumerAuthenticationInformation { get; set; }
     }
 
     public class Links

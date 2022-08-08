@@ -43,6 +43,8 @@ namespace Cybersource.Data
         public const string TRANSACTIONS = "/tss/v2/";
         public const string BIN = "/bin/v1/";
 
+        public const string PaymentFlowAppName = "vtex.cybersource-payer-auth";
+
         public static class CybersourceDecision
         {
             public const string Review = "REVIEW";
