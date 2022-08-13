@@ -8,6 +8,11 @@ type Mutation {
   removeConfiguration: String @cacheControl(scope: PRIVATE)
 }
 
+type SubstiantialChange {
+  initConfiguration: String @cacheControl(scope: PRIVATE)
+  removeConfiguration: String @cacheControl(scope: PRIVATE)
+}
+
 type ConversionReport {
   conversionDetails: [ConversionDetail]
 }
