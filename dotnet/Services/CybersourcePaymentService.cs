@@ -1385,10 +1385,6 @@ namespace Cybersource.Services
                         case "CL": // Chile
                             regionCode = GetAdministrativeAreaChile(region);
                             break;
-                    }
-
-                    switch (countryCode)
-                    {
                         case "CO": // Colombia
                             regionCode = GetAdministrativeAreaColombia(region);
                             break;
