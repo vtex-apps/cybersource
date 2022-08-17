@@ -1388,6 +1388,9 @@ namespace Cybersource.Services
                         case "CO": // Colombia
                             regionCode = GetAdministrativeAreaColombia(region);
                             break;
+                        case "PE": // Peru
+                            regionCode = GetAdministrativeAreaPeru(region);
+                            break;
                     }
 
                     _context.Vtex.Logger.Debug("GetAdministrativeArea", null, $"'{region}', '{countryCode}' = '{regionCode}'");
@@ -1476,6 +1479,7 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaColombia(string region)
         {
             string regionCode = string.Empty;
+            region = region.Replace(" ", string.Empty);
             switch(region)
             {
                 case "Distrito Capital de Bogotá":
@@ -1483,9 +1487,6 @@ namespace Cybersource.Services
                     break;
                 case "Guaviare":
                     regionCode = "GUV";
-                    break;
-                case "La Guajira":
-                    regionCode = "LAG";
                     break;
                 case "Norte de Santander":
                     regionCode = "NSA";
@@ -1495,6 +1496,35 @@ namespace Cybersource.Services
                     break;
                 case "Valle del Cauca":
                     regionCode = "VAC";
+                    break;
+                case "Vichada":
+                    regionCode = "VID";
+                    break;
+                default:
+                    regionCode = region.Substring(0, 3).ToUpper();
+                    break;
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaPeru(string region)
+        {
+            string regionCode = string.Empty;
+            region = region.Replace(" ", string.Empty);
+            switch (region)
+            {
+                case "Huánuco":
+                    regionCode = "HUC";
+                    break;
+                case "La Libertad":
+                    regionCode = "LAL";
+                    break;
+                case "Madre de Dios":
+                    regionCode = "MDD";
+                    break;
+                case "San Martín":
+                    regionCode = "SAM";
                     break;
                 case "Vichada":
                     regionCode = "VID";
