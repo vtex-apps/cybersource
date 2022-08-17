@@ -404,7 +404,7 @@ namespace Cybersource.Services
                             }
                         }
 
-                        if (!string.IsNullOrEmpty(vtexOrder.ShippingData.Address.ReceiverName))
+                        if (!string.IsNullOrEmpty(vtexOrder.ShippingData.Address.ReceiverName) && vtexOrder.ShippingData.Address.ReceiverName.Trim().Length > 2) // Check that the Receiver Name is at least 3 characters
                         {
                             string[] nameArr = vtexOrder.ShippingData.Address.ReceiverName.Split(' ', 2);
                             if (nameArr.Length <= 1)
@@ -1459,7 +1459,7 @@ namespace Cybersource.Services
                         regionCode = "AP";
                         break;
                     case "XVI": // Región del Ñuble
-                        regionCode = region;
+                        regionCode = "NB";
                         break;
                     default:
                         regionCode = region;
