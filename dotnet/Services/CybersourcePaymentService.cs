@@ -1391,6 +1391,9 @@ namespace Cybersource.Services
                         case "PE": // Peru
                             regionCode = GetAdministrativeAreaPeru(region);
                             break;
+                        case "MX": // Mexico
+                            regionCode = GetAdministrativeAreaMexico(region);
+                            break;
                     }
 
                     _context.Vtex.Logger.Debug("GetAdministrativeArea", null, $"'{region}', '{countryCode}' = '{regionCode}'");
@@ -1515,6 +1518,7 @@ namespace Cybersource.Services
             switch (region)
             {
                 case "Huánuco":
+                case "Huanuco":
                     regionCode = "HUC";
                     break;
                 case "La Libertad":
@@ -1528,6 +1532,49 @@ namespace Cybersource.Services
                     break;
                 case "Vichada":
                     regionCode = "VID";
+                    break;
+                default:
+                    regionCode = region.Substring(0, 3).ToUpper();
+                    break;
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaMexico(string region)
+        {
+            string regionCode = string.Empty;
+            region = region.Replace(" ", string.Empty);
+            switch (region)
+            {
+                case "Baja California":
+                    regionCode = "BCN";
+                    break;
+                case "Baja California Sur":
+                    regionCode = "BCS";
+                    break;
+                case "Chiapas":
+                    regionCode = "CHP";
+                    break;
+                case "Chihuahua":
+                    regionCode = "CHH";
+                    break;
+                case "Ciudad de México":
+                case "Ciudad de Mexico":
+                    regionCode = "DIF";
+                    break;
+                case "Guerrero":
+                    regionCode = "GRO";
+                    break;
+                case "Nuevo León":
+                case "Nuevo Leon":
+                    regionCode = "NLE";
+                    break;
+                case "Quintana Roo":
+                    regionCode = "ROO";
+                    break;
+                case "San Luis Potosí":
+                    regionCode = "SLP";
                     break;
                 default:
                     regionCode = region.Substring(0, 3).ToUpper();
