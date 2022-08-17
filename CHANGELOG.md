@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - (CYBRSOURCE-44) Fixed region code lookup
 - (CYBRSOURCE-44) For shipping address, only use Receiver Name if more than two characters, otherwise use payer name.
 
+### Added
+- Colombia region codes
+
 ## [1.4.0] - 2022-08-08
 
 ### Added

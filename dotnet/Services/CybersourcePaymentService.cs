@@ -1387,6 +1387,13 @@ namespace Cybersource.Services
                             break;
                     }
 
+                    switch (countryCode)
+                    {
+                        case "CO": // Colombia
+                            regionCode = GetAdministrativeAreaColombia(region);
+                            break;
+                    }
+
                     _context.Vtex.Logger.Debug("GetAdministrativeArea", null, $"'{region}', '{countryCode}' = '{regionCode}'");
                 }
             }
@@ -1465,6 +1472,40 @@ namespace Cybersource.Services
                         regionCode = region;
                         break;
                 }
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaColombia(string region)
+        {
+            string regionCode = string.Empty;
+            switch(region)
+            {
+                case "Distrito Capital de Bogotá":
+                    regionCode = "DC";
+                    break;
+                case "Guaviare":
+                    regionCode = "GUV";
+                    break;
+                case "La Guajira":
+                    regionCode = "LAG";
+                    break;
+                case "Norte de Santander":
+                    regionCode = "NSA";
+                    break;
+                case "San Andrés":
+                    regionCode = "SAP";
+                    break;
+                case "Valle del Cauca":
+                    regionCode = "VAC";
+                    break;
+                case "Vichada":
+                    regionCode = "VID";
+                    break;
+                default:
+                    regionCode = region.Substring(0, 3).ToUpper();
+                    break;
             }
 
             return regionCode;
