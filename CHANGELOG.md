@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Ecuador region codes
+- Panama region codes
+
+### Fixed
+- (CYBRSOURCE-43) Added await to order Config changes
+
 ## [1.4.1] - 2022-08-17
 
 ### Fixed

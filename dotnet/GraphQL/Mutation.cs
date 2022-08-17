@@ -32,7 +32,7 @@ namespace Cybersource.GraphQL
                         return default;
                     }
 
-                    return vtexApiService.InitConfiguration();
+                    return await vtexApiService.InitConfiguration();
                 });
 
             FieldAsync<StringGraphType>(
@@ -51,7 +51,7 @@ namespace Cybersource.GraphQL
                         return default;
                     }
 
-                    return vtexApiService.RemoveConfiguration();
+                    return await vtexApiService.RemoveConfiguration();
                 });
         }
     }
