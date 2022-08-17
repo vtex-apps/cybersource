@@ -1482,7 +1482,6 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaColombia(string region)
         {
             string regionCode = string.Empty;
-            region = region.Replace(" ", string.Empty);
             switch(region)
             {
                 case "Distrito Capital de Bogotá":
@@ -1504,6 +1503,7 @@ namespace Cybersource.Services
                     regionCode = "VID";
                     break;
                 default:
+                    region = region.Replace(" ", string.Empty);
                     regionCode = region.Substring(0, 3).ToUpper();
                     break;
             }
@@ -1514,7 +1514,6 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaPeru(string region)
         {
             string regionCode = string.Empty;
-            region = region.Replace(" ", string.Empty);
             switch (region)
             {
                 case "Huánuco":
@@ -1534,6 +1533,7 @@ namespace Cybersource.Services
                     regionCode = "VID";
                     break;
                 default:
+                    region = region.Replace(" ", string.Empty);
                     regionCode = region.Substring(0, 3).ToUpper();
                     break;
             }
@@ -1544,7 +1544,6 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaMexico(string region)
         {
             string regionCode = string.Empty;
-            region = region.Replace(" ", string.Empty);
             switch (region)
             {
                 case "Baja California":
@@ -1577,6 +1576,7 @@ namespace Cybersource.Services
                     regionCode = "SLP";
                     break;
                 default:
+                    region = region.Replace(" ", string.Empty);
                     regionCode = region.Substring(0, 3).ToUpper();
                     break;
             }
