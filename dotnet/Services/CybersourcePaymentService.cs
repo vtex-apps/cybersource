@@ -404,7 +404,7 @@ namespace Cybersource.Services
                             }
                         }
 
-                        if (!string.IsNullOrEmpty(vtexOrder.ShippingData.Address.ReceiverName))
+                        if (!string.IsNullOrEmpty(vtexOrder.ShippingData.Address.ReceiverName) && vtexOrder.ShippingData.Address.ReceiverName.Trim().Length > 2) // Check that the Receiver Name is at least 3 characters
                         {
                             string[] nameArr = vtexOrder.ShippingData.Address.ReceiverName.Split(' ', 2);
                             if (nameArr.Length <= 1)
@@ -1385,6 +1385,15 @@ namespace Cybersource.Services
                         case "CL": // Chile
                             regionCode = GetAdministrativeAreaChile(region);
                             break;
+                        case "CO": // Colombia
+                            regionCode = GetAdministrativeAreaColombia(region);
+                            break;
+                        case "PE": // Peru
+                            regionCode = GetAdministrativeAreaPeru(region);
+                            break;
+                        case "MX": // Mexico
+                            regionCode = GetAdministrativeAreaMexico(region);
+                            break;
                     }
 
                     _context.Vtex.Logger.Debug("GetAdministrativeArea", null, $"'{region}', '{countryCode}' = '{regionCode}'");
@@ -1459,12 +1468,117 @@ namespace Cybersource.Services
                         regionCode = "AP";
                         break;
                     case "XVI": // Región del Ñuble
-                        regionCode = region;
+                        regionCode = "NB";
                         break;
                     default:
                         regionCode = region;
                         break;
                 }
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaColombia(string region)
+        {
+            string regionCode = string.Empty;
+            switch(region)
+            {
+                case "Distrito Capital de Bogotá":
+                    regionCode = "DC";
+                    break;
+                case "Guaviare":
+                    regionCode = "GUV";
+                    break;
+                case "Norte de Santander":
+                    regionCode = "NSA";
+                    break;
+                case "San Andrés":
+                    regionCode = "SAP";
+                    break;
+                case "Valle del Cauca":
+                    regionCode = "VAC";
+                    break;
+                case "Vichada":
+                    regionCode = "VID";
+                    break;
+                default:
+                    region = region.Replace(" ", string.Empty);
+                    regionCode = region.Substring(0, 3).ToUpper();
+                    break;
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaPeru(string region)
+        {
+            string regionCode = string.Empty;
+            switch (region)
+            {
+                case "Huánuco":
+                case "Huanuco":
+                    regionCode = "HUC";
+                    break;
+                case "La Libertad":
+                    regionCode = "LAL";
+                    break;
+                case "Madre de Dios":
+                    regionCode = "MDD";
+                    break;
+                case "San Martín":
+                    regionCode = "SAM";
+                    break;
+                case "Vichada":
+                    regionCode = "VID";
+                    break;
+                default:
+                    region = region.Replace(" ", string.Empty);
+                    regionCode = region.Substring(0, 3).ToUpper();
+                    break;
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaMexico(string region)
+        {
+            string regionCode = string.Empty;
+            switch (region)
+            {
+                case "Baja California":
+                    regionCode = "BCN";
+                    break;
+                case "Baja California Sur":
+                    regionCode = "BCS";
+                    break;
+                case "Chiapas":
+                    regionCode = "CHP";
+                    break;
+                case "Chihuahua":
+                    regionCode = "CHH";
+                    break;
+                case "Ciudad de México":
+                case "Ciudad de Mexico":
+                    regionCode = "DIF";
+                    break;
+                case "Guerrero":
+                    regionCode = "GRO";
+                    break;
+                case "Nuevo León":
+                case "Nuevo Leon":
+                    regionCode = "NLE";
+                    break;
+                case "Quintana Roo":
+                    regionCode = "ROO";
+                    break;
+                case "San Luis Potosí":
+                    regionCode = "SLP";
+                    break;
+                default:
+                    region = region.Replace(" ", string.Empty);
+                    regionCode = region.Substring(0, 3).ToUpper();
+                    break;
             }
 
             return regionCode;
