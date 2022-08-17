@@ -1394,6 +1394,12 @@ namespace Cybersource.Services
                         case "MX": // Mexico
                             regionCode = GetAdministrativeAreaMexico(region);
                             break;
+                        case "EC": // Ecuador
+                            regionCode = GetAdministrativeAreaEcuador(region);
+                            break;
+                        case "PA": // Panama
+                            regionCode = GetAdministrativeAreaPanama(region);
+                            break;
                     }
 
                     _context.Vtex.Logger.Debug("GetAdministrativeArea", null, $"'{region}', '{countryCode}' = '{regionCode}'");
@@ -1578,6 +1584,117 @@ namespace Cybersource.Services
                 default:
                     region = region.Replace(" ", string.Empty);
                     regionCode = region.Substring(0, 3).ToUpper();
+                    break;
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaEcuador(string region)
+        {
+            string regionCode = string.Empty;
+            switch (region)
+            {
+                case "Cañar":
+                case "Canar":
+                    regionCode = "F";
+                    break;
+                case "Chimborazo":
+                    regionCode = "H";
+                    break;
+                case "Cotopaxi":
+                    regionCode = "X";
+                    break;
+                case "El Oro":
+                    regionCode = "O";
+                    break;
+                case "Galápagos":
+                case "Galapagos":
+                    regionCode = "W";
+                    break;
+                case "Los Ríos":
+                    regionCode = "R";
+                    break;
+                case "Morona-Santiago":
+                    regionCode = "S";
+                    break;
+                case "Orellana":
+                    regionCode = "D";
+                    break;
+                case "Pastaza":
+                    regionCode = "Y";
+                    break;
+                case "Santa Elena":
+                    regionCode = "SE";
+                    break;
+                case "Santo Domingo de los Tsáchilas":
+                case "Santo Domingo de los Tsachilas":
+                    regionCode = "SD";
+                    break;
+                case "Sucumbíos":
+                    regionCode = "U";
+                    break;
+                default:
+                    region = region.Replace(" ", string.Empty);
+                    regionCode = region.Substring(0, 1).ToUpper();
+                    break;
+            }
+
+            return regionCode;
+        }
+
+        public string GetAdministrativeAreaPanama(string region)
+        {
+            string regionCode = string.Empty;
+            switch (region)
+            {
+                case "Bocas del Toro":
+                    regionCode = "1";
+                    break;
+                case "Chiriquí":
+                    regionCode = "4";
+                    break;
+                case "Coclé":
+                case "Cocle":
+                    regionCode = "2";
+                    break;
+                case "Colón":
+                case "Colon":
+                    regionCode = "3";
+                    break;
+                case "Darién":
+                case "Darien":
+                    regionCode = "5";
+                    break;
+                case "Emberá":
+                    regionCode = "EM";
+                    break;
+                case "Herrera":
+                    regionCode = "6";
+                    break;
+                case "Kuna Yala":
+                    regionCode = "KY";
+                    break;
+                case "Los Santos":
+                    regionCode = "7";
+                    break;
+                case "Ngäbe Buglé":
+                case "Ngabe Bugle":
+                    regionCode = "NB";
+                    break;
+                case "Panamá":
+                case "Panama":
+                    regionCode = "8";
+                    break;
+                case "Panamá Oeste":
+                case "Panama Oeste":
+                    regionCode = "10";
+                    break;
+                case "Veraguas":
+                    regionCode = "9";
+                    break;
+                default:
+                    regionCode = region;
                     break;
             }
 
