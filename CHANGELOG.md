@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.4.1] - 2022-08-17
+
 ### Fixed
 - (CYBRSOURCE-44) Fixed region code lookup
 - (CYBRSOURCE-44) For shipping address, only use Receiver Name if more than two characters, otherwise use payer name.
