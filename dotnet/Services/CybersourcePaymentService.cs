@@ -1210,22 +1210,23 @@ namespace Cybersource.Services
             try
             {
                 paymentsResponse = await _cybersourceApi.SetupPayerAuth(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+                createPaymentResponse = new CreatePaymentResponse
+                {
+                    PaymentAppData = new PaymentAppData
+                    {
+                        AppName = CybersourceConstants.PaymentFlowAppName,
+                        Payload = JsonConvert.SerializeObject(paymentsResponse.ConsumerAuthenticationInformation)
+                    },
+                    PaymentId = createPaymentRequest.PaymentId,
+                    Status = CybersourceConstants.VtexAuthStatus.Undefined
+                };
             }
             catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("SetupPayerAuth", null, "Error", ex);
             }
 
-            createPaymentResponse = new CreatePaymentResponse
-            {
-                PaymentAppData = new PaymentAppData
-                {
-                    AppName = CybersourceConstants.PaymentFlowAppName,
-                    Payload = JsonConvert.SerializeObject(paymentsResponse.ConsumerAuthenticationInformation)
-                },
-                PaymentId = createPaymentRequest.PaymentId,
-                Status = CybersourceConstants.VtexAuthStatus.Undefined
-            };
+            _context.Vtex.Logger.Debug("SetupPayerAuth", null, string.Empty, new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)), ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)) });
 
             return createPaymentResponse;
         }
@@ -1239,11 +1240,23 @@ namespace Cybersource.Services
             try
             {
                 paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+                createPaymentResponse = new CreatePaymentResponse
+                {
+                    PaymentAppData = new PaymentAppData
+                    {
+                        AppName = CybersourceConstants.PaymentFlowAppName,
+                        Payload = JsonConvert.SerializeObject(paymentsResponse.ConsumerAuthenticationInformation)
+                    },
+                    PaymentId = createPaymentRequest.PaymentId,
+                    Status = CybersourceConstants.VtexAuthStatus.Undefined
+                };
             }
             catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("CheckPayerAuthEnrollment", null, "Error", ex);
             }
+
+            _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, string.Empty, new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
 
             return createPaymentResponse;
         }
@@ -1488,24 +1501,24 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaColombia(string region)
         {
             string regionCode = string.Empty;
-            switch(region)
+            switch(region.ToLowerInvariant())
             {
-                case "Distrito Capital de Bogotá":
+                case "distrito capital de bogotá":
                     regionCode = "DC";
                     break;
-                case "Guaviare":
+                case "guaviare":
                     regionCode = "GUV";
                     break;
-                case "Norte de Santander":
+                case "norte de santander":
                     regionCode = "NSA";
                     break;
-                case "San Andrés":
+                case "san andrés":
                     regionCode = "SAP";
                     break;
-                case "Valle del Cauca":
+                case "valle del cauca":
                     regionCode = "VAC";
                     break;
-                case "Vichada":
+                case "vichada":
                     regionCode = "VID";
                     break;
                 default:
@@ -1520,22 +1533,79 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaPeru(string region)
         {
             string regionCode = string.Empty;
-            switch (region)
+            switch (region.ToLowerInvariant())
             {
-                case "Huánuco":
-                case "Huanuco":
+                case "ankashu":
+                case "anqash":
+                    regionCode = "ANC";
+                    break;
+                case "arikipa":
+                case "ariqipa":
+                    regionCode = "ARE";
+                    break;
+                case "el callao":
+                case "kallao":
+                case "qallaw":
+                    regionCode = "CAL";
+                    break;
+                case "kashamarka":
+                case "qajamarka":
+                    regionCode = "CAJ";
+                    break;
+                case "kusku":
+                case "qusqu":
+                    regionCode = "CUS";
+                    break;
+                case "huancavelica":
+                case "wankawelika":
+                case "wankawillka":
+                case "wanuku":
+                    regionCode = "HUV";
+                    break;
+                case "hunin":
+                    regionCode = "JUN";
+                    break;
+                case "huánuco":
+                case "huanuco":
                     regionCode = "HUC";
                     break;
-                case "La Libertad":
+                case "ika":
+                    regionCode = "ICA";
+                    break;
+                case "la libertad":
+                case "qispi kay":
                     regionCode = "LAL";
                     break;
-                case "Madre de Dios":
+                case "lima hatun llaqta":
+                case "lima llaqta suyu":
+                case "municipalidad metropolitana de lima":
+                    regionCode = "LMA";
+                    break;
+                case "luritu":
+                    regionCode = "LOR";
+                    break;
+                case "madre de dios":
+                case "mayutata":
                     regionCode = "MDD";
                     break;
-                case "San Martín":
+                case "muqiwa":
+                    regionCode = "MOQ";
+                    break;
+                case "piwra":
+                    regionCode = "PIU";
+                    break;
+                case "san martín":
+                case "san martin":
                     regionCode = "SAM";
                     break;
-                case "Vichada":
+                case "takna":
+                case "taqna":
+                    regionCode = "TAC";
+                    break;
+                case "ukayali":
+                    regionCode = "UCA";
+                    break;
+                case "vichada":
                     regionCode = "VID";
                     break;
                 default:
@@ -1550,35 +1620,35 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaMexico(string region)
         {
             string regionCode = string.Empty;
-            switch (region)
+            switch (region.ToLowerInvariant())
             {
-                case "Baja California":
+                case "baja california":
                     regionCode = "BCN";
                     break;
-                case "Baja California Sur":
+                case "baja california sur":
                     regionCode = "BCS";
                     break;
-                case "Chiapas":
+                case "chiapas":
                     regionCode = "CHP";
                     break;
-                case "Chihuahua":
+                case "chihuahua":
                     regionCode = "CHH";
                     break;
-                case "Ciudad de México":
-                case "Ciudad de Mexico":
-                    regionCode = "DIF";
+                case "ciudad de méxico":
+                case "ciudad de mexico":
+                    regionCode = "CMX";
                     break;
-                case "Guerrero":
+                case "guerrero":
                     regionCode = "GRO";
                     break;
-                case "Nuevo León":
-                case "Nuevo Leon":
+                case "nuevo león":
+                case "nuevo leon":
                     regionCode = "NLE";
                     break;
-                case "Quintana Roo":
+                case "quintana roo":
                     regionCode = "ROO";
                     break;
-                case "San Luis Potosí":
+                case "san luis potosí":
                     regionCode = "SLP";
                     break;
                 default:
@@ -1593,45 +1663,45 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaEcuador(string region)
         {
             string regionCode = string.Empty;
-            switch (region)
+            switch (region.ToLowerInvariant())
             {
-                case "Cañar":
-                case "Canar":
+                case "cañar":
+                case "canar":
                     regionCode = "F";
                     break;
-                case "Chimborazo":
+                case "chimborazo":
                     regionCode = "H";
                     break;
-                case "Cotopaxi":
+                case "cotopaxi":
                     regionCode = "X";
                     break;
-                case "El Oro":
+                case "el oro":
                     regionCode = "O";
                     break;
-                case "Galápagos":
-                case "Galapagos":
+                case "galápagos":
+                case "galapagos":
                     regionCode = "W";
                     break;
-                case "Los Ríos":
+                case "los ríos":
                     regionCode = "R";
                     break;
-                case "Morona-Santiago":
+                case "morona-santiago":
                     regionCode = "S";
                     break;
-                case "Orellana":
+                case "orellana":
                     regionCode = "D";
                     break;
-                case "Pastaza":
+                case "pastaza":
                     regionCode = "Y";
                     break;
-                case "Santa Elena":
+                case "santa elena":
                     regionCode = "SE";
                     break;
-                case "Santo Domingo de los Tsáchilas":
-                case "Santo Domingo de los Tsachilas":
+                case "santo domingo de los tsáchilas":
+                case "santo domingo de los tsachilas":
                     regionCode = "SD";
                     break;
-                case "Sucumbíos":
+                case "sucumbíos":
                     regionCode = "U";
                     break;
                 default:
@@ -1646,51 +1716,54 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaPanama(string region)
         {
             string regionCode = string.Empty;
-            switch (region)
+            switch (region.ToLowerInvariant())
             {
-                case "Bocas del Toro":
+                case "bocas del toro":
                     regionCode = "1";
                     break;
-                case "Chiriquí":
+                case "chiriquí":
+                case "chiriqui":
                     regionCode = "4";
                     break;
-                case "Coclé":
-                case "Cocle":
+                case "coclé":
+                case "cocle":
                     regionCode = "2";
                     break;
-                case "Colón":
-                case "Colon":
+                case "colón":
+                case "colon":
                     regionCode = "3";
                     break;
-                case "Darién":
-                case "Darien":
+                case "darién":
+                case "darien":
                     regionCode = "5";
                     break;
-                case "Emberá":
+                case "emberá":
+                case "embera":
                     regionCode = "EM";
                     break;
-                case "Herrera":
+                case "herrera":
                     regionCode = "6";
                     break;
-                case "Kuna Yala":
+                case "guna yala":
+                case "kuna yala":
                     regionCode = "KY";
                     break;
-                case "Los Santos":
+                case "los santos":
                     regionCode = "7";
                     break;
-                case "Ngäbe Buglé":
-                case "Ngabe Bugle":
+                case "ngäbe buglé":
+                case "ngabe bugle":
                     regionCode = "NB";
                     break;
-                case "Panamá":
-                case "Panama":
+                case "panamá":
+                case "panama":
                     regionCode = "8";
                     break;
-                case "Panamá Oeste":
-                case "Panama Oeste":
+                case "panamá oeste":
+                case "panama oeste":
                     regionCode = "10";
                     break;
-                case "Veraguas":
+                case "veraguas":
                     regionCode = "9";
                     break;
                 default:
