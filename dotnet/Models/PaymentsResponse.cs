@@ -42,7 +42,7 @@ namespace Cybersource.Models
         public string Message { get; set; }
 
         [JsonProperty("submitTimeUtc")]
-        public DateTimeOffset SubmitTimeUtc { get; set; }
+        public string SubmitTimeUtc { get; set; }
 
         [JsonProperty("details")]
         public Detail[] Details { get; set; }
