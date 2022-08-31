@@ -296,7 +296,8 @@ namespace Cybersource.Services
                         payment.processingInformation.reconciliationId = createPaymentRequest.PaymentId;
                         payment.installmentInformation = new InstallmentInformation
                         {
-                            totalCount = numberOfInstallments
+                            totalCount = numberOfInstallments,
+                            planType = "02"
                         };
 
                         break;
@@ -672,7 +673,46 @@ namespace Cybersource.Services
                     createPaymentResponse.Status = paymentStatus;
                     if (paymentsResponse.ProcessorInformation != null)
                     {
-                        createPaymentResponse.Nsu = paymentsResponse.ProcessorInformation.TransactionId;
+                        try
+                        {
+                            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                            if (!string.IsNullOrWhiteSpace(merchantSettings.CustomNsu))
+                            {
+                                MerchantSettings nsuSettings = new MerchantSettings
+                                {
+                                    MerchantDefinedValueSettings = new List<MerchantDefinedValueSetting>
+                                {
+                                    new MerchantDefinedValueSetting
+                                    {
+                                        GoodPortion = merchantSettings.CustomNsu,
+                                        IsValid = true,
+                                        UserInput = merchantSettings.CustomNsu
+                                    }
+                                }
+                                };
+
+                                PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+
+                                List<MerchantDefinedInformation> merchantDefinedNsu = await this.GetMerchantDefinedInformation(nsuSettings, requestWrapper);
+                                string customNsu = merchantDefinedNsu.First().value;
+                                if (!string.IsNullOrWhiteSpace(customNsu))
+                                {
+                                    createPaymentResponse.Nsu = customNsu;
+                                }
+                                else
+                                {
+                                    createPaymentResponse.Nsu = paymentsResponse.ProcessorInformation.TransactionId;
+                                }
+                            }
+                            else
+                            {
+                                createPaymentResponse.Nsu = paymentsResponse.ProcessorInformation.TransactionId;
+                            }
+                        }
+                        catch(Exception ex)
+                        {
+                            _context.Vtex.Logger.Error("CreatePayment", "ProcessorInformation.TransactionId", "Error setting NSU", ex, new[] { ("OrderId", createPaymentRequest.OrderId) });
+                        }
                     }
 
                     createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
