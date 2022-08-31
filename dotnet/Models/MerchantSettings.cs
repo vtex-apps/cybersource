@@ -28,6 +28,9 @@ namespace Cybersource.Models
         [JsonProperty("usePayerAuthentication")]
         public bool UsePayerAuthentication { get; set; }
 
+        [JsonProperty("customNsu")]
+        public string CustomNsu { get; set; }
+
         // Taxes
         [JsonProperty("enableTax")]
         public bool EnableTax { get; set; }

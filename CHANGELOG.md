@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Installments Plan Type
+- Custom NSU
+
 ## [1.4.3] - 2022-08-29
 
 ### Fixed
