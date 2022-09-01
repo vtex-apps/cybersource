@@ -223,7 +223,7 @@ namespace Cybersource.Services
                         else if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Mexico))
                         {
                             payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
-                            payment.processingInformation.reconciliationId = createPaymentRequest.PaymentId;
+                            payment.processingInformation.reconciliationId = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
                             payment.installmentInformation = new InstallmentInformation
                             {
                                 totalCount = numberOfInstallments
@@ -293,7 +293,7 @@ namespace Cybersource.Services
                     case CybersourceConstants.Processors.Banorte:
                     case CybersourceConstants.Processors.AmexDirect:
                         payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
-                        payment.processingInformation.reconciliationId = createPaymentRequest.PaymentId;
+                        payment.processingInformation.reconciliationId = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
                         payment.installmentInformation = new InstallmentInformation
                         {
                             totalCount = numberOfInstallments,
@@ -311,7 +311,7 @@ namespace Cybersource.Services
                         //-gracePeriodDuration: if planType = 07 and totalCount = 00, this must be greater than 00
                         plan = installmentsInterestRate > 0 ? "05" : "03";
                         payment.processingInformation.commerceIndicator = createPaymentRequest.Installments > 1 ? CybersourceConstants.INSTALLMENT : CybersourceConstants.INTERNET;
-                        payment.processingInformation.reconciliationId = createPaymentRequest.PaymentId;
+                        payment.processingInformation.reconciliationId = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
                         payment.installmentInformation = new InstallmentInformation
                         {
                             totalCount = numberOfInstallments,
@@ -678,31 +678,7 @@ namespace Cybersource.Services
                             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                             if (!string.IsNullOrWhiteSpace(merchantSettings.CustomNsu))
                             {
-                                MerchantSettings nsuSettings = new MerchantSettings
-                                {
-                                    MerchantDefinedValueSettings = new List<MerchantDefinedValueSetting>
-                                {
-                                    new MerchantDefinedValueSetting
-                                    {
-                                        GoodPortion = merchantSettings.CustomNsu,
-                                        IsValid = true,
-                                        UserInput = merchantSettings.CustomNsu
-                                    }
-                                }
-                                };
-
-                                PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
-
-                                List<MerchantDefinedInformation> merchantDefinedNsu = await this.GetMerchantDefinedInformation(nsuSettings, requestWrapper);
-                                string customNsu = merchantDefinedNsu.First().value;
-                                if (!string.IsNullOrWhiteSpace(customNsu))
-                                {
-                                    createPaymentResponse.Nsu = customNsu;
-                                }
-                                else
-                                {
-                                    createPaymentResponse.Nsu = paymentsResponse.ProcessorInformation.TransactionId;
-                                }
+                                createPaymentResponse.Nsu = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
                             }
                             else
                             {
@@ -2236,6 +2212,49 @@ namespace Cybersource.Services
                     cardBrandName = this.FindType(cardBin);
                 }
             }
+        }
+
+        public async Task<string> GetReconciliationId(MerchantSettings merchantSettings, CreatePaymentRequest createPaymentRequest)
+        {
+            string reconciliationId = createPaymentRequest.Reference;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(merchantSettings.CustomNsu))
+                {
+                    MerchantSettings nsuSettings = new MerchantSettings
+                    {
+                        MerchantDefinedValueSettings = new List<MerchantDefinedValueSetting>
+                                {
+                                    new MerchantDefinedValueSetting
+                                    {
+                                        GoodPortion = merchantSettings.CustomNsu,
+                                        IsValid = true,
+                                        UserInput = merchantSettings.CustomNsu
+                                    }
+                                }
+                    };
+
+                    PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
+                    List<MerchantDefinedInformation> merchantDefinedNsu = await this.GetMerchantDefinedInformation(nsuSettings, requestWrapper);
+                    string customNsu = merchantDefinedNsu.First().value;
+                    if (!string.IsNullOrWhiteSpace(customNsu))
+                    {
+                        reconciliationId = customNsu;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetReconciliationId", null,
+                "Error: ", ex,
+                new[]
+                {
+                    ( "merchantSettings", JsonConvert.SerializeObject(merchantSettings) ),
+                    ( "createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest) )
+                });
+            }
+
+            return reconciliationId;
         }
     }
 }
