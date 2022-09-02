@@ -1520,6 +1520,9 @@ namespace Cybersource.Services
             switch(region.ToLowerInvariant())
             {
                 case "distrito capital de bogotá":
+                case "distrito capital":
+                case "bogotá, d.c.":
+                case "bogota, d.c.":
                     regionCode = "DC";
                     break;
                 case "guaviare":
@@ -1529,9 +1532,13 @@ namespace Cybersource.Services
                     regionCode = "NSA";
                     break;
                 case "san andrés":
+                case "san andres":
+                case "san andrés, providencia y santa catalina":
+                case "san andres, providencia y santa catalina":
                     regionCode = "SAP";
                     break;
                 case "valle del cauca":
+                case "valle":
                     regionCode = "VAC";
                     break;
                 case "vichada":
@@ -1657,6 +1664,9 @@ namespace Cybersource.Services
                 case "guerrero":
                     regionCode = "GRO";
                     break;
+                case "méxico":
+                    regionCode = "MEX";
+                    break;
                 case "nuevo león":
                 case "nuevo leon":
                     regionCode = "NLE";
@@ -1699,9 +1709,11 @@ namespace Cybersource.Services
                     regionCode = "W";
                     break;
                 case "los ríos":
+                case "los rios":
                     regionCode = "R";
                     break;
                 case "morona-santiago":
+                case "morona santiago":
                     regionCode = "S";
                     break;
                 case "orellana":
@@ -1770,6 +1782,10 @@ namespace Cybersource.Services
                 case "ngäbe buglé":
                 case "ngabe bugle":
                     regionCode = "NB";
+                    break;
+                case "naso tjër di":
+                case "naso tjer di":
+                    regionCode = "NT";
                     break;
                 case "panamá":
                 case "panama":
