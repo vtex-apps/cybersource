@@ -1520,6 +1520,9 @@ namespace Cybersource.Services
             switch(region.ToLowerInvariant())
             {
                 case "distrito capital de bogotá":
+                case "distrito capital":
+                case "bogotá, d.c.":
+                case "bogota, d.c.":
                     regionCode = "DC";
                     break;
                 case "guaviare":
@@ -1529,9 +1532,13 @@ namespace Cybersource.Services
                     regionCode = "NSA";
                     break;
                 case "san andrés":
+                case "san andres":
+                case "san andrés, providencia y santa catalina":
+                case "san andres, providencia y santa catalina":
                     regionCode = "SAP";
                     break;
                 case "valle del cauca":
+                case "valle":
                     regionCode = "VAC";
                     break;
                 case "vichada":
