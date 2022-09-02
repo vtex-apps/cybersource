@@ -1664,6 +1664,9 @@ namespace Cybersource.Services
                 case "guerrero":
                     regionCode = "GRO";
                     break;
+                case "méxico":
+                    regionCode = "MEX";
+                    break;
                 case "nuevo león":
                 case "nuevo leon":
                     regionCode = "NLE";
@@ -1706,9 +1709,11 @@ namespace Cybersource.Services
                     regionCode = "W";
                     break;
                 case "los ríos":
+                case "los rios":
                     regionCode = "R";
                     break;
                 case "morona-santiago":
+                case "morona santiago":
                     regionCode = "S";
                     break;
                 case "orellana":
@@ -1777,6 +1782,10 @@ namespace Cybersource.Services
                 case "ngäbe buglé":
                 case "ngabe bugle":
                     regionCode = "NB";
+                    break;
+                case "naso tjër di":
+                case "naso tjer di":
+                    regionCode = "NT";
                     break;
                 case "panamá":
                 case "panama":
