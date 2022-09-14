@@ -637,7 +637,6 @@ namespace Cybersource.Services
                 else
                 {
                     Console.WriteLine($" - MISSING PayerAuthReferenceId - [{createPaymentRequest.PaymentId}] ");
-                    return createPaymentResponse;
                 }
 
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);

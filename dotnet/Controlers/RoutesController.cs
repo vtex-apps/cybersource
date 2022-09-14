@@ -47,7 +47,7 @@
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                     MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
-                    if (merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
+                    if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
                     {
                         paymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
                     }
