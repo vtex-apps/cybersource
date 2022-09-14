@@ -29,6 +29,7 @@ namespace Cybersource.Data
         public const string API_VERSION_HEADER = "'x-api-version";
         public const string BUCKET_PAYMENT = "payments";
         public const string BUCKET_ANTIFRAUD = "antifraud";
+        public const string BUCKET_PAYMENT_REQUEST = "payment-request";
         public const string BUCKET_TOKEN = "cybersource-token";
         public const string TOKEN_TEST = "oauth-token-test";
         public const string TOKEN_LIVE = "oauth-token-live";
@@ -119,12 +120,21 @@ namespace Cybersource.Data
             public const string MerchantId = "Merchant Id";
             public const string MerchantKey = "Merchant Key";
             public const string SharedSecretKey = "Shared Secret Key";
+            public const string UsePayerAuth = "Payer Authentication";
+            public const string Disabled = "Disabled";
+            public const string Active = "Active";
         }
 
         public static class CaptureSetting
         {
             public const string DelayedCapture = "DelayedCapture";
             public const string ImmediateCapture = "AuthAndCapture";
+        }
+
+        public static class PayerAuthenticationSetting
+        {
+            public const string Disabled = "disabled";
+            public const string Active = "active";
         }
 
         public const string ResponseHeadersSeparator = "\r\n";

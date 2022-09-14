@@ -11,6 +11,9 @@ namespace Cybersource.Data
         Task<PaymentData> GetPaymentData(string paymentIdentifier);
         Task SavePaymentData(string paymentIdentifier, PaymentData paymentData);
 
+        Task<CreatePaymentRequest> GetCreatePaymentRequest(string id);
+        Task SaveCreatePaymentRequest(string id, CreatePaymentRequest createPaymentRequest);
+
         Task<SendAntifraudDataResponse> GetAntifraudData(string id);
         Task SaveAntifraudData(string id, SendAntifraudDataResponse antifraudDataResponse);
 

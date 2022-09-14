@@ -60,6 +60,12 @@ namespace Cybersource.Services
                 string merchantName = createPaymentRequest.MerchantName;
                 string merchantTaxId = string.Empty;
                 bool doCapture = false;
+                string orderSuffix = string.Empty;
+                if(!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
+                {
+                    orderSuffix = merchantSettings.OrderSuffix.Trim();
+                }
+
                 if (createPaymentRequest.MerchantSettings != null)
                 {
                     foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
@@ -116,7 +122,7 @@ namespace Cybersource.Services
                     },
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = createPaymentRequest.OrderId, // Use Reference to have a consistent number with Fraud?
+                        code = $"{createPaymentRequest.OrderId}{orderSuffix}", // Use Reference to have a consistent number with Fraud?
                         //transactionId = createPaymentRequest.TransactionId,
                         applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                         applicationVersion = _context.Vtex.App.Version,
@@ -606,7 +612,11 @@ namespace Cybersource.Services
             try
             {
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
-                if (paymentData != null && paymentData.CreatePaymentResponse != null)
+                if (paymentData == null)
+                {
+                    paymentData = new PaymentData();
+                }
+                else if (paymentData.CreatePaymentResponse != null)
                 {
                     _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
                     await _vtexApiService.ProcessConversions();
@@ -614,10 +624,31 @@ namespace Cybersource.Services
                 }
 
                 Payments payment = await this.BuildPayment(createPaymentRequest);
+                if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
+                {
+                    Console.WriteLine($" - PayerAuthReferenceId = {paymentData.PayerAuthReferenceId} - ");
+                    // Check Payer Auth Enrollment
+                    payment.ConsumerAuthenticationInformation = new ConsumerAuthenticationInformation
+                    {
+                        ReferenceId = paymentData.PayerAuthReferenceId,
+                        TransactionMode = "S"   // S: eCommerce
+                    };
+                }
+                else
+                {
+                    Console.WriteLine($" - MISSING PayerAuthReferenceId - [{createPaymentRequest.PaymentId}] ");
+                    return createPaymentResponse;
+                }
+
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
                 if (paymentsResponse != null)
                 {
-                    _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("payment", JsonConvert.SerializeObject(payment)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
+                    _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] 
+                    {
+                        ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
+                        ("payment", JsonConvert.SerializeObject(payment)),
+                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
+                    });
                     createPaymentResponse = new CreatePaymentResponse();
                     createPaymentResponse.AuthorizationId = paymentsResponse.Id;
                     createPaymentResponse.Tid = paymentsResponse.Id;
@@ -705,18 +736,15 @@ namespace Cybersource.Services
                         decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.totalAmount, out capturedAmount);
                     }
 
-                    paymentData = new PaymentData
-                    {
-                        AuthorizationId = createPaymentResponse.AuthorizationId,
-                        TransactionId = createPaymentResponse.Tid,
-                        PaymentId = createPaymentResponse.PaymentId,
-                        Value = authAmount,
-                        RequestId = null,
-                        CaptureId = null,
-                        CreatePaymentResponse = createPaymentResponse,
-                        CallbackUrl = createPaymentRequest.CallbackUrl,
-                        OrderId = createPaymentRequest.OrderId
-                    };
+                    paymentData.AuthorizationId = createPaymentResponse.AuthorizationId;
+                    paymentData.TransactionId = createPaymentResponse.Tid;
+                    paymentData.PaymentId = createPaymentResponse.PaymentId;
+                    paymentData.Value = authAmount;
+                    paymentData.RequestId = null;
+                    paymentData.CaptureId = null;
+                    paymentData.CreatePaymentResponse = createPaymentResponse;
+                    paymentData.CallbackUrl = createPaymentRequest.CallbackUrl;
+                    paymentData.OrderId = createPaymentRequest.OrderId;
 
                     if (capturedAmount > 0)
                     {
@@ -1221,60 +1249,103 @@ namespace Cybersource.Services
         {
             CreatePaymentResponse createPaymentResponse = null;
             PaymentsResponse paymentsResponse = null;
+            PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
+            if (paymentData != null && paymentData.CreatePaymentResponse != null)
+            {
+                _context.Vtex.Logger.Debug("SetupPayerAuth", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
+                await _vtexApiService.ProcessConversions();
+                return paymentData.CreatePaymentResponse;
+            }
+
             Payments payment = await this.BuildPayment(createPaymentRequest);
 
             try
             {
                 paymentsResponse = await _cybersourceApi.SetupPayerAuth(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+                ConsumerAuthenticationInformationWrapper consumerAuthenticationInformationWrapper = new ConsumerAuthenticationInformationWrapper(paymentsResponse.ConsumerAuthenticationInformation);
+                consumerAuthenticationInformationWrapper.CreatePaymentRequestReference = createPaymentRequest.PaymentId;
                 createPaymentResponse = new CreatePaymentResponse
                 {
                     PaymentAppData = new PaymentAppData
                     {
                         AppName = CybersourceConstants.PaymentFlowAppName,
-                        Payload = JsonConvert.SerializeObject(paymentsResponse.ConsumerAuthenticationInformation)
+                        Payload = JsonConvert.SerializeObject(consumerAuthenticationInformationWrapper)
                     },
                     PaymentId = createPaymentRequest.PaymentId,
                     Status = CybersourceConstants.VtexAuthStatus.Undefined
                 };
+
+                paymentData = new PaymentData
+                {
+                    CreatePaymentRequest = createPaymentRequest,
+                    PayerAuthReferenceId = paymentsResponse.ConsumerAuthenticationInformation.ReferenceId
+                };
+
+                await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
             }
             catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("SetupPayerAuth", null, "Error", ex);
             }
 
-            _context.Vtex.Logger.Debug("SetupPayerAuth", null, string.Empty, new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)), ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)) });
+            _context.Vtex.Logger.Debug("SetupPayerAuth", null, string.Empty,
+                new[] {
+                    ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
+                    ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)),
+                    ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse))
+                });
 
             return createPaymentResponse;
         }
 
-        public async Task<CreatePaymentResponse> CheckPayerAuthEnrollment(CreatePaymentRequest createPaymentRequest)
+        public async Task<PaymentsResponse> CheckPayerAuthEnrollment(CreatePaymentRequest createPaymentRequest)
         {
-            CreatePaymentResponse createPaymentResponse = null;
             PaymentsResponse paymentsResponse = null;
-            Payments payment = await this.BuildPayment(createPaymentRequest);
-
             try
             {
-                paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
-                createPaymentResponse = new CreatePaymentResponse
+                PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
+                if (paymentData == null)
                 {
-                    PaymentAppData = new PaymentAppData
+                    paymentData = new PaymentData();
+                }
+                //else if (paymentData.CreatePaymentResponse != null)
+                //{
+                //    _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
+                //    await _vtexApiService.ProcessConversions();
+                //    return paymentData.CreatePaymentResponse;
+                //}
+
+                Payments payment = await this.BuildPayment(createPaymentRequest);
+                if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
+                {
+                    Console.WriteLine($" - PayerAuthReferenceId = {paymentData.PayerAuthReferenceId} - ");
+                    // Check Payer Auth Enrollment
+                    payment.ConsumerAuthenticationInformation = new ConsumerAuthenticationInformation
                     {
-                        AppName = CybersourceConstants.PaymentFlowAppName,
-                        Payload = JsonConvert.SerializeObject(paymentsResponse.ConsumerAuthenticationInformation)
-                    },
-                    PaymentId = createPaymentRequest.PaymentId,
-                    Status = CybersourceConstants.VtexAuthStatus.Undefined
-                };
+                        ReferenceId = paymentData.PayerAuthReferenceId,
+                        TransactionMode = "S"   // S: eCommerce
+                    };
+                }
+                else
+                {
+                    Console.WriteLine($" - MISSING PayerAuthReferenceId - [{createPaymentRequest.PaymentId}] ");
+                    return paymentsResponse;
+                }
+
+                paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
             }
             catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("CheckPayerAuthEnrollment", null, "Error", ex);
             }
 
-            _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, string.Empty, new[] { ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
+            _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, string.Empty, new[]
+            {
+                ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
+                ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
+            });
 
-            return createPaymentResponse;
+            return paymentsResponse;
         }
         #endregion
 

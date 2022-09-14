@@ -13,6 +13,7 @@ namespace Cybersource.Services
         Task<RefundPaymentResponse> RefundPayment(RefundPaymentRequest refundPaymentRequest);
 
         Task<CreatePaymentResponse> SetupPayerAuth(CreatePaymentRequest createPaymentRequest);
+        Task<PaymentsResponse> CheckPayerAuthEnrollment(CreatePaymentRequest createPaymentRequest);
 
         Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest);
         Task<SendAntifraudDataResponse> GetAntifraudStatus(string id);
