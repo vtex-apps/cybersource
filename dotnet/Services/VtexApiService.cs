@@ -1033,6 +1033,13 @@ namespace Cybersource.Services
             
             try
             {
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix) && merchantReferenceNumber.EndsWith(merchantSettings.OrderSuffix.Trim()))
+                {
+                    // Remove custom order suffix
+                    merchantReferenceNumber = merchantReferenceNumber.Substring(0, merchantReferenceNumber.LastIndexOf(merchantSettings.OrderSuffix.Trim()));
+                }
+
                 VtexOrder[] vtexOrders = await this.LookupOrders(merchantReferenceNumber);
                 if (vtexOrders != null)
                 {

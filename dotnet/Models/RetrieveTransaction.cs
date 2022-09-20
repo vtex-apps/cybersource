@@ -174,5 +174,38 @@ namespace Cybersource.Models
         [JsonProperty("decision")]
         public string Decision { get; set; }
     }
+
+    public class ConsumerAuthenticationInformationWrapper : ConsumerAuthenticationInformation
+    {
+        [JsonProperty("createPaymentRequestReference")]
+        public string CreatePaymentRequestReference { get; set; }
+
+        public ConsumerAuthenticationInformationWrapper(ConsumerAuthenticationInformation consumerAuthenticationInformation)
+        {
+            StrongAuthentication = new StrongAuthentication
+            {
+                AuthenticationIndicator = consumerAuthenticationInformation.StrongAuthentication != null ? consumerAuthenticationInformation.StrongAuthentication.AuthenticationIndicator : null
+            };
+
+            AccessToken = consumerAuthenticationInformation.AccessToken;
+            AuthenticationPath = consumerAuthenticationInformation.AuthenticationPath;
+            AuthenticationTransactionId = consumerAuthenticationInformation.AuthenticationTransactionId;
+            Cavv = consumerAuthenticationInformation.Cavv;
+            CavvAlgorithm = consumerAuthenticationInformation.CavvAlgorithm;
+            DeviceDataCollectionUrl = consumerAuthenticationInformation.DeviceDataCollectionUrl;
+            Eci = consumerAuthenticationInformation.Eci;
+            EciRaw = consumerAuthenticationInformation.EciRaw;
+            TransactionMode = consumerAuthenticationInformation.TransactionMode;
+            ReferenceId = consumerAuthenticationInformation.ReferenceId;
+            Token = consumerAuthenticationInformation.Token;
+            ProofXml = consumerAuthenticationInformation.ProofXml;
+            ParesStatus = consumerAuthenticationInformation.ParesStatus;
+            Xid = consumerAuthenticationInformation.Xid;
+            VeresEnrolled = consumerAuthenticationInformation.VeresEnrolled;
+            AuthenticationPath = consumerAuthenticationInformation.AuthenticationPath;
+            EcommerceIndicator = consumerAuthenticationInformation.EcommerceIndicator;
+            SpecificationVersion = consumerAuthenticationInformation.SpecificationVersion;
+        }
+    }
 }
 

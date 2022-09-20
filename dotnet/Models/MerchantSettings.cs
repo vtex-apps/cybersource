@@ -31,6 +31,9 @@ namespace Cybersource.Models
         [JsonProperty("customNsu")]
         public string CustomNsu { get; set; }
 
+        [JsonProperty("orderSuffix")]
+        public string OrderSuffix { get; set; }
+
         // Taxes
         [JsonProperty("enableTax")]
         public bool EnableTax { get; set; }

@@ -115,6 +115,10 @@
     "testMerchantDefinedData": {
       "path": "/cybersource/test-mdd",
       "public": true
+    },
+    "payerAuth": {
+      "path": "/cybersource/payer-auth/:paymentId",
+      "public": true
     }
   },
   "events": {

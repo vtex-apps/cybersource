@@ -12,7 +12,7 @@ namespace Cybersource.GraphQL
     [GraphQLMetadata("Mutation")]
     public class Mutation : ObjectGraphType<object>
     {
-        public Mutation(IVtexApiService vtexApiService, ICybersourceRepository cybersourceRepository)
+        public Mutation(IVtexApiService vtexApiService, ICybersourceRepository cybersourceRepository, ICybersourcePaymentService cybersourcePaymentService)
         {
             Name = "Mutation";
 
@@ -52,6 +52,36 @@ namespace Cybersource.GraphQL
                     }
 
                     return await vtexApiService.RemoveConfiguration();
+                });
+
+            FieldAsync<StringGraphType>(
+                "payerAuthorize",
+                arguments: new QueryArguments(
+                    new QueryArgument<StringGraphType> { Name = "paymentId" }
+                    ),
+                resolve: async context =>
+                {
+                    string paymentId = context.GetArgument<string>("paymentId");
+                    Console.WriteLine($"    payerAuthorize paymentId = '{paymentId}'    ");
+                    CreatePaymentResponse paymentResponse = new CreatePaymentResponse();
+                    PaymentData paymentData = await cybersourceRepository.GetPaymentData(paymentId);
+                    if (paymentData != null && paymentData.CreatePaymentRequest != null)
+                    {
+                        if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
+                        {
+                            paymentResponse = await cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
+                        }
+                        else
+                        {
+                            paymentResponse = new CreatePaymentResponse
+                            {
+                                Message = "Missing PayerAuthReferenceId"
+                            };
+                        }
+                    }
+
+                    Console.WriteLine($"    payerAuthorize paymentResponse.Status = '{paymentResponse.Status}'    ");
+                    return paymentResponse.Status; // approved, denied, undefined
                 });
         }
     }

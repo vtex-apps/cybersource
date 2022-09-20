@@ -9,8 +9,10 @@ namespace Cybersource.Models
         public string AuthorizationId { get; set; }
         public string CaptureId { get; set; }
         public CreatePaymentResponse CreatePaymentResponse { get; set; }
+        public CreatePaymentRequest CreatePaymentRequest { get; set; }
         public string CallbackUrl { get; set; }
         public string OrderId { get; set; }
         public bool ImmediateCapture { get; set; }
+        public string PayerAuthReferenceId { get; set; }
     }
 }

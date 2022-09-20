@@ -46,8 +46,8 @@
                 try
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
-                    MerchantSettings merchantSettings = await this._cybersourceRepository.GetMerchantSettings();
-                    if (merchantSettings.UsePayerAuthentication)
+                    MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                    if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
                     {
                         paymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
                     }
@@ -68,6 +68,38 @@
             }
 
             Response.Headers.Add("Cache-Control", "private");
+
+            return Json(paymentResponse);
+        }
+
+        public async Task<IActionResult> PayerAuth(string paymentId)
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            CreatePaymentResponse paymentResponse = null;
+            PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
+            if(paymentData != null && paymentData.CreatePaymentRequest != null)
+            {
+                if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
+                {
+                    Console.WriteLine($" -- paymentData.PayerAuthReferenceId == {paymentData.PayerAuthReferenceId} -- ");
+                    Console.WriteLine($" -- [{paymentId}] == [{paymentData.CreatePaymentRequest.PaymentId}] -- ");
+                    paymentResponse = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
+                    _context.Vtex.Logger.Debug("PayerAuth", null, string.Empty, new[] 
+                    {
+                        ("paymentId", paymentId),
+                        ("paymentResponse", JsonConvert.SerializeObject(paymentResponse))
+                    });
+                }
+                else
+                {
+                    paymentResponse = new CreatePaymentResponse
+                    {
+                        Message = "Missing PayerAuthReferenceId"
+                    };
+
+                    _context.Vtex.Logger.Debug("PayerAuth", null, "Missing PayerAuthReferenceId");
+                }
+            }
 
             return Json(paymentResponse);
         }
@@ -243,6 +275,24 @@
                         Name = CybersourceConstants.ManifestCustomField.CompanyTaxId,
                         Type = "text"
                     },
+                    //new CustomFieldOptions
+                    //{
+                    //    Name = CybersourceConstants.ManifestCustomField.UsePayerAuth,
+                    //    Type = "select",
+                    //    Options = new List<Option>
+                    //    {
+                    //        new Option
+                    //        {
+                    //            Text = CybersourceConstants.ManifestCustomField.Disabled,
+                    //            Value = CybersourceConstants.PayerAuthenticationSetting.Disabled
+                    //        },
+                    //        new Option
+                    //        {
+                    //            Text = CybersourceConstants.ManifestCustomField.Active,
+                    //            Value = CybersourceConstants.PayerAuthenticationSetting.Active
+                    //        }
+                    //    }
+                    //},
                     new CustomFieldOptions
                     {
                         Name = CybersourceConstants.ManifestCustomField.CaptureSetting,
@@ -301,7 +351,11 @@
                     SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
                     sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
                     sw.Stop();
-                    _context.Vtex.Logger.Debug("SendAntifraudData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                    _context.Vtex.Logger.Debug("SendAntifraudData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[]
+                    {
+                        ("sendAntifraudDataRequest", bodyAsText),
+                        ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse))
+                    });
                 }
             }
             catch (Exception ex)
@@ -330,7 +384,11 @@
                     SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
                     sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
                     sw.Stop();
-                    _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] { ("sendAntifraudDataRequest", bodyAsText), ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse)) });
+                    _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] 
+                    {
+                        ("sendAntifraudDataRequest", bodyAsText),
+                        ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse))
+                    });
                 }
             }
             catch (Exception ex)
@@ -364,7 +422,11 @@
                 }
 
                 sw.Stop();
-                _context.Vtex.Logger.Debug("GetAntifraudStatus", transactionId, $"Returned {getAntifraudStatusResponse.Status} in {sw.Elapsed.TotalMilliseconds} ms ", new[] { ("getAntifraudStatusResponse", JsonConvert.SerializeObject(getAntifraudStatusResponse)) });
+                _context.Vtex.Logger.Debug("GetAntifraudStatus", transactionId, $"Returned {getAntifraudStatusResponse.Status} in {sw.Elapsed.TotalMilliseconds} ms ", new[]
+                {
+                    ("getAntifraudStatusResponse",
+                    JsonConvert.SerializeObject(getAntifraudStatusResponse))
+                });
             }
             catch (Exception ex)
             {
@@ -426,7 +488,11 @@
                                 else
                                 {
                                     vtexTaxResponse = await _vtexApiService.GetFallbackTaxes(taxRequestOriginal);
-                                    _context.Vtex.Logger.Error("TaxHandler", "Fallback", "Using Fallback Rates", null, new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+                                    _context.Vtex.Logger.Error("TaxHandler", "Fallback", "Using Fallback Rates", null, new[]
+                                    {
+                                        ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)),
+                                        ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse))
+                                    });
                                 }
                             }
                         }
@@ -434,7 +500,11 @@
                 }
 
                 timer.Stop();
-                _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[] { ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)), ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse)) });
+                _context.Vtex.Logger.Debug("TaxHandler", "Response", $"Elapsed Time = '{timer.Elapsed.TotalMilliseconds}' '{orderFormId}' {totalItems} items.  From cache? {fromCache}", new[]
+                {
+                    ("VtexTaxRequest", JsonConvert.SerializeObject(taxRequestOriginal)),
+                    ("VtexTaxResponse", JsonConvert.SerializeObject(vtexTaxResponse))
+                });
             }
             catch (Exception ex)
             {

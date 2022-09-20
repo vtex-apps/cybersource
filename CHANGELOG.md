@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- (CYBRSOURCE-46) Optional order reference suffix
+- Functions to support Payer Auth
+
 ## [1.4.6] - 2022-09-02
 
 ### Fixed
