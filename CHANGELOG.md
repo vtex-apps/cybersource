@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.6.0] - 2022-09-21
+
 ### Changed
 - (CYBRSOURCE-48) Use order number as reference for cancel transactions
 ### Added
