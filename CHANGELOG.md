@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- (CYBRSOURCE-48) Use order number as reference for cancel transactions
+### Added
+- Ecuador payload customizations
+
 ## [1.5.0] - 2022-09-20
 
 ### Added

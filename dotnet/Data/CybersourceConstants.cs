@@ -161,6 +161,7 @@ namespace Cybersource.Data
             public const string Peru = "PE";
             public const string Mexico = "MX";
             public const string Brasil = "BR";
+            public const string Ecuador = "EC";
         }
 
         public static class Processors

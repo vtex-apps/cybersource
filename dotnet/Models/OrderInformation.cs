@@ -11,5 +11,7 @@ namespace Cybersource.Models
         public AmountDetails amountDetails { get; set; }
         public List<LineItem> lineItems { get; set; }
         public string taxAmount { get; set; }
+        public string nationalTaxIncluded { get; set; }
+        public InvoiceDetails invoiceDetails { get; set; }
     }
 }
