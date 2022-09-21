@@ -534,10 +534,10 @@ namespace Cybersource.Services
                 {
                     string taxAmount = null;
                     string commodityCode = null;
+                    long itemTax = 0L;
                     VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => i.Id.Equals(vtexItem.Id));
                     if (vtexOrderItem != null)
                     {
-                        long itemTax = 0L;
                         foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
                         {
                             string name = priceTag.Name.ToLower();
@@ -569,7 +569,31 @@ namespace Cybersource.Services
                         commodityCode = commodityCode
                     };
 
+                    if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                    {
+                        lineItem.unitPrice = ((vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)) * vtexItem.Quantity).ToString();
+                        lineItem.taxAmount = itemTax > 0 ? lineItem.unitPrice : "0";
+                        lineItem.taxDetails = new TaxDetail[]
+                        {
+                            new TaxDetail
+                            {
+                                type = "national",
+                                amount = taxAmount
+                            }
+                        };
+                    }
+
                     payment.orderInformation.lineItems.Add(lineItem);
+                }
+
+                if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                {
+                    payment.orderInformation.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
+                    payment.orderInformation.invoiceDetails = new InvoiceDetails
+                    {
+                        purchaseOrderNumber = createPaymentRequest.OrderId,
+                        taxable = createPaymentRequest.MiniCart.TaxValue > 0m
+                    };
                 }
 
                 if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("AdditionalData")))
@@ -806,7 +830,7 @@ namespace Cybersource.Services
                 {
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = await _vtexApiService.GetOrderId(cancelPaymentRequest.PaymentId),
+                        code = await _vtexApiService.GetOrderId(paymentData.OrderId),
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
                         applicationUser = _context.Vtex.App.Vendor,
