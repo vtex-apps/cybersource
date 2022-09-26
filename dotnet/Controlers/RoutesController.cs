@@ -275,24 +275,24 @@
                         Name = CybersourceConstants.ManifestCustomField.CompanyTaxId,
                         Type = "text"
                     },
-                    //new CustomFieldOptions
-                    //{
-                    //    Name = CybersourceConstants.ManifestCustomField.UsePayerAuth,
-                    //    Type = "select",
-                    //    Options = new List<Option>
-                    //    {
-                    //        new Option
-                    //        {
-                    //            Text = CybersourceConstants.ManifestCustomField.Disabled,
-                    //            Value = CybersourceConstants.PayerAuthenticationSetting.Disabled
-                    //        },
-                    //        new Option
-                    //        {
-                    //            Text = CybersourceConstants.ManifestCustomField.Active,
-                    //            Value = CybersourceConstants.PayerAuthenticationSetting.Active
-                    //        }
-                    //    }
-                    //},
+                    new CustomFieldOptions
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.UsePayerAuth,
+                        Type = "select",
+                        Options = new List<Option>
+                        {
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.Disabled,
+                                Value = CybersourceConstants.PayerAuthenticationSetting.Disabled
+                            },
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.Active,
+                                Value = CybersourceConstants.PayerAuthenticationSetting.Active
+                            }
+                        }
+                    },
                     new CustomFieldOptions
                     {
                         Name = CybersourceConstants.ManifestCustomField.CaptureSetting,
