@@ -30,6 +30,7 @@ namespace Cybersource.Services
         Task<PersonalData> GetPersonalData(string userProfileId);
         Task<VtexOrderList> ListOrders(string queryString);
 
+        Task<VtexBinLookup> VtexBinLookup(string bin);
         Task<BinLookup> BinLookup(string bin);
         Task<HttpStatusCode> IsValidAuthUser();
         Task<ValidatedUser> ValidateUserToken(string token);

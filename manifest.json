@@ -133,6 +133,13 @@
       }
     },
     {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "api.vtexpayments.com.br",
+        "path": "/api/pvt/bins/*"
+      }
+    },
+    {
       "name": "vbase-read-write"
     }
   ],
