@@ -213,7 +213,7 @@ namespace Cybersource.Services
 
                 if(isDebit && createPaymentRequest.Installments > 0)
                 {
-                    _context.Vtex.Logger.Info("BuildPayment", "Installments", "Card is Debit - Setting Installments to one.", new[] { ("orderId", createPaymentRequest.OrderId), ("Installments", createPaymentRequest.Installments) });
+                    _context.Vtex.Logger.Info("BuildPayment", "Installments", "Card is Debit - Setting Installments to one.", new[] { ("orderId", createPaymentRequest.OrderId), ("Installments", createPaymentRequest.Installments.ToString()) });
                     createPaymentRequest.Installments = 1;
                 }
 
