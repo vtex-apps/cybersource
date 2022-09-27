@@ -211,6 +211,12 @@ namespace Cybersource.Services
                     payment.processingInformation.capture = "true";
                 }
 
+                if(isDebit && createPaymentRequest.Installments > 0)
+                {
+                    _context.Vtex.Logger.Info("BuildPayment", "Installments", "Card is Debit - Setting Installments to one.", new[] { ("orderId", createPaymentRequest.OrderId), ("Installments", createPaymentRequest.Installments) });
+                    createPaymentRequest.Installments = 1;
+                }
+
                 string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
                 string plan = string.Empty;
                 decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
@@ -297,6 +303,22 @@ namespace Cybersource.Services
 
                         break;
                     case CybersourceConstants.Processors.Banorte:
+                        payment.processingInformation.reconciliationId = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
+                        if (createPaymentRequest.Installments > 1)
+                        {
+                            payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
+                            payment.installmentInformation = new InstallmentInformation
+                            {
+                                totalCount = numberOfInstallments,
+                                planType = "02"
+                            };
+                        }
+                        else
+                        {
+                            payment.processingInformation.commerceIndicator = CybersourceConstants.INTERNET;
+                        }
+
+                        break;
                     case CybersourceConstants.Processors.AmexDirect:
                         payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
                         payment.processingInformation.reconciliationId = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
