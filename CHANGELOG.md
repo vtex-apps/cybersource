@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Functions to support Payer Auth
+- On CreatePayment, look up order id from ref
+
 ## [1.6.0] - 2022-09-21
 
 ### Changed

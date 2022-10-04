@@ -81,13 +81,13 @@
             {
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
-                    Console.WriteLine($" -- paymentData.PayerAuthReferenceId == {paymentData.PayerAuthReferenceId} -- ");
-                    Console.WriteLine($" -- [{paymentId}] == [{paymentData.CreatePaymentRequest.PaymentId}] -- ");
                     paymentResponse = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
-                    _context.Vtex.Logger.Debug("PayerAuth", null, string.Empty, new[] 
+                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
+                    _context.Vtex.Logger.Debug("PayerAuth", null, string.Empty, new[]
                     {
                         ("paymentId", paymentId),
-                        ("paymentResponse", JsonConvert.SerializeObject(paymentResponse))
+                        ("paymentResponse", JsonConvert.SerializeObject(paymentResponse)),
+                        ("sendResponse", JsonConvert.SerializeObject(sendResponse))
                     });
                 }
                 else
