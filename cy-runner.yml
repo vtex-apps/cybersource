@@ -9,12 +9,6 @@ base:
     domain: myvtex.com
     urlExternalSeller:
     vtexIdUrl: https://vtexid.vtex.com.br/api/vtexid/pub/authenticate/default
-    deployCli:
-      enabled: true
-      git: https://github.com/vtex/toolbelt.git
-      branch: qe/cypress
-  twilio:
-    enabled: true
   jira:
     enabled: true
     account: vtex-dev
@@ -45,7 +39,6 @@ base:
     pageLoadTimeout: 45000
     browser: chrome
     chromeWebSecurity: false
-    sorry: false
   stateFiles: [.orders.json]
 
 workspace:
@@ -53,8 +46,6 @@ workspace:
   prefix: cybersource
   linkApp:
     enabled: true
-    logOutput:
-      enabled: false
   installApps:
     - vtex.cybersource-fraud
     - vtex.cybersource-ui
@@ -83,13 +74,13 @@ strategy:
     stopOnFail: false
     parallel: true
     specs:
-      - cypress/integration/sku*
-      - cypress/integration/2.1-singleProduct*
-      - cypress/integration/2.2-multiProduct*
-      - cypress/integration/2.3-promotionalProduct*
-      - cypress/integration/2.4-discountProduct*
-      - cypress/integration/2.5-discountShipping*
-      - cypress/integration/2.6-externalSeller*
+      - cypress/integration/sku.spec.js
+      - cypress/integration/2.1-singleProduct.spec.js
+      - cypress/integration/2.2-multiProduct.spec.js
+      - cypress/integration/2.3-promotionalProduct.spec.js
+      - cypress/integration/2.4-discountProduct.spec.js
+      - cypress/integration/2.5-discountShipping.spec.js
+      - cypress/integration/2.6-externalSeller.spec.js
     dependency:
       - cypress/integration/post_setup.spec.js
   refund:
@@ -99,10 +90,10 @@ strategy:
     stopOnFail: false
     parallel: true
     specs:
-      - cypress/integration/2.7-fullRefund*
-      - cypress/integration/2.8-partialRefund*
-      - cypress/integration/2.9-settlements*
+      - cypress/integration/2.7-fullRefund.spec.js
+      - cypress/integration/2.8-partialRefund.spec.js
+      - cypress/integration/2.9-settlements.spec.js
     dependency:
-      - cypress/integration/2.1-singleProduct*
-      - cypress/integration/2.2-multiProduct*
-      - cypress/integration/2.3-promotionalProduct*
+      - cypress/integration/2.1-singleProduct.spec.js
+      - cypress/integration/2.2-multiProduct.spec.js
+      - cypress/integration/2.3-promotionalProduct.spec.js

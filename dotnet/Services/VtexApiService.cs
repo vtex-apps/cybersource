@@ -1295,6 +1295,18 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
+        public async Task<VtexBinLookup> VtexBinLookup(string bin)
+        {
+            VtexBinLookup binLookup = null;
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"https://api.vtexpayments.com.br/api/pvt/bins/{bin}", null);
+            if (sendResponse.Success)
+            {
+                binLookup = JsonConvert.DeserializeObject<VtexBinLookup>(sendResponse.Message);
+            }
+
+            return binLookup;
+        }
+
         /// <summary>
         /// Limits
         /// Requests are throttled at 10 per minute with a burst allowance of 10. If you hit the speed limit the service will return a 429 http status code.

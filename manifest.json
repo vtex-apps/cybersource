@@ -1,7 +1,7 @@
 {
   "name": "cybersource",
   "vendor": "vtex",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "title": "Cybersource",
   "description": "Cybersource payment",
   "categories": [],
@@ -130,6 +130,13 @@
       "attrs": {
         "host": "{{account}}.vtexpayments.com.br",
         "path": "/payment-provider/transactions/*"
+      }
+    },
+    {
+      "name": "outbound-access",
+      "attrs": {
+        "host": "api.vtexpayments.com.br",
+        "path": "/api/pvt/bins/*"
       }
     },
     {

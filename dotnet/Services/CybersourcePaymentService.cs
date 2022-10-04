@@ -213,6 +213,12 @@ namespace Cybersource.Services
                     payment.processingInformation.capture = "true";
                 }
 
+                if(isDebit && createPaymentRequest.Installments > 0)
+                {
+                    _context.Vtex.Logger.Info("BuildPayment", "Installments", "Card is Debit - Setting Installments to one.", new[] { ("orderId", createPaymentRequest.OrderId), ("Installments", createPaymentRequest.Installments.ToString()) });
+                    createPaymentRequest.Installments = 1;
+                }
+
                 string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
                 string plan = string.Empty;
                 decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
@@ -299,6 +305,22 @@ namespace Cybersource.Services
 
                         break;
                     case CybersourceConstants.Processors.Banorte:
+                        payment.processingInformation.reconciliationId = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
+                        if (createPaymentRequest.Installments > 1)
+                        {
+                            payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
+                            payment.installmentInformation = new InstallmentInformation
+                            {
+                                totalCount = numberOfInstallments,
+                                planType = "02"
+                            };
+                        }
+                        else
+                        {
+                            payment.processingInformation.commerceIndicator = CybersourceConstants.INTERNET;
+                        }
+
+                        break;
                     case CybersourceConstants.Processors.AmexDirect:
                         payment.processingInformation.commerceIndicator = CybersourceConstants.INSTALLMENT;
                         payment.processingInformation.reconciliationId = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
@@ -2314,36 +2336,53 @@ namespace Cybersource.Services
         public void BinLookup(string cardBin, string paymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName)
         {
             isDebit = false;
-            CybersourceBinLookupResponse cybersourceBinLookup = _cybersourceApi.BinLookup(cardBin).Result;
-            if (cybersourceBinLookup != null && cybersourceBinLookup.PaymentAccountInformation != null && cybersourceBinLookup.PaymentAccountInformation.Card != null)
+            VtexBinLookup vtexBinLookup = _vtexApiService.VtexBinLookup(cardBin).Result;
+            if (vtexBinLookup != null)
             {
-                cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
-                if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
+                if (!string.IsNullOrEmpty(vtexBinLookup.CardType))
                 {
-                    cardBrandName = this.FindType(cardBin);
+                    isDebit = vtexBinLookup.CardType.ToLower().Equals("debit");
                 }
 
-                if (cybersourceBinLookup.PaymentAccountInformation.Features != null && cybersourceBinLookup.PaymentAccountInformation.Features.AccountFundingSource != null)
+                cardType = this.GetCardType(vtexBinLookup.CardBrand);
+                if (!Enum.TryParse(vtexBinLookup.CardBrand, true, out cardBrandName))
                 {
-                    isDebit = cybersourceBinLookup.PaymentAccountInformation.Features.AccountFundingSource.ToUpper().Equals("DEBIT");
+                    cardBrandName = this.FindType(cardBin);
                 }
             }
             else
             {
-                BinLookup binLookup = _vtexApiService.BinLookup(cardBin).Result;
-                if (binLookup != null && binLookup.Type != null && binLookup.Scheme != null)
+                CybersourceBinLookupResponse cybersourceBinLookup = _cybersourceApi.BinLookup(cardBin).Result;
+                if (cybersourceBinLookup != null && cybersourceBinLookup.PaymentAccountInformation != null && cybersourceBinLookup.PaymentAccountInformation.Card != null)
                 {
-                    isDebit = binLookup.Type.ToLower().Equals("debit");
-                    cardType = this.GetCardType(binLookup.Scheme);
-                    if (!Enum.TryParse(binLookup.Scheme, true, out cardBrandName))
+                    cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
+                    if (!Enum.TryParse(cybersourceBinLookup.PaymentAccountInformation.Card.BrandName, true, out cardBrandName))
                     {
                         cardBrandName = this.FindType(cardBin);
+                    }
+
+                    if (cybersourceBinLookup.PaymentAccountInformation.Features != null && cybersourceBinLookup.PaymentAccountInformation.Features.AccountFundingSource != null)
+                    {
+                        isDebit = cybersourceBinLookup.PaymentAccountInformation.Features.AccountFundingSource.ToUpper().Equals("DEBIT");
                     }
                 }
                 else
                 {
-                    cardType = this.GetCardType(paymentMethod);
-                    cardBrandName = this.FindType(cardBin);
+                    BinLookup binLookup = _vtexApiService.BinLookup(cardBin).Result;
+                    if (binLookup != null && binLookup.Type != null && binLookup.Scheme != null)
+                    {
+                        isDebit = binLookup.Type.ToLower().Equals("debit");
+                        cardType = this.GetCardType(binLookup.Scheme);
+                        if (!Enum.TryParse(binLookup.Scheme, true, out cardBrandName))
+                        {
+                            cardBrandName = this.FindType(cardBin);
+                        }
+                    }
+                    else
+                    {
+                        cardType = this.GetCardType(paymentMethod);
+                        cardBrandName = this.FindType(cardBin);
+                    }
                 }
             }
         }
