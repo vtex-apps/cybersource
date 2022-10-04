@@ -66,7 +66,7 @@ namespace Cybersource.Services
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
                 }
 
-                string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference);
+                string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
 
                 if (createPaymentRequest.MerchantSettings != null)
                 {
@@ -674,17 +674,12 @@ namespace Cybersource.Services
                 Payments payment = await this.BuildPayment(createPaymentRequest);
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
-                    Console.WriteLine($" - PayerAuthReferenceId = {paymentData.PayerAuthReferenceId} - ");
                     // Check Payer Auth Enrollment
                     payment.ConsumerAuthenticationInformation = new ConsumerAuthenticationInformation
                     {
                         ReferenceId = paymentData.PayerAuthReferenceId,
                         TransactionMode = "S"   // S: eCommerce
                     };
-                }
-                else
-                {
-                    Console.WriteLine($" - MISSING PayerAuthReferenceId - [{createPaymentRequest.PaymentId}] ");
                 }
 
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
