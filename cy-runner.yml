@@ -60,6 +60,14 @@ workspace:
     enabled: true
 
 strategy:
+  configureAffiliation:
+    enabled: true
+    sendDashboard: true
+    hardTries: 1
+    stopOnFail: true
+    parallel: false
+    specs:
+      - cypress/integration/1.0-ConfigureAffiliation.spec.js
   basicTests:
     enabled: true
     sendDashboard: true
@@ -74,6 +82,8 @@ strategy:
       - cypress/integration/2.4-discountProduct.spec.js
       - cypress/integration/2.5-discountShipping.spec.js
       - cypress/integration/2.6-externalSeller.spec.js
+    dependency:
+      - cypress/integration/1.0-ConfigureAffiliation.spec.js
   refund:
     enabled: true
     sendDashboard: true
