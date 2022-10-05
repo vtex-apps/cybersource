@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Github reusable workflow and cy-runner updated to version 2
+- GitHub reusable workflow and cy-runner updated to version 2
+- Cypress tests changed to use new orderForm lock tool
 
 ## [1.6.1] - 2022-09-29
 
