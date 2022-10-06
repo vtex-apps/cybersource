@@ -25,7 +25,7 @@ namespace Cybersource.Services
         Task<VtexOrder[]> GetOrderGroup(string orderId);
         Task<VtexOrder[]> LookupOrders(string orderId);
         Task<string> GetSequence(string orderId);
-        Task<string> GetOrderId(string reference);
+        Task<string> GetOrderId(string reference, string defaultValue = null);
         Task<List<string>> GetPropertyList();
         Task<PersonalData> GetPersonalData(string userProfileId);
         Task<VtexOrderList> ListOrders(string queryString);

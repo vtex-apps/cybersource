@@ -184,9 +184,14 @@ namespace Cybersource.Services
             return sequence;
         }
 
-        public async Task<string> GetOrderId(string reference)
+        public async Task<string> GetOrderId(string reference, string defaultValue = null)
         {
             string orderId = reference; // default to original value
+            if(!string.IsNullOrEmpty(defaultValue))
+            {
+                orderId = defaultValue;
+            }
+
             try
             {
                 VtexOrderList vtexOrderList = await this.SearchOrders(orderId);

@@ -57,6 +57,20 @@
       "type": "select"
     },
     {
+      "name": "Payer Authentication",
+      "type": "select",
+      "options": [
+        {
+          "text": "Disabled",
+          "value": "disabled"
+        },
+        {
+          "text": "Active",
+          "value": "active"
+        }
+      ]
+    },
+    {
       "name": "Merchant Id",
       "type": "text"
     },
