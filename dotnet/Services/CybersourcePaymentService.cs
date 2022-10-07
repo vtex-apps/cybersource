@@ -66,6 +66,8 @@ namespace Cybersource.Services
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
                 }
 
+                string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
+
                 if (createPaymentRequest.MerchantSettings != null)
                 {
                     foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
@@ -122,7 +124,7 @@ namespace Cybersource.Services
                     },
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = $"{createPaymentRequest.OrderId}{orderSuffix}", // Use Reference to have a consistent number with Fraud?
+                        code = $"{referenceNumber}{orderSuffix}", // Use Reference to have a consistent number with Fraud?
                         //transactionId = createPaymentRequest.TransactionId,
                         applicationName = $"{_context.Vtex.App.Vendor}.{_context.Vtex.App.Name}",
                         applicationVersion = _context.Vtex.App.Version,
@@ -672,17 +674,12 @@ namespace Cybersource.Services
                 Payments payment = await this.BuildPayment(createPaymentRequest);
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
-                    Console.WriteLine($" - PayerAuthReferenceId = {paymentData.PayerAuthReferenceId} - ");
                     // Check Payer Auth Enrollment
                     payment.ConsumerAuthenticationInformation = new ConsumerAuthenticationInformation
                     {
                         ReferenceId = paymentData.PayerAuthReferenceId,
                         TransactionMode = "S"   // S: eCommerce
                     };
-                }
-                else
-                {
-                    Console.WriteLine($" - MISSING PayerAuthReferenceId - [{createPaymentRequest.PaymentId}] ");
                 }
 
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
@@ -848,11 +845,19 @@ namespace Cybersource.Services
                     return cancelPaymentResponse;
                 }
 
+                string referenceNumber = await _vtexApiService.GetOrderId(paymentData.OrderId);
+                string orderSuffix = string.Empty;
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
+                {
+                    orderSuffix = merchantSettings.OrderSuffix.Trim();
+                }
+
                 Payments payment = new Payments
                 {
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = await _vtexApiService.GetOrderId(paymentData.OrderId),
+                        code = $"{referenceNumber}{orderSuffix}",
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
                         applicationUser = _context.Vtex.App.Vendor,
@@ -934,12 +939,18 @@ namespace Cybersource.Services
                 }
 
                 string referenceNumber = await _vtexApiService.GetOrderId(paymentData.OrderId);
+                string orderSuffix = string.Empty;
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
+                {
+                    orderSuffix = merchantSettings.OrderSuffix.Trim();
+                }
 
                 Payments payment = new Payments
                 {
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = referenceNumber,
+                        code = $"{referenceNumber}{orderSuffix}",
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
                         applicationUser = _context.Vtex.App.Vendor,
@@ -1032,11 +1043,19 @@ namespace Cybersource.Services
             try
             {
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(refundPaymentRequest.PaymentId);
+                string referenceNumber = await _vtexApiService.GetOrderId(refundPaymentRequest.PaymentId);
+                string orderSuffix = string.Empty;
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
+                {
+                    orderSuffix = merchantSettings.OrderSuffix.Trim();
+                }
+
                 Payments payment = new Payments
                 {
                     clientReferenceInformation = new ClientReferenceInformation
                     {
-                        code = await _vtexApiService.GetOrderId(refundPaymentRequest.PaymentId),
+                        code = $"{referenceNumber}{orderSuffix}",
                         applicationName = _context.Vtex.App.Name,
                         applicationVersion = _context.Vtex.App.Version,
                         applicationUser = _context.Vtex.App.Vendor,
@@ -1298,7 +1317,7 @@ namespace Cybersource.Services
             if (paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 _context.Vtex.Logger.Debug("SetupPayerAuth", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
-                await _vtexApiService.ProcessConversions();
+                //await _vtexApiService.ProcessConversions();
                 return paymentData.CreatePaymentResponse;
             }
 

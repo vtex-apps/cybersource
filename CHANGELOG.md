@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### Changed
+## [1.6.2] - 2022-10-06
 
+### Changed
+- Functions to support Payer Auth
+- On CreatePayment, look up order id from ref
 - Github reusable workflow and cy-runner updated to version 2
 
 ## [1.6.1] - 2022-09-29
