@@ -6,9 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### Changed
-
-- Cypress tests changed to use new orderForm lock tool
+### Added
+- Added custom parser for Panama region codes
 
 ## [1.6.2] - 2022-10-06
 
