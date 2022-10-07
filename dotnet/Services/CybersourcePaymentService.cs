@@ -595,14 +595,14 @@ namespace Cybersource.Services
 
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                     {
-                        lineItem.unitPrice = ((vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)) * vtexItem.Quantity).ToString();
+                        lineItem.unitPrice = (vtexItem.Price * vtexItem.Quantity).ToString();
                         lineItem.taxAmount = itemTax > 0 ? lineItem.unitPrice : "0";
                         lineItem.taxDetails = new TaxDetail[]
                         {
                             new TaxDetail
                             {
                                 type = "national",
-                                amount = taxAmount
+                                amount = (((decimal)itemTax / 100) * vtexItem.Quantity).ToString()
                             }
                         };
                     }
@@ -612,7 +612,7 @@ namespace Cybersource.Services
 
                 if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                 {
-                    payment.orderInformation.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
+                    payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
                     payment.orderInformation.invoiceDetails = new InvoiceDetails
                     {
                         purchaseOrderNumber = createPaymentRequest.OrderId,
