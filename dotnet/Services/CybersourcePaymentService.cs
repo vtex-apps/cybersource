@@ -1879,6 +1879,20 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaPanama(string region)
         {
             string regionCode = string.Empty;
+            if(region.Contains('-'))
+            {
+                string regionCodeTemp = region.Split('-').Last();
+                if(!string.IsNullOrEmpty(regionCodeTemp))
+                {
+                    int regionCodeParsed = 0;
+                    bool isNumeric = int.TryParse(regionCodeTemp, out regionCodeParsed);
+                    if(isNumeric && regionCodeParsed > 0 && regionCodeParsed < 13)
+                    {
+                        return regionCodeTemp;
+                    }
+                }
+            }
+
             switch (region.ToLowerInvariant())
             {
                 case "bocas del toro":
