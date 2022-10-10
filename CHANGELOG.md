@@ -6,12 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.7.1] - 2022-10-07
+
+### Fixed
+- Ecuador payload customizations
+
+## [1.7.0] - 2022-10-07
+
+### Added
+- Added custom parser for Panama region codes
+
 ## [1.6.2] - 2022-10-06
 
 ### Changed
 - Functions to support Payer Auth
 - On CreatePayment, look up order id from ref
-- Github reusable workflow and cy-runner updated to version 2
+- GitHub reusable workflow and cy-runner updated to version 2
 
 ## [1.6.1] - 2022-09-29
 

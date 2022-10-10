@@ -595,14 +595,14 @@ namespace Cybersource.Services
 
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                     {
-                        lineItem.unitPrice = ((vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)) * vtexItem.Quantity).ToString();
+                        lineItem.unitPrice = (vtexItem.Price * vtexItem.Quantity).ToString();
                         lineItem.taxAmount = itemTax > 0 ? lineItem.unitPrice : "0";
                         lineItem.taxDetails = new TaxDetail[]
                         {
                             new TaxDetail
                             {
                                 type = "national",
-                                amount = taxAmount
+                                amount = (((decimal)itemTax / 100) * vtexItem.Quantity).ToString()
                             }
                         };
                     }
@@ -612,7 +612,7 @@ namespace Cybersource.Services
 
                 if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                 {
-                    payment.orderInformation.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
+                    payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
                     payment.orderInformation.invoiceDetails = new InvoiceDetails
                     {
                         purchaseOrderNumber = createPaymentRequest.OrderId,
@@ -1879,6 +1879,20 @@ namespace Cybersource.Services
         public string GetAdministrativeAreaPanama(string region)
         {
             string regionCode = string.Empty;
+            if(region.Contains('-'))
+            {
+                string regionCodeTemp = region.Split('-').Last();
+                if(!string.IsNullOrEmpty(regionCodeTemp))
+                {
+                    int regionCodeParsed = 0;
+                    bool isNumeric = int.TryParse(regionCodeTemp, out regionCodeParsed);
+                    if(isNumeric && regionCodeParsed > 0 && regionCodeParsed < 13)
+                    {
+                        return regionCodeTemp;
+                    }
+                }
+            }
+
             switch (region.ToLowerInvariant())
             {
                 case "bocas del toro":
