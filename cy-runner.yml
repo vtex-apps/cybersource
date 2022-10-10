@@ -15,7 +15,6 @@ base:
     board: CYBRSOURCE
     issueType: Bug
     priority: High
-    testing: true
   slack:
     enabled: false
     channel: some-channel
@@ -44,7 +43,12 @@ base:
 workspace:
   name: random
   prefix: cybersource
-  reserveOrderForm: true
+  # The nex configuration avoid apps that need account
+  # level resources from running in parallel
+  reserveAccount:
+    enabled: true
+    setup:
+      - orderForm
   linkApp:
     enabled: true
   installApps:
