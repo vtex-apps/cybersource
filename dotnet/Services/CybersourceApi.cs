@@ -274,7 +274,15 @@ namespace Cybersource.Services
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
 
-                //_context.Vtex.Logger.Debug("SendRequest", "Proxy", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                StringBuilder sb2 = new StringBuilder();
+                foreach (var header in response.Headers)
+                {
+                    string headerName = header.Key;
+                    string headerContent = string.Join(",", header.Value.ToArray());
+                    sb2.AppendLine($"{headerName} : {headerContent}");
+                }
+
+                _context.Vtex.Logger.Debug("SendRequest", "Proxy", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}\n{sb2}");
             }
             catch (Exception ex)
             {

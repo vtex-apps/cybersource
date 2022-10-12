@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Cybersource.Models
 {
@@ -8,5 +9,6 @@ namespace Cybersource.Models
         public string commerceIndicator { get; set; }
         public string capture { get; set; }
         public string reconciliationId { get; set; }
+        public List<string> actionList { get; set; }
     }
 }
