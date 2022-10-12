@@ -101,7 +101,7 @@ namespace Cybersource.Services
             }
             else
             {
-                _context.Vtex.Logger.Error("GetOrderInformation", null, 
+                _context.Vtex.Logger.Error("GetOrderInformation", null,
                 "Error:", null,
                 new[]
                 {
@@ -123,7 +123,7 @@ namespace Cybersource.Services
             }
             else
             {
-                _context.Vtex.Logger.Error("GetOrderGroup", null, 
+                _context.Vtex.Logger.Error("GetOrderGroup", null,
                 "Error:", null,
                 new[]
                 {
@@ -152,7 +152,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("LookupOrders", null, 
+                _context.Vtex.Logger.Error("LookupOrders", null,
                 "Error:", ex,
                 new[]
                 {
@@ -173,7 +173,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetSequence", null, 
+                _context.Vtex.Logger.Error("GetSequence", null,
                 "Error:", ex,
                 new[]
                 {
@@ -187,7 +187,7 @@ namespace Cybersource.Services
         public async Task<string> GetOrderId(string reference, string defaultValue = null)
         {
             string orderId = reference; // default to original value
-            if(!string.IsNullOrEmpty(defaultValue))
+            if (!string.IsNullOrEmpty(defaultValue))
             {
                 orderId = defaultValue;
             }
@@ -195,7 +195,21 @@ namespace Cybersource.Services
             try
             {
                 VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
-                if (vtexOrderList != null && vtexOrderList.List.Count > 0)
+                if (vtexOrderList == null || vtexOrderList.List.Count == 0)
+                {
+                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Reference # {orderId} does not appear to be a valid VTEX order ID");
+                    if (!string.IsNullOrEmpty(defaultValue))
+                    {
+                        // defaultValue didn't work so let's try with reference
+                        vtexOrderList = await this.SearchOrders(reference);
+                    }
+                }
+
+                if (vtexOrderList == null || vtexOrderList.List.Count == 0)
+                {
+                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Could not find a valid VTEX order ID for either {defaultValue} or {reference}");
+                }
+                else
                 {
                     orderId = vtexOrderList.List.First().OrderId;
                     int charLocation = orderId.IndexOf("-", StringComparison.Ordinal);
@@ -204,18 +218,14 @@ namespace Cybersource.Services
                         orderId = orderId.Substring(0, charLocation);
                     }
                 }
-                else
-                {
-                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Could not find order id for reference# {reference} ");
-                }
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetOrderId", null, 
+                _context.Vtex.Logger.Error("GetOrderId", null,
                 "Error:", ex,
                 new[]
                 {
-                    ( "reference", reference )
+                    ( "orderId", orderId )
                 });
             }
 
@@ -232,7 +242,7 @@ namespace Cybersource.Services
             }
             else
             {
-                _context.Vtex.Logger.Error("SearchOrders", null, 
+                _context.Vtex.Logger.Error("SearchOrders", null,
                 "Error:", null,
                 new[]
                 {
@@ -254,11 +264,11 @@ namespace Cybersource.Services
                 {
                     listVtexDocks = JsonConvert.DeserializeObject<VtexDockResponse[]>(sendResponse.Message);
                 }
-             }
-             catch (Exception ex)
-             {
-                 _context.Vtex.Logger.Error("ListVtexDocks", null, $"Error", ex);
-             }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ListVtexDocks", null, $"Error", ex);
+            }
 
             return listVtexDocks;
         }
@@ -272,17 +282,17 @@ namespace Cybersource.Services
                 if (sendResponse.Success)
                 {
                     dockResponse = JsonConvert.DeserializeObject<VtexDockResponse>(sendResponse.Message);
-                 }
-             }
-             catch (Exception ex)
-             {
-                 _context.Vtex.Logger.Error("ListDockById", null, 
-                 "Error:", ex,
-                 new[]
-                 {
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ListDockById", null,
+                "Error:", ex,
+                new[]
+                {
                      ( "dockId", dockId )
-                 });
-             }
+                });
+            }
 
             return dockResponse;
         }
@@ -317,7 +327,7 @@ namespace Cybersource.Services
             }
             else
             {
-                _context.Vtex.Logger.Error("GetSku", null, 
+                _context.Vtex.Logger.Error("GetSku", null,
                 "Error:", null,
                 new[]
                 {
@@ -386,7 +396,7 @@ namespace Cybersource.Services
                             taxConfiguration = JsonConvert.DeserializeObject<VtexOrderformTaxConfiguration>(existingTaxConfig);
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         _context.Vtex.Logger.Error("RemoveConfiguration", null, "Error getting existing config", ex);
                     }
@@ -429,7 +439,7 @@ namespace Cybersource.Services
             }
             else
             {
-                _context.Vtex.Logger.Error("GetFallbackRate", null, 
+                _context.Vtex.Logger.Error("GetFallbackRate", null,
                 "Error:", null,
                 new[]
                 {
@@ -525,14 +535,14 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetFallbackTaxes", null, 
+                _context.Vtex.Logger.Error("GetFallbackTaxes", null,
                 "Error:", ex,
                 new[]
                 {
                     ( "OrderFormId", taxRequest.OrderFormId )
                 });
             }
-            
+
 
             return vtexTaxResponse;
         }
@@ -706,7 +716,7 @@ namespace Cybersource.Services
                                 if (requestItem.Quantity == trItem.Quantity)
                                 {
                                     itemTaxResponses[responseId] = vtexTaxResponse.ItemTaxResponse.FirstOrDefault(t => t.Id.Equals(taxResponseIndexId));
-                                    if(itemTaxResponses[responseId] == null)
+                                    if (itemTaxResponses[responseId] == null)
                                     {
                                         return null;
                                     }
@@ -802,18 +812,18 @@ namespace Cybersource.Services
                 }
 
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-                if(merchantSettings != null && !string.IsNullOrWhiteSpace(merchantSettings.NexusRegions))
+                if (merchantSettings != null && !string.IsNullOrWhiteSpace(merchantSettings.NexusRegions))
                 {
                     usedMerchantSettings = true;
                     string[] arrCountry = merchantSettings.NexusRegions.Split(':');
-                    foreach(string stateList in arrCountry)
+                    foreach (string stateList in arrCountry)
                     {
                         string[] countryWithStates = stateList.Split('=');
                         string tmpCountry = countryWithStates[0];
-                        if(tmpCountry.Equals(country))
+                        if (tmpCountry.Equals(country))
                         {
                             string[] stateArr = countryWithStates[1].Split(',');
-                            if(stateArr.Contains(state))
+                            if (stateArr.Contains(state))
                             {
                                 inNexus = true;
                                 break;
@@ -829,7 +839,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("InNexus", null, 
+                _context.Vtex.Logger.Error("InNexus", null,
                 "Error:", ex,
                 new[]
                 {
@@ -862,7 +872,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("ProcessNotification", null, 
+                _context.Vtex.Logger.Error("ProcessNotification", null,
                 "Error:", ex,
                 new[]
                 {
@@ -992,7 +1002,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("ProcessNotification", null, 
+                _context.Vtex.Logger.Error("ProcessNotification", null,
                 "Error:", ex,
                 new[]
                 {
@@ -1035,7 +1045,7 @@ namespace Cybersource.Services
         public async Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments)
         {
             StringBuilder results = new StringBuilder();
-            
+
             try
             {
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
@@ -1120,7 +1130,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("UpdateOrderStatus", null, 
+                _context.Vtex.Logger.Error("UpdateOrderStatus", null,
                 "Error:", ex,
                 new[]
                 {
@@ -1136,7 +1146,7 @@ namespace Cybersource.Services
         public string GetCountryCode(string country)
         {
             string countryCode = string.Empty;
-            if(!string.IsNullOrEmpty(country))
+            if (!string.IsNullOrEmpty(country))
             {
                 countryCode = CybersourceConstants.CountryCodesMapping[country];
             }
@@ -1170,7 +1180,7 @@ namespace Cybersource.Services
 
             try
             {
-                if(taxRequest == null)
+                if (taxRequest == null)
                 {
                     taxRequest = new VtexTaxRequest
                     {
@@ -1199,7 +1209,7 @@ namespace Cybersource.Services
 
                     List<VtexTax> vtexTaxes = new List<VtexTax>();
                     // Name = $"STATE TAX: {taxResponse.Tax.Jurisdictions.State}", // NY COUNTY TAX: MONROE
-                    foreach(Jurisdiction jurisdiction in lineItem.jurisdiction)
+                    foreach (Jurisdiction jurisdiction in lineItem.jurisdiction)
                     {
                         decimal taxAmount = 0;
                         decimal.TryParse(jurisdiction.taxAmount, out taxAmount);
@@ -1247,7 +1257,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("CybersourceResponseToVtexResponse", null, 
+                _context.Vtex.Logger.Error("CybersourceResponseToVtexResponse", null,
                 "Error:", ex,
                 new[]
                 {
@@ -1274,7 +1284,7 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("PostCallbackResponse", null, 
+                _context.Vtex.Logger.Error("PostCallbackResponse", null,
                 "Error:", ex,
                 new[]
                 {
@@ -1339,7 +1349,7 @@ namespace Cybersource.Services
             try
             {
                 string jsonSerializedOrderConfig = await _cybersourceRepository.GetOrderConfiguration();
-                if(!string.IsNullOrEmpty(jsonSerializedOrderConfig))
+                if (!string.IsNullOrEmpty(jsonSerializedOrderConfig))
                 {
                     List<CustomApp> customApps = null;
                     dynamic orderConfig = JsonConvert.DeserializeObject(jsonSerializedOrderConfig);
@@ -1413,7 +1423,8 @@ namespace Cybersource.Services
 
             ValidatedUser validatedUser = null;
 
-            try {
+            try
+            {
                 validatedUser = await ValidateUserToken(_context.Vtex.AdminUserAuthToken);
             }
             catch (Exception ex)

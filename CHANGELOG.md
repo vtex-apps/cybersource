@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Improve CreatePayment orderId lookup to handle cases where orderId is provided in reference field
+
 ## [1.7.1] - 2022-10-07
 
 ### Fixed
