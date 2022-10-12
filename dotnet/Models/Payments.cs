@@ -10,6 +10,7 @@ namespace Cybersource.Models
         public ProcessingInformation processingInformation { get; set; }
         public AggregatorInformation aggregatorInformation { get; set; }
         public OrderInformation orderInformation { get; set; }
+        public ConsumerAuthenticationInformation consumerAuthenticationInformation { get; set; }
         public PaymentInformation paymentInformation { get; set; }
         public ReversalInformation reversalInformation { get; set; }
         public DeviceInformation deviceInformation { get; set; }
@@ -19,6 +20,5 @@ namespace Cybersource.Models
         public TaxInformation taxInformation { get; set; }
         public MerchantInformation merchantInformation { get; set; }
         public List<MerchantDefinedInformation> merchantDefinedInformation { get; set; }
-        public ConsumerAuthenticationInformation ConsumerAuthenticationInformation { get; set; }
     }
 }

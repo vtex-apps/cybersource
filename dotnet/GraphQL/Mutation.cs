@@ -1,5 +1,4 @@
 using Cybersource.Data;
-using Cybersource.GraphQL.Types;
 using Cybersource.Models;
 using Cybersource.Services;
 using GraphQL;
@@ -63,25 +62,26 @@ namespace Cybersource.GraphQL
                 {
                     string paymentId = context.GetArgument<string>("paymentId");
                     Console.WriteLine($"    payerAuthorize paymentId = '{paymentId}'    ");
-                    CreatePaymentResponse paymentResponse = new CreatePaymentResponse();
+                    CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
+                    PaymentsResponse paymentsResponse = null;
                     PaymentData paymentData = await cybersourceRepository.GetPaymentData(paymentId);
                     if (paymentData != null && paymentData.CreatePaymentRequest != null)
                     {
                         if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                         {
-                            paymentResponse = await cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
+                            (createPaymentResponse, paymentsResponse) = await cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
                         }
                         else
                         {
-                            paymentResponse = new CreatePaymentResponse
+                            createPaymentResponse = new CreatePaymentResponse
                             {
                                 Message = "Missing PayerAuthReferenceId"
                             };
                         }
                     }
 
-                    Console.WriteLine($"    payerAuthorize paymentResponse.Status = '{paymentResponse.Status}'    ");
-                    return paymentResponse.Status; // approved, denied, undefined
+                    Console.WriteLine($"    payerAuthorize paymentResponse.Status = '{createPaymentResponse.Status}'    ");
+                    return createPaymentResponse.Status; // approved, denied, undefined
                 });
         }
     }

@@ -654,9 +654,10 @@ namespace Cybersource.Services
             return payment;
         }
 
-        public async Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest)
+        public async Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest)
         {
             CreatePaymentResponse createPaymentResponse = null;
+            PaymentsResponse paymentsResponse = null;
             try
             {
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
@@ -668,21 +669,27 @@ namespace Cybersource.Services
                 {
                     _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
                     await _vtexApiService.ProcessConversions();
-                    return paymentData.CreatePaymentResponse;
+                    return (paymentData.CreatePaymentResponse, null);
                 }
 
                 Payments payment = await this.BuildPayment(createPaymentRequest);
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
                     // Check Payer Auth Enrollment
-                    payment.ConsumerAuthenticationInformation = new ConsumerAuthenticationInformation
+                    payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
                     {
                         ReferenceId = paymentData.PayerAuthReferenceId,
-                        TransactionMode = "S"   // S: eCommerce
+                        TransactionMode = "S",   // S: eCommerce
+                        ReturnUrl = $"{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
+                    };
+
+                    payment.processingInformation.actionList = new List<string>
+                    {
+                        "CONSUMER_AUTHENTICATION"
                     };
                 }
 
-                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+                paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
                 if (paymentsResponse != null)
                 {
                     _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] 
@@ -812,7 +819,7 @@ namespace Cybersource.Services
                 });
             }
 
-            return createPaymentResponse;
+            return (createPaymentResponse, paymentsResponse);
         }
 
         public async Task<CancelPaymentResponse> CancelPayment(CancelPaymentRequest cancelPaymentRequest)
@@ -1384,10 +1391,11 @@ namespace Cybersource.Services
                 {
                     Console.WriteLine($" - PayerAuthReferenceId = {paymentData.PayerAuthReferenceId} - ");
                     // Check Payer Auth Enrollment
-                    payment.ConsumerAuthenticationInformation = new ConsumerAuthenticationInformation
+                    payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
                     {
                         ReferenceId = paymentData.PayerAuthReferenceId,
-                        TransactionMode = "S"   // S: eCommerce
+                        TransactionMode = "S",   // S: eCommerce
+                        ReturnUrl = $"{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
                     };
                 }
                 else
@@ -1520,7 +1528,7 @@ namespace Cybersource.Services
 
             };
 
-            CreatePaymentResponse createPaymentResponse = await CreatePayment(createPaymentRequest);
+            (CreatePaymentResponse createPaymentResponse, PaymentsResponse paymentsResponse) = await CreatePayment(createPaymentRequest);
 
             return createPaymentResponse != null;
         }

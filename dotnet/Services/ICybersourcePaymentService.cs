@@ -7,7 +7,7 @@ namespace Cybersource.Services
 {
     public interface ICybersourcePaymentService
     {
-        Task<CreatePaymentResponse> CreatePayment(CreatePaymentRequest createPaymentRequest);
+        Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest);
         Task<CancelPaymentResponse> CancelPayment(CancelPaymentRequest cancelPaymentRequest);
         Task<CapturePaymentResponse> CapturePayment(CapturePaymentRequest capturePaymentRequest);
         Task<RefundPaymentResponse> RefundPayment(RefundPaymentRequest refundPaymentRequest);

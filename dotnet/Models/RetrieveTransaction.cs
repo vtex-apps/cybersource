@@ -103,6 +103,7 @@ namespace Cybersource.Models
         public long ReturnCode { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class ConsumerAuthenticationInformation
     {
         [JsonProperty("strongAuthentication")]
@@ -158,6 +159,129 @@ namespace Cybersource.Models
 
         [JsonProperty("specificationVersion")]
         public string SpecificationVersion { get; set; }
+
+        [JsonProperty("authenticationType")]
+        public string AuthenticationType { get; set; }
+
+        [JsonProperty("acsWindowSize")]
+        public string AcsWindowSize { get; set; }
+
+        [JsonProperty("alternateAuthenticationData")]
+        public string AlternateAuthenticationData { get; set; }
+
+        [JsonProperty("alternateAuthenticationDate")]
+        public string AlternateAuthenticationDate { get; set; }
+
+        [JsonProperty("alternateAuthenticationMethod")]
+        public string AlternateAuthenticationMethod { get; set; }
+
+        [JsonProperty("authenticationDate")]
+        public string AuthenticationDate { get; set; }
+
+        [JsonProperty("transactionFlowIndicator")]
+        public object TransactionFlowIndicator { get; set; }
+
+        [JsonProperty("challengeCancelCode")]
+        public string ChallengeCancelCode { get; set; }
+
+        [JsonProperty("challengeCode")]
+        public string ChallengeCode { get; set; }
+
+        [JsonProperty("challengeStatus")]
+        public string ChallengeStatus { get; set; }
+
+        [JsonProperty("customerCardAlias")]
+        public string CustomerCardAlias { get; set; }
+
+        [JsonProperty("decoupledAuthenticationIndicator")]
+        public string DecoupledAuthenticationIndicator { get; set; }
+
+        [JsonProperty("decoupledAuthenticationMaxTime")]
+        public string DecoupledAuthenticationMaxTime { get; set; }
+
+        [JsonProperty("defaultCard")]
+        public bool DefaultCard { get; set; }
+
+        [JsonProperty("deviceChannel")]
+        public string DeviceChannel { get; set; }
+
+        [JsonProperty("installmentTotalCount")]
+        public object InstallmentTotalCount { get; set; }
+
+        [JsonProperty("merchantFraudRate")]
+        public string MerchantFraudRate { get; set; }
+
+        [JsonProperty("marketingOptIn")]
+        public bool MarketingOptIn { get; set; }
+
+        [JsonProperty("marketingSource")]
+        public string MarketingSource { get; set; }
+
+        [JsonProperty("mcc")]
+        public string Mcc { get; set; }
+
+        [JsonProperty("merchantScore")]
+        public object MerchantScore { get; set; }
+
+        [JsonProperty("messageCategory")]
+        public string MessageCategory { get; set; }
+
+        [JsonProperty("npaCode")]
+        public string NpaCode { get; set; }
+
+        [JsonProperty("overridePaymentMethod")]
+        public string OverridePaymentMethod { get; set; }
+
+        [JsonProperty("overrideCountryCode")]
+        public string OverrideCountryCode { get; set; }
+
+        [JsonProperty("priorAuthenticationData")]
+        public string PriorAuthenticationData { get; set; }
+
+        [JsonProperty("priorAuthenticationMethod")]
+        public string PriorAuthenticationMethod { get; set; }
+
+        [JsonProperty("priorAuthenticationReferenceId")]
+        public string PriorAuthenticationReferenceId { get; set; }
+
+        [JsonProperty("priorAuthenticationTime")]
+        public string PriorAuthenticationTime { get; set; }
+
+        [JsonProperty("productCode")]
+        public string ProductCode { get; set; }
+
+        [JsonProperty("returnUrl")]
+        public string ReturnUrl { get; set; }
+
+        [JsonProperty("requestorId")]
+        public string RequestorId { get; set; }
+
+        [JsonProperty("requestorInitiatedAuthenticationIndicator")]
+        public string RequestorInitiatedAuthenticationIndicator { get; set; }
+
+        [JsonProperty("requestorName")]
+        public string RequestorName { get; set; }
+
+        [JsonProperty("sdkMaxTimeout")]
+        public string SdkMaxTimeout { get; set; }
+
+        [JsonProperty("secureCorporatePaymentIndicator")]
+        public string SecureCorporatePaymentIndicator { get; set; }
+
+        [JsonProperty("whiteListStatus")]
+        public string WhiteListStatus { get; set; }
+
+        [JsonProperty("acsUrl")]
+        public Uri AcsUrl { get; set; }
+
+        [JsonProperty("stepUpUrl")]
+        public Uri StepUpUrl { get; set; }
+
+        [JsonProperty("pareq")]
+        public string Pareq { get; set; }
+
+        [JsonProperty("proxyPan")]
+        public string ProxyPan { get; set; }
     }
 
     public partial class StrongAuthentication

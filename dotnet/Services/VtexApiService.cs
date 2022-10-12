@@ -195,7 +195,21 @@ namespace Cybersource.Services
             try
             {
                 VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
-                if (vtexOrderList != null && vtexOrderList.List.Count > 0)
+                if (vtexOrderList == null || vtexOrderList.List.Count == 0)
+                {
+                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Reference # {orderId} does not appear to be a valid VTEX order ID");
+                    if (!string.IsNullOrEmpty(defaultValue))
+                    {
+                        // defaultValue didn't work so let's try with reference
+                        vtexOrderList = await this.SearchOrders(reference);
+                    }
+                }
+
+                if (vtexOrderList == null || vtexOrderList.List.Count == 0)
+                {
+                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Could not find a valid VTEX order ID for either {defaultValue} or {reference}");
+                }
+                else
                 {
                     orderId = vtexOrderList.List.First().OrderId;
                     int charLocation = orderId.IndexOf("-", StringComparison.Ordinal);
@@ -204,18 +218,14 @@ namespace Cybersource.Services
                         orderId = orderId.Substring(0, charLocation);
                     }
                 }
-                else
-                {
-                    _context.Vtex.Logger.Warn("GetOrderId", null, $"Could not find order id for reference# {reference} ");
-                }
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetOrderId", null, 
+                _context.Vtex.Logger.Error("GetOrderId", null,
                 "Error:", ex,
                 new[]
                 {
-                    ( "reference", reference )
+                    ( "orderId", orderId )
                 });
             }
 

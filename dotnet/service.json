@@ -119,6 +119,10 @@
     "payerAuth": {
       "path": "/cybersource/payer-auth/:paymentId",
       "public": true
+    },
+    "payerAuthResponse": {
+      "path": "/cybersource/payer-auth-response",
+      "public": true
     }
   },
   "events": {

@@ -39,7 +39,8 @@
         /// <returns></returns>
         public async Task<IActionResult> CreatePayment()
         {
-            CreatePaymentResponse paymentResponse = null;
+            CreatePaymentResponse createPaymentResponse = null;
+            PaymentsResponse paymentsResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
@@ -49,11 +50,11 @@
                     MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
                     if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
                     {
-                        paymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
+                        createPaymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
                     }
                     else
                     {
-                        paymentResponse = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
                     }
                 }
                 catch (Exception ex)
@@ -69,30 +70,34 @@
 
             Response.Headers.Add("Cache-Control", "private");
 
-            return Json(paymentResponse);
+            return Json(createPaymentResponse);
         }
 
         public async Task<IActionResult> PayerAuth(string paymentId)
         {
             Response.Headers.Add("Cache-Control", "no-cache");
-            CreatePaymentResponse paymentResponse = null;
+            CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
+            PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
             if(paymentData != null && paymentData.CreatePaymentRequest != null)
             {
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
-                    paymentResponse = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
+                    (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
+                    //paymentsResponse = await this._cybersourcePaymentService.CheckPayerAuthEnrollment(paymentData.CreatePaymentRequest);
+                    Console.WriteLine($"    -------------- PayerAuth=({paymentsResponse.Status}) {paymentsResponse.ConsumerAuthenticationInformation.AccessToken} | {paymentsResponse.ConsumerAuthenticationInformation.AcsWindowSize}  -------------   ");
                     SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
-                    _context.Vtex.Logger.Debug("PayerAuth", null, string.Empty, new[]
+                    _context.Vtex.Logger.Debug("PayerAuth", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
                     {
                         ("paymentId", paymentId),
-                        ("paymentResponse", JsonConvert.SerializeObject(paymentResponse)),
+                        ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
+                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)),
                         ("sendResponse", JsonConvert.SerializeObject(sendResponse))
                     });
                 }
                 else
                 {
-                    paymentResponse = new CreatePaymentResponse
+                    createPaymentResponse = new CreatePaymentResponse
                     {
                         Message = "Missing PayerAuthReferenceId"
                     };
@@ -101,7 +106,35 @@
                 }
             }
 
-            return Json(paymentResponse);
+            return Json(paymentsResponse);
+        }
+
+        public async Task<IActionResult> PayerAuthResponse()
+        {
+            Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
+            Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
+            if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
+            {
+                string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+                try
+                {
+                    _context.Vtex.Logger.Debug("PayerAuthResponse", null, $"stepup response = '{bodyAsText}' ");
+                    Console.WriteLine($" ----------------------------------  {bodyAsText}   ------------------------------- ");
+                    Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
+                    Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
+                }
+                catch (Exception ex)
+                {
+                    _context.Vtex.Logger.Error("PayerAuthResponse", null,
+                    "Payment Error: ", ex,
+                    new[]
+                    {
+                        ("body", bodyAsText)
+                    });
+                }
+            }
+
+            return Json("done");
         }
 
         /// <summary>
