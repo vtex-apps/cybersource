@@ -565,7 +565,7 @@ namespace Cybersource.Services
                         foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
                         {
                             string name = priceTag.Name.ToLower();
-                            if (name.Contains("tax@") || name.Contains("taxhub@"))
+                            if ((name.Contains("tax@") || name.Contains("taxhub@")) && !name.Contains("shipping"))
                             {
                                 if (priceTag.IsPercentual ?? false)
                                 {
