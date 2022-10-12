@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.7.2] - 2022-10-12
+
 ### Changed
 - Fix on new Cypress reserve/release orderForm feature
 ### Fixed
