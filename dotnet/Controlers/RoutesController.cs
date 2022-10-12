@@ -85,7 +85,7 @@
                 {
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
                     //paymentsResponse = await this._cybersourcePaymentService.CheckPayerAuthEnrollment(paymentData.CreatePaymentRequest);
-                    Console.WriteLine($"    -------------- PayerAuth=({paymentsResponse.Status}) {paymentsResponse.ConsumerAuthenticationInformation.AccessToken} | {paymentsResponse.ConsumerAuthenticationInformation.AcsWindowSize}  -------------   ");
+                    //Console.WriteLine($"    -------------- PayerAuth=({paymentsResponse.Status}) {paymentsResponse.ConsumerAuthenticationInformation.AccessToken} | {paymentsResponse.ConsumerAuthenticationInformation.AcsWindowSize}  -------------   ");
                     SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
                     _context.Vtex.Logger.Debug("PayerAuth", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
                     {
