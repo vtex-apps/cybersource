@@ -10,5 +10,6 @@ namespace Cybersource.Models
         public string currency { get; set; }
         public string taxAmount { get; set; }
         public string freightAmount { get; set; }
+        public string nationalTaxIncluded { get; set; }
     }
 }
