@@ -595,8 +595,8 @@ namespace Cybersource.Services
 
                     if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                     {
-                        lineItem.unitPrice = (vtexItem.Price * vtexItem.Quantity).ToString();
-                        lineItem.taxAmount = itemTax > 0 ? lineItem.unitPrice : "0";
+                        decimal unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity));
+                        lineItem.taxAmount = itemTax > 0 ? (unitPrice * vtexItem.Quantity).ToString() : "0";
                         lineItem.taxDetails = new TaxDetail[]
                         {
                             new TaxDetail
