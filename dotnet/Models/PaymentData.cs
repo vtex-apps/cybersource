@@ -14,5 +14,6 @@ namespace Cybersource.Models
         public string OrderId { get; set; }
         public bool ImmediateCapture { get; set; }
         public string PayerAuthReferenceId { get; set; }
+        public string AuthenticationTransactionId { get; set; }
     }
 }

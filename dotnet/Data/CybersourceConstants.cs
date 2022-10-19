@@ -355,5 +355,13 @@ namespace Cybersource.Data
            { "Región de Aysén del General Carlos Ibáñez del Campo (XI)", "AI" },
            { "Región de Magallanes y la Antártica Chilena (XII)", "MA" },
         };
+
+        public enum ActionList
+        {
+            DECISION_SKIP,   // Use this when you want to skip Decision Manager service(s).                
+            TOKEN_CREATE,     // Use this when you want to create a token from the card/bank data in your payment request.
+            CONSUMER_AUTHENTICATION,    // Use this when you want to check if a card is enrolled in Payer Authentioncation along with your payment request.
+            VALIDATE_CONSUMER_AUTHENTICATION    // Use this after you acquire a Payer Authentioncation result that needs to be included for your payment request.
+        }
     }
 }

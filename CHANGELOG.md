@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Region setting bug
+### Added
+- (CYBRSOURCE-40) Functions to support Payer Auth
+
 ## [1.7.3] - 2022-10-12
 
 ### Fixed

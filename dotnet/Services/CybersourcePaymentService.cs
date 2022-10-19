@@ -556,8 +556,8 @@ namespace Cybersource.Services
 
                 foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
                 {
-                    string taxAmount = null;
-                    string commodityCode = null;
+                    string taxAmount = string.Empty;
+                    string commodityCode = string.Empty;
                     long itemTax = 0L;
                     VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => i.Id.Equals(vtexItem.Id));
                     if (vtexOrderItem != null)
@@ -582,42 +582,56 @@ namespace Cybersource.Services
                         commodityCode = vtexOrderItem.TaxCode;
                     }
 
-                    LineItem lineItem = new LineItem
+                    try
                     {
-                        productSKU = vtexItem.Id,
-                        productName = vtexItem.Name,
-                        unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)).ToString(), // Discount is negative
-                        quantity = vtexItem.Quantity.ToString(),
-                        discountAmount = vtexItem.Discount.ToString(),
-                        taxAmount = taxAmount,
-                        commodityCode = commodityCode
-                    };
-
-                    if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
-                    {
-                        decimal unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity));
-                        lineItem.taxAmount = itemTax > 0 ? (unitPrice * vtexItem.Quantity).ToString() : "0";
-                        lineItem.taxDetails = new TaxDetail[]
+                        LineItem lineItem = new LineItem
                         {
+                            productSKU = vtexItem.Id,
+                            productName = vtexItem.Name,
+                            unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)).ToString(), // Discount is negative
+                            quantity = vtexItem.Quantity.ToString(),
+                            discountAmount = vtexItem.Discount.ToString(),
+                            taxAmount = taxAmount,
+                            commodityCode = commodityCode
+                        };
+
+                        if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                        {
+                            decimal unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity));
+                            lineItem.taxAmount = itemTax > 0 ? (unitPrice * vtexItem.Quantity).ToString() : "0";
+                            lineItem.taxDetails = new TaxDetail[]
+                            {
                             new TaxDetail
                             {
                                 type = "national",
                                 amount = (((decimal)itemTax / 100) * vtexItem.Quantity).ToString()
                             }
-                        };
-                    }
+                            };
+                        }
 
-                    payment.orderInformation.lineItems.Add(lineItem);
+                        payment.orderInformation.lineItems.Add(lineItem);
+                    }
+                    catch(Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("BuildPayment", "LineItems", "Error", ex);
+                    }
                 }
 
-                if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                try
                 {
-                    payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
-                    payment.orderInformation.invoiceDetails = new InvoiceDetails
+                    if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                     {
-                        purchaseOrderNumber = createPaymentRequest.OrderId,
-                        taxable = createPaymentRequest.MiniCart.TaxValue > 0m
-                    };
+                        payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
+                        payment.orderInformation.invoiceDetails = new InvoiceDetails
+                        {
+                            purchaseOrderNumber = createPaymentRequest.OrderId,
+                            taxable = createPaymentRequest.MiniCart.TaxValue > 0m
+                        };
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _context.Vtex.Logger.Error("BuildPayment", "Ecuador Customization", "Error", ex);
                 }
 
                 if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("AdditionalData")))
@@ -654,7 +668,7 @@ namespace Cybersource.Services
             return payment;
         }
 
-        public async Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest)
+        public async Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId = null)
         {
             CreatePaymentResponse createPaymentResponse = null;
             PaymentsResponse paymentsResponse = null;
@@ -665,7 +679,7 @@ namespace Cybersource.Services
                 {
                     paymentData = new PaymentData();
                 }
-                else if (paymentData.CreatePaymentResponse != null)
+                else if (paymentData.CreatePaymentResponse != null && string.IsNullOrEmpty(authenticationTransactionId))
                 {
                     _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
                     await _vtexApiService.ProcessConversions();
@@ -673,23 +687,36 @@ namespace Cybersource.Services
                 }
 
                 Payments payment = await this.BuildPayment(createPaymentRequest);
-                if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
+                if (!string.IsNullOrEmpty(authenticationTransactionId))
+                {
+                    payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
+                    {
+                        AuthenticationTransactionId = authenticationTransactionId
+                    };
+
+                    payment.processingInformation.actionList = new List<string>
+                    {
+                        nameof(CybersourceConstants.ActionList.VALIDATE_CONSUMER_AUTHENTICATION)
+                    };
+                }
+                else if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
                     // Check Payer Auth Enrollment
                     payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
                     {
                         ReferenceId = paymentData.PayerAuthReferenceId,
                         TransactionMode = "S",   // S: eCommerce
-                        ReturnUrl = $"{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
+                        ReturnUrl = $"https://{_context.Vtex.Workspace}--{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
                     };
 
                     payment.processingInformation.actionList = new List<string>
                     {
-                        "CONSUMER_AUTHENTICATION"
+                        nameof(CybersourceConstants.ActionList.CONSUMER_AUTHENTICATION)
                     };
                 }
 
                 paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+
                 if (paymentsResponse != null)
                 {
                     _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] 
@@ -724,6 +751,7 @@ namespace Cybersource.Services
                     {
                         case "AUTHORIZED":
                         case "PARTIAL_AUTHORIZED":
+                        case "AUTHENTICATION_SUCCESSFUL":
                             // Check for pre-auth fraud status
                             SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
                             if (antifraudDataResponse != null)
@@ -746,6 +774,7 @@ namespace Cybersource.Services
                             break;
                         case "DECLINED":
                         case "AUTHORIZED_RISK_DECLINED":
+                        case "CONSUMER_AUTHENTICATION_FAILED":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
                             break;
                     }
@@ -1395,7 +1424,7 @@ namespace Cybersource.Services
                     {
                         ReferenceId = paymentData.PayerAuthReferenceId,
                         TransactionMode = "S",   // S: eCommerce
-                        ReturnUrl = $"{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
+                        ReturnUrl = $"https://{_context.Vtex.Workspace}--{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
                     };
                 }
                 else
