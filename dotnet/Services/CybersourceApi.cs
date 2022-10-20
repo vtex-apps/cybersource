@@ -719,14 +719,14 @@ namespace Cybersource.Services
             return paymentsResponse;
         }
 
-        public async Task<PaymentsResponse> ValidateAuthenticationResults(Payments payments)
+        public async Task<PaymentsResponse> ValidateAuthenticationResults(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, json);
             string endpoint = $"{CybersourceConstants.RISK}authentication-results";
-            SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
-            if (response != null)
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            if (response.Success)
             {
                 paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
             }

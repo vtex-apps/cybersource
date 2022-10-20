@@ -123,6 +123,14 @@
     "payerAuthResponse": {
       "path": "/cybersource/payer-auth-response",
       "public": true
+    },
+    "validateAuthenticationResults": {
+      "path": "/cybersource/validate-auth/:paymentId/:authenticationTransactionId",
+      "public": true
+    },
+    "checkAuthStatus": {
+      "path": "/cybersource/payer-auth/status/:paymentId",
+      "public": true
     }
   },
   "events": {

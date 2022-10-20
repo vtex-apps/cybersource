@@ -84,8 +84,6 @@
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
-                    //paymentsResponse = await this._cybersourcePaymentService.CheckPayerAuthEnrollment(paymentData.CreatePaymentRequest);
-                    //Console.WriteLine($"    -------------- PayerAuth=({paymentsResponse.Status}) {paymentsResponse.ConsumerAuthenticationInformation.AccessToken} | {paymentsResponse.ConsumerAuthenticationInformation.AcsWindowSize}  -------------   ");
                     SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
                     _context.Vtex.Logger.Debug("PayerAuth", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
                     {
@@ -109,19 +107,17 @@
             return Json(paymentsResponse);
         }
 
-        public async Task<IActionResult> PayerAuthResponse()
+        public async Task PayerAuthResponse()
         {
-            Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
-            Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 try
                 {
-                    _context.Vtex.Logger.Debug("PayerAuthResponse", null, $"stepup response = '{bodyAsText}' ");
-                    Console.WriteLine($" ----------------------------------  {bodyAsText}   ------------------------------- ");
-                    Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
-                    Console.WriteLine(" ----------------------------------  PayerAuthResponse   ------------------------------- ");
+                    var queryParams = HttpUtility.ParseQueryString(bodyAsText);
+                    string authenticationTransactionId = queryParams["TransactionId"];
+                    string paymentId = queryParams["MD"];
+                    await this.ProcessPayerAuthentication(paymentId, authenticationTransactionId);
                 }
                 catch (Exception ex)
                 {
@@ -133,8 +129,62 @@
                     });
                 }
             }
+        }
 
-            return Json("done");
+        public async Task ValidateAuthenticationResults(string paymentId, string authenticationTransactionId)
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            await this.ProcessPayerAuthentication(paymentId, authenticationTransactionId);
+        }
+
+        public async Task<IActionResult> CheckAuthStatus(string paymentId)
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            string status = CybersourceConstants.VtexAuthStatus.Undefined;
+            PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
+            if(paymentData != null && paymentData.CreatePaymentResponse != null)
+            {
+                status = paymentData.CreatePaymentResponse.Status;
+            }
+
+            return Json(status);
+        }
+
+        public async Task<CreatePaymentResponse> ProcessPayerAuthentication(string paymentId, string authenticationTransactionId)
+        {
+            Console.WriteLine($"ValidateAuthenticationResults = [{authenticationTransactionId}] ");
+            CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
+            PaymentsResponse paymentsResponse = null;
+            PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
+            if (paymentData != null && paymentData.CreatePaymentRequest != null)
+            {
+                if (!string.IsNullOrEmpty(authenticationTransactionId))
+                {
+                    paymentData.AuthenticationTransactionId = authenticationTransactionId;
+                    await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
+                    (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, authenticationTransactionId);
+                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
+                    _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
+                    {
+                        ("paymentId", paymentId),
+                        ("authenticationTransactionId", authenticationTransactionId),
+                        ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
+                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)),
+                        ("sendResponse", JsonConvert.SerializeObject(sendResponse))
+                    });
+                }
+                else
+                {
+                    createPaymentResponse = new CreatePaymentResponse
+                    {
+                        Message = "Missing AuthenticationTransactionId"
+                    };
+
+                    _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, "Missing AuthenticationTransactionId");
+                }
+            }
+
+            return createPaymentResponse;
         }
 
         /// <summary>
