@@ -6,10 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Just testing the new workflow
+
 ## [1.8.0] - 2022-10-20
 
 ### Fixed
 - Region setting bug
+
 ### Added
 - (CYBRSOURCE-40) Functions to support Payer Auth
 
