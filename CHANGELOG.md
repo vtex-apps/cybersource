@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- (CYBRSOURCE-55) Ecuador payload customizations: add shipping tax as a line item
+
 ## [1.8.0] - 2022-10-20
 
 ### Added

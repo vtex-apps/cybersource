@@ -554,6 +554,7 @@ namespace Cybersource.Services
                     }
                 }
 
+                long shippingTax = 0;
                 foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
                 {
                     string taxAmount = string.Empty;
@@ -565,15 +566,29 @@ namespace Cybersource.Services
                         foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
                         {
                             string name = priceTag.Name.ToLower();
-                            if ((name.Contains("tax@") || name.Contains("taxhub@")) && !name.Contains("shipping"))
+                            if (name.Contains("tax@") || name.Contains("taxhub@"))
                             {
-                                if (priceTag.IsPercentual ?? false)
+                                if (name.Contains("shipping"))
                                 {
-                                    itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                                    if (priceTag.IsPercentual ?? false)
+                                    {
+                                        shippingTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                                    }
+                                    else
+                                    {
+                                        shippingTax += priceTag.Value / vtexOrderItem.Quantity;
+                                    }
                                 }
                                 else
                                 {
-                                    itemTax += priceTag.Value / vtexOrderItem.Quantity;
+                                    if (priceTag.IsPercentual ?? false)
+                                    {
+                                        itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                                    }
+                                    else
+                                    {
+                                        itemTax += priceTag.Value / vtexOrderItem.Quantity;
+                                    }
                                 }
                             }
                         }
@@ -595,17 +610,17 @@ namespace Cybersource.Services
                             commodityCode = commodityCode
                         };
 
-                        if (merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                        if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                         {
                             decimal unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity));
                             lineItem.taxAmount = itemTax > 0 ? (unitPrice * vtexItem.Quantity).ToString() : "0";
                             lineItem.taxDetails = new TaxDetail[]
                             {
-                            new TaxDetail
-                            {
-                                type = "national",
-                                amount = (((decimal)itemTax / 100) * vtexItem.Quantity).ToString()
-                            }
+                                new TaxDetail
+                                {
+                                    type = "national",
+                                    amount = (((decimal)itemTax / 100) * vtexItem.Quantity).ToString()
+                                }
                             };
                         }
 
@@ -619,6 +634,25 @@ namespace Cybersource.Services
 
                 try
                 {
+                    // Add shipping tax as a line item
+                    LineItem lineItem = new LineItem
+                    {
+                        productName = "ADMINISTRACION MANEJO DE PRODUCTO",
+                        unitPrice = createPaymentRequest.MiniCart.ShippingValue.ToString(), // Shipping cost without taxes
+                        quantity = "1",
+                        taxAmount = createPaymentRequest.MiniCart.ShippingValue.ToString(), // unitPrice * quantity
+                        taxDetails = new TaxDetail[]
+                        {
+                            new TaxDetail
+                            {
+                                type = "national",
+                                amount = ((decimal)shippingTax / 100).ToString() // taxAmount * taxRate (based on configuration in the account)
+                }
+                        }
+                    };
+
+                    payment.orderInformation.lineItems.Add(lineItem);
+
                     if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                     {
                         payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
