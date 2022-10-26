@@ -42,7 +42,6 @@ namespace Cybersource.Models
                     {
                         string fieldValue = fields[fieldName];
                         ((IDictionary<string, object>)this.CustomData.CustomApps).Add($"{propName}_{fieldName}", fieldValue);
-                        //Console.WriteLine($"'{propName}_{fieldName}' = '{fieldValue}'");
                     }
                 }
             }

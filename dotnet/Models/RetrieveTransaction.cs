@@ -282,12 +282,36 @@ namespace Cybersource.Models
 
         [JsonProperty("proxyPan")]
         public string ProxyPan { get; set; }
+
+        [JsonProperty("signedParesStatusReason")]
+        public string SignedParesStatusReason { get; set; }
+
+        [JsonProperty("acsReferenceNumber")]
+        public string AcsReferenceNumber { get; set; }
+
+        [JsonProperty("ucafCollectionIndicator")]
+        public string UcafCollectionIndicator { get; set; }
+
+        [JsonProperty("directoryServerTransactionId")]
+        public string DirectoryServerTransactionId { get; set; }
+
+        [JsonProperty("threeDSServerTransactionId")]
+        public Guid ThreeDsServerTransactionId { get; set; }
+
+        [JsonProperty("acsOperatorID")]
+        public string AcsOperatorId { get; set; }
+
+        [JsonProperty("acsTransactionId")]
+        public Guid AcsTransactionId { get; set; }
     }
 
     public partial class StrongAuthentication
     {
         [JsonProperty("authenticationIndicator")]
         public string AuthenticationIndicator { get; set; }
+
+        [JsonProperty("OutageExemptionIndicator")]
+        public string OutageExemptionIndicator { get; set; }
     }
 
     public class Profile
@@ -308,7 +332,8 @@ namespace Cybersource.Models
         {
             StrongAuthentication = new StrongAuthentication
             {
-                AuthenticationIndicator = consumerAuthenticationInformation.StrongAuthentication != null ? consumerAuthenticationInformation.StrongAuthentication.AuthenticationIndicator : null
+                AuthenticationIndicator = consumerAuthenticationInformation.StrongAuthentication != null ? consumerAuthenticationInformation.StrongAuthentication.AuthenticationIndicator : null,
+                OutageExemptionIndicator = consumerAuthenticationInformation.StrongAuthentication != null ? consumerAuthenticationInformation.StrongAuthentication.OutageExemptionIndicator : null
             };
 
             AccessToken = consumerAuthenticationInformation.AccessToken;

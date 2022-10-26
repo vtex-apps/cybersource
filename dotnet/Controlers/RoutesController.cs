@@ -84,8 +84,8 @@
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
-                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
-                    _context.Vtex.Logger.Debug("PayerAuth", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
+                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    _context.Vtex.Logger.Info("PayerAuth", null, $"{paymentData.CreatePaymentRequest.OrderId} = {paymentData.CreatePaymentResponse.Status}", new[]
                     {
                         ("paymentId", paymentId),
                         ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
@@ -152,7 +152,6 @@
 
         public async Task<CreatePaymentResponse> ProcessPayerAuthentication(string paymentId, string authenticationTransactionId)
         {
-            Console.WriteLine($"ValidateAuthenticationResults = [{authenticationTransactionId}] ");
             CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
@@ -163,8 +162,8 @@
                     paymentData.AuthenticationTransactionId = authenticationTransactionId;
                     await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, authenticationTransactionId);
-                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
-                    _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
+                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    _context.Vtex.Logger.Info("ValidateAuthenticationResults", null, $"{paymentData.CreatePaymentRequest.OrderId} = {paymentData.CreatePaymentResponse.Status}", new[]
                     {
                         ("paymentId", paymentId),
                         ("authenticationTransactionId", authenticationTransactionId),
