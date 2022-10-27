@@ -677,7 +677,10 @@ namespace Cybersource.Services
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
                 if (paymentData == null)
                 {
-                    paymentData = new PaymentData();
+                    paymentData = new PaymentData
+                    {
+                        CreatePaymentRequest = createPaymentRequest
+                    };
                 }
                 else if (paymentData.CreatePaymentResponse != null && string.IsNullOrEmpty(authenticationTransactionId))
                 {
@@ -1014,14 +1017,14 @@ namespace Cybersource.Services
 
                 if (paymentData.CreatePaymentResponse != null)
                 {
-                    _context.Vtex.Logger.Debug("CapturePayment", null,
-                    "Loaded PaymentData",
-                    new[]
-                    {
-                        ( "orderId", paymentData.CreatePaymentRequest.OrderId ),
-                        ( "paymentId", paymentData.PaymentId ),
-                        ( "paymentData", JsonConvert.SerializeObject(paymentData) )
-                    });
+                    //_context.Vtex.Logger.Debug("CapturePayment", null,
+                    //"Loaded PaymentData",
+                    //new[]
+                    //{
+                    //    ( "orderId", paymentData.CreatePaymentRequest.OrderId ),
+                    //    ( "paymentId", paymentData.PaymentId ),
+                    //    ( "paymentData", JsonConvert.SerializeObject(paymentData) )
+                    //});
 
                     if (paymentData.ImmediateCapture) // || !string.IsNullOrEmpty(paymentData.CaptureId))
                     {

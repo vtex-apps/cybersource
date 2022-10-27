@@ -234,7 +234,7 @@
                 if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
                     string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                    _context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
+                    //_context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
                     CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
                     captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
                 }
