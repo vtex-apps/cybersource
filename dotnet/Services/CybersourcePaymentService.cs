@@ -634,25 +634,6 @@ namespace Cybersource.Services
 
                 try
                 {
-                    // Add shipping tax as a line item
-                    LineItem lineItem = new LineItem
-                    {
-                        productName = "ADMINISTRACION MANEJO DE PRODUCTO",
-                        unitPrice = createPaymentRequest.MiniCart.ShippingValue.ToString(), // Shipping cost without taxes
-                        quantity = "1",
-                        taxAmount = createPaymentRequest.MiniCart.ShippingValue.ToString(), // unitPrice * quantity
-                        taxDetails = new TaxDetail[]
-                        {
-                            new TaxDetail
-                            {
-                                type = "national",
-                                amount = ((decimal)shippingTax / 100).ToString() // taxAmount * taxRate (based on configuration in the account)
-                }
-                        }
-                    };
-
-                    payment.orderInformation.lineItems.Add(lineItem);
-
                     if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                     {
                         payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
@@ -661,6 +642,25 @@ namespace Cybersource.Services
                             purchaseOrderNumber = createPaymentRequest.OrderId,
                             taxable = createPaymentRequest.MiniCart.TaxValue > 0m
                         };
+
+                        // Add shipping tax as a line item
+                        LineItem lineItem = new LineItem
+                        {
+                            productName = "ADMINISTRACION MANEJO DE PRODUCTO",
+                            unitPrice = createPaymentRequest.MiniCart.ShippingValue.ToString(), // Shipping cost without taxes
+                            quantity = "1",
+                            taxAmount = createPaymentRequest.MiniCart.ShippingValue.ToString(), // unitPrice * quantity
+                            taxDetails = new TaxDetail[]
+                            {
+                                new TaxDetail
+                                {
+                                    type = "national",
+                                    amount = ((decimal)shippingTax / 100).ToString() // taxAmount * taxRate (based on configuration in the account)
+                                }
+                            }
+                        };
+
+                        payment.orderInformation.lineItems.Add(lineItem);
                     }
                 }
                 catch(Exception ex)
