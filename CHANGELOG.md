@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.8.0] - 2022-10-20
 
+### Added
+- In cypress tests, Select Credit Card then make payment 
+
 ### Fixed
 - Region setting bug
 ### Added

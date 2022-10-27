@@ -23,6 +23,9 @@ export function completePayment(
   it(`In ${prefix} - Completing the Payment & save OrderId`, () => {
     cy.intercept('**/gatewayCallback/**').as('callback')
 
+    // Select Credit Card Option
+    cy.get('a[id*=creditCard]').should('be.visible').click()
+
     cy.get('body').then($body => {
       if ($body.find(selectors.CreditCard).length) {
         cy.get(selectors.CreditCard).click()
