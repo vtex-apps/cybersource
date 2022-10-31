@@ -101,7 +101,7 @@ namespace Cybersource.Services
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
 
-                //_context.Vtex.Logger.Debug("SendRequest", $"Production? {merchantSettings.IsLive}", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
+                // _context.Vtex.Logger.Debug("SendRequest", $"Production? {merchantSettings.IsLive}", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -477,12 +477,19 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
-
             try
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-                SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+                SendResponse response = null;
+                if (string.IsNullOrEmpty(proxyUrl))
+                {
+                    response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                }
+                else
+                {
+                    response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+                }
                 
                 if (response != null)
                 {

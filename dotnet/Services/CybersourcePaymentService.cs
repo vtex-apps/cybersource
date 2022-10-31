@@ -1121,6 +1121,15 @@ namespace Cybersource.Services
                     paymentData.CaptureId = capturePaymentResponse.SettleId;
                     paymentData.Value = capturePaymentResponse.Value;
                     paymentData.TransactionId = capturePaymentResponse.PaymentId;
+                    if(string.IsNullOrEmpty(paymentData.CaptureId))
+                    {
+                        _context.Vtex.Logger.Error("CapturePayment", null,
+                        "Empty Capture Id ", null,
+                        new[]
+                        {
+                            ( "PaymentId", capturePaymentRequest.PaymentId )
+                        });
+                    }
 
                     await _cybersourceRepository.SavePaymentData(capturePaymentRequest.PaymentId, paymentData);
                 }
@@ -1140,7 +1149,7 @@ namespace Cybersource.Services
 
         public async Task<RefundPaymentResponse> RefundPayment(RefundPaymentRequest refundPaymentRequest)
         {
-            RefundPaymentResponse refundPaymentResponse = null;
+            RefundPaymentResponse refundPaymentResponse = new RefundPaymentResponse();
 
             try
             {
@@ -2084,77 +2093,80 @@ namespace Cybersource.Services
         private string GetCardType(string cardTypeText)
         {
             string cardType = null;
-            switch (cardTypeText.ToLower())
+            if (!string.IsNullOrEmpty(cardTypeText))
             {
-                case "visa":
-                    cardType = "001";
-                    break;
-                case "mastercard":
-                case "eurocard":
-                    cardType = "002";
-                    break;
-                case "american express":
-                case "amex":
-                    cardType = "003";
-                    break;
-                case "discover":
-                    cardType = "004";
-                    break;
-                case "diners":
-                case "diners club":
-                    cardType = "005";
-                    break;
-                case "carte blanche":
-                    cardType = "006";
-                    break;
-                case "jcb":
-                    cardType = "007";
-                    break;
-                case "enroute":
-                    cardType = "014";
-                    break;
-                case "jal":
-                    cardType = "021";
-                    break;
-                case "maestro uk":
-                    cardType = "024";
-                    break;
-                case "delta":
-                    cardType = "031";
-                    break;
-                case "visa electron":
-                    cardType = "033";
-                    break;
-                case "dankort":
-                    cardType = "034";
-                    break;
-                case "cartes bancaires":
-                    cardType = "036";
-                    break;
-                case "carta si":
-                    cardType = "037";
-                    break;
-                case "encoded account number":
-                    cardType = "039";
-                    break;
-                case "uatp":
-                    cardType = "040";
-                    break;
-                case "maestro international":
-                    cardType = "042";
-                    break;
-                case "hipercard":
-                    cardType = "050";
-                    break;
-                case "aura":
-                    cardType = "051";
-                    break;
-                case "elo":
-                    cardType = "054";
-                    break;
-                case "china unionpay":
-                    cardType = "062";
-                    break;
+                switch (cardTypeText.ToLower())
+                {
+                    case "visa":
+                        cardType = "001";
+                        break;
+                    case "mastercard":
+                    case "eurocard":
+                        cardType = "002";
+                        break;
+                    case "american express":
+                    case "amex":
+                        cardType = "003";
+                        break;
+                    case "discover":
+                        cardType = "004";
+                        break;
+                    case "diners":
+                    case "diners club":
+                        cardType = "005";
+                        break;
+                    case "carte blanche":
+                        cardType = "006";
+                        break;
+                    case "jcb":
+                        cardType = "007";
+                        break;
+                    case "enroute":
+                        cardType = "014";
+                        break;
+                    case "jal":
+                        cardType = "021";
+                        break;
+                    case "maestro uk":
+                        cardType = "024";
+                        break;
+                    case "delta":
+                        cardType = "031";
+                        break;
+                    case "visa electron":
+                        cardType = "033";
+                        break;
+                    case "dankort":
+                        cardType = "034";
+                        break;
+                    case "cartes bancaires":
+                        cardType = "036";
+                        break;
+                    case "carta si":
+                        cardType = "037";
+                        break;
+                    case "encoded account number":
+                        cardType = "039";
+                        break;
+                    case "uatp":
+                        cardType = "040";
+                        break;
+                    case "maestro international":
+                        cardType = "042";
+                        break;
+                    case "hipercard":
+                        cardType = "050";
+                        break;
+                    case "aura":
+                        cardType = "051";
+                        break;
+                    case "elo":
+                        cardType = "054";
+                        break;
+                    case "china unionpay":
+                        cardType = "062";
+                        break;
+                }
             }
 
             return cardType;
@@ -2162,6 +2174,11 @@ namespace Cybersource.Services
 
         public CybersourceConstants.CardType FindType(string cardNumber)
         {
+            if(string.IsNullOrEmpty(cardNumber))
+            {
+                return CybersourceConstants.CardType.Unknown;
+            }
+
             // Visa:   / ^4(?!38935 | 011 | 51416 | 576)\d{ 12} (?:\d{ 3})?$/
             // Master: / ^5(?!04175 | 067 | 06699)\d{ 15}$/
             // Amex:   / ^3[47]\d{ 13}$/

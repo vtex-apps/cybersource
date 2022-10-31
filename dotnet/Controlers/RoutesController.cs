@@ -47,7 +47,12 @@
                 try
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
-                    MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                    MerchantSetting merchantSettingPayerAuth = null;
+                    if (createPaymentRequest.MerchantSettings != null)
+                    {
+                        merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                    }
+
                     if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
                     {
                         createPaymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
@@ -267,7 +272,7 @@
                 if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
                     string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                    _context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
+                    //_context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
                     RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
                     refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
                 }

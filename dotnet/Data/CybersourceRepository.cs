@@ -128,7 +128,8 @@
                 jsonSerializedCreatePaymentRequest);
             if (!sendResponse.Success)
             {
-                _context.Vtex.Logger.Warn("SavePaymentData", null, $"Failed",
+                _context.Vtex.Logger.Error("SavePaymentData", null, $"Failed",
+                    null,
                     new[]
                 {
                         ( "StatusCode", sendResponse.StatusCode ),
@@ -137,6 +138,15 @@
                         ( "paymentData", JsonConvert.SerializeObject(paymentData) )
                 });
             }
+            //else
+            //{
+            //    _context.Vtex.Logger.Info("SavePaymentData", null, "Saved.",
+            //        new[]
+            //    {
+            //            ( "paymentIdentifier", paymentIdentifier ),
+            //            ( "paymentData", JsonConvert.SerializeObject(paymentData) )
+            //    });
+            //}
         }
 
         public async Task<SendAntifraudDataResponse> GetAntifraudData(string id)
