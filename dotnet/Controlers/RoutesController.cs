@@ -90,7 +90,7 @@
                 {
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
                     SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
-                    _context.Vtex.Logger.Info("PayerAuth", null, $"{paymentData.CreatePaymentRequest.OrderId} = {paymentData.CreatePaymentResponse.Status}", new[]
+                    _context.Vtex.Logger.Info("PayerAuth", null, $"{paymentData.CreatePaymentRequest?.OrderId} = {paymentData.CreatePaymentResponse?.Status}", new[]
                     {
                         ("paymentId", paymentId),
                         ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
@@ -147,9 +147,18 @@
             Response.Headers.Add("Cache-Control", "no-cache");
             string status = CybersourceConstants.VtexAuthStatus.Undefined;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
-            if(paymentData != null && paymentData.CreatePaymentResponse != null)
+            if (paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 status = paymentData.CreatePaymentResponse.Status;
+                SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                if (sendResponse.Success)
+                {
+                    TransactionDetails transactionDetails = await _vtexApiService.GetTransactionDetails(paymentData.TransactionId);
+                    if (transactionDetails != null)
+                    {
+                        status = transactionDetails.Status.ToLower();
+                    }
+                }
             }
 
             return Json(status);
@@ -239,7 +248,6 @@
                 if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
                     string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                    //_context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
                     CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
                     captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
                 }
@@ -272,7 +280,6 @@
                 if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
                     string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                    //_context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
                     RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
                     refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
                 }
@@ -302,8 +309,6 @@
             methods.PaymentMethods.Add("Diners");
             methods.PaymentMethods.Add("Hipercard");
             methods.PaymentMethods.Add("Elo");
-
-            //Response.Headers.Add("Cache-Control", "private");
 
             return Json(methods);
         }
@@ -683,7 +688,6 @@
 
         public async Task<IActionResult> DecisionManagerNotify()
         {
-            //ActionResult actionResult = BadRequest();
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string result = string.Empty;
@@ -693,7 +697,6 @@
                     try
                     {
                         string bodyAsText = HttpUtility.UrlDecode(bodyAsTextRaw);
-                        //_context.Vtex.Logger.Debug("DecisionManagerNotify", null, "Request.Body", new[] { ("body", bodyAsTextRaw) });
                         bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
                         try
                         {
@@ -707,7 +710,6 @@
 
                             result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
                             _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) });
-                            //actionResult = Ok();
                         }
                         catch (Exception ex)
                         {
@@ -725,7 +727,6 @@
                 }
             }
 
-            //return actionResult;
             return Ok();
         }
 

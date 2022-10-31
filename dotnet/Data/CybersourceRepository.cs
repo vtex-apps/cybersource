@@ -138,15 +138,6 @@
                         ( "paymentData", JsonConvert.SerializeObject(paymentData) )
                 });
             }
-            //else
-            //{
-            //    _context.Vtex.Logger.Info("SavePaymentData", null, "Saved.",
-            //        new[]
-            //    {
-            //            ( "paymentIdentifier", paymentIdentifier ),
-            //            ( "paymentData", JsonConvert.SerializeObject(paymentData) )
-            //    });
-            //}
         }
 
         public async Task<SendAntifraudDataResponse> GetAntifraudData(string id)
@@ -490,7 +481,7 @@
 
         public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData)
         {
-            SendResponse sendResponse = null;
+            SendResponse sendResponse = new SendResponse();
             try
             {
                 var request = new HttpRequestMessage
