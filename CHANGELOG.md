@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- vm2 package updated to 3.9.11 due a critical security vulnerability
+
 ## [1.8.0] - 2022-10-20
 
 ### Added
