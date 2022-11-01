@@ -177,6 +177,18 @@ namespace Cybersource.Data
             public const string AmexDirect = "Amex Direct";
         }
 
+        public static class Applications
+        {
+            public const string Decision = "ics_decision";
+            public const string PA_Enroll = "ics_pa_enroll";
+            public const string Authorize = "ics_auth";
+            public const string PA_Setup = "ics_pa_setup";
+            public const string Capture = "ics_bill";
+            public const string CreditAuth = "ics_credit_auth";
+            public const string Credit = "ics_credit";
+            public const string AuthReversal = "ics_auth_reversal";
+        }
+
         public enum CardType
         {
             Unknown,

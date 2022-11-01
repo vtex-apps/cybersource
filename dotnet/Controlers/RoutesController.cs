@@ -89,14 +89,7 @@
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
-                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
-                    _context.Vtex.Logger.Info("PayerAuth", null, $"{paymentData.CreatePaymentRequest?.OrderId} = {paymentData.CreatePaymentResponse?.Status}", new[]
-                    {
-                        ("paymentId", paymentId),
-                        ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
-                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)),
-                        ("sendResponse", JsonConvert.SerializeObject(sendResponse))
-                    });
+                    await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                 }
                 else
                 {
@@ -160,7 +153,7 @@
                     }
                 }
             }
-
+            
             return Json(status);
         }
 
@@ -728,6 +721,12 @@
             }
 
             return Ok();
+        }
+
+        public async Task<IActionResult> RetrieveTransaction(string requestId)
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.RetrieveTransaction(requestId));
         }
 
         public async Task<IActionResult> TestFlattenCustomData()

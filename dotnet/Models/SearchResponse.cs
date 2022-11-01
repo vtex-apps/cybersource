@@ -58,7 +58,7 @@ namespace Cybersource.Models
         public string Id { get; set; }
 
         [JsonProperty("submitTimeUtc")]
-        public DateTimeOffset SubmitTimeUtc { get; set; }
+        public string SubmitTimeUtc { get; set; }
 
         [JsonProperty("merchantId")]
         public string MerchantId { get; set; }

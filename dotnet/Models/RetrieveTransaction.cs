@@ -76,7 +76,13 @@ namespace Cybersource.Models
     public class ApplicationInformation
     {
         [JsonProperty("reasonCode")]
-        public long ReasonCode { get; set; }
+        public string ReasonCode { get; set; }
+
+        [JsonProperty("rCode")]
+        public string RCode { get; set; }
+
+        [JsonProperty("rFlag")]
+        public string RFlag { get; set; }
 
         [JsonProperty("applications")]
         public List<Application> Applications { get; set; }
@@ -100,7 +106,10 @@ namespace Cybersource.Models
         public string RMessage { get; set; }
 
         [JsonProperty("returnCode")]
-        public long ReturnCode { get; set; }
+        public string ReturnCode { get; set; }
+
+        [JsonProperty("reconciliationId")]
+        public string ReconciliationId { get; set; }
     }
 
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]

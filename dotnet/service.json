@@ -131,6 +131,10 @@
     "checkAuthStatus": {
       "path": "/cybersource/payer-auth/status/:paymentId",
       "public": true
+    },
+    "retrieveTransaction": {
+      "path": "/cybersource/payment-provider/retrieve-transaction/:requestId",
+      "public": true
     }
   },
   "events": {

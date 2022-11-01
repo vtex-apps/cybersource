@@ -55,7 +55,6 @@ namespace Cybersource.Services
             Payments payment = null;
             try
             {
-                _context.Vtex.Logger.Debug("BuildPayment", null, "Creating Payment", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)) });
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string merchantName = createPaymentRequest.MerchantName;
                 string merchantTaxId = string.Empty;
@@ -684,7 +683,6 @@ namespace Cybersource.Services
                 }
                 else if (paymentData.CreatePaymentResponse != null && string.IsNullOrEmpty(authenticationTransactionId))
                 {
-                    _context.Vtex.Logger.Debug("CreatePayment", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
                     await _vtexApiService.ProcessConversions();
                     return (paymentData.CreatePaymentResponse, null);
                 }
@@ -725,13 +723,11 @@ namespace Cybersource.Services
 
                 if (paymentsResponse != null)
                 {
-                    _context.Vtex.Logger.Debug("CreatePayment", "PaymentService", "Processing Payment", new[] 
-                    {
-                        ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
-                        ("payment", JsonConvert.SerializeObject(payment)),
-                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
-                    });
                     createPaymentResponse = new CreatePaymentResponse();
+                    string paymentStatus;
+                    bool doCancel;
+                    (createPaymentResponse, paymentsResponse, paymentStatus, doCancel) = await this.GetPaymentStatus(createPaymentResponse, createPaymentRequest, paymentsResponse, isPayerAuth);
+
                     createPaymentResponse.AuthorizationId = paymentsResponse.Id;
                     createPaymentResponse.Tid = paymentsResponse.Id;
                     createPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message ?? paymentsResponse.Status;
@@ -744,96 +740,6 @@ namespace Cybersource.Services
                         ? paymentsResponse.ProcessorInformation.ResponseCode
                         : errorInformation;
 
-                    string paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
-                    bool doCancel = false;
-                    // AUTHORIZED
-                    // PARTIAL_AUTHORIZED
-                    // AUTHORIZED_PENDING_REVIEW
-                    // AUTHORIZED_RISK_DECLINED
-                    // PENDING_AUTHENTICATION
-                    // PENDING_REVIEW
-                    // DECLINED
-                    // INVALID_REQUEST
-                    switch (paymentsResponse.Status)
-                    {
-                        case "AUTHORIZED":
-                        case "PARTIAL_AUTHORIZED":
-                        case "AUTHENTICATION_SUCCESSFUL":
-                            if (isPayerAuth)
-                            {
-                                if (!string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.VeresEnrolled) &&
-                                    !paymentsResponse.ConsumerAuthenticationInformation.VeresEnrolled.Equals("Y"))
-                                {
-                                    //Y - Authentication Successful
-                                    //U - Authentication Could Not Be Performed
-                                    //B - Bypassed Authentication
-                                    //N – Cardholder not participating
-                                    paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
-                                    doCancel = true;
-                                    paymentsResponse.Status = "REFUSED";
-                                    break;
-                                }
-
-                                // MC
-                                if ((paymentsResponse.PaymentInformation.card.type.Equals("002") &&
-                                    string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.UcafCollectionIndicator)) ||
-                                    (!string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.UcafCollectionIndicator) &&
-                                    paymentsResponse.ConsumerAuthenticationInformation.UcafCollectionIndicator.Equals("0")))
-                                {
-                                    paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
-                                    doCancel = true;
-                                    paymentsResponse.Status = "REFUSED";
-                                    break;
-                                }
-
-                                // Visa or Amex
-                                if ((paymentsResponse.PaymentInformation.card.type.Equals("001") || paymentsResponse.PaymentInformation.card.type.Equals("003")) &&
-                                    (string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.Eci)) ||
-                                    (!string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.Eci) &&
-                                    (paymentsResponse.ConsumerAuthenticationInformation.Eci.Equals("00") ||
-                                    paymentsResponse.ConsumerAuthenticationInformation.Eci.Equals("07"))))
-                                {
-                                    //05 - Authentication successful para Visa / Amex
-                                    //02 - Authentication successful para Mastercard
-                                    //06 - Authentication attempted para Visa / Amex
-                                    //01 - Authentication attempted para Mastercard
-                                    //07 - Authentication failed para Visa / Amex
-                                    //00 - Authentication failed para Mastercard
-                                    paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
-                                    doCancel = true;
-                                    paymentsResponse.Status = "REFUSED";
-                                    break;
-                                }
-                            }
-
-                            // Check for pre-auth fraud status
-                            SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
-                            if (antifraudDataResponse != null)
-                            {
-                                paymentStatus = antifraudDataResponse.Status;
-                            }
-                            else
-                            {
-                                paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
-                            }
-
-                            break;
-
-                        case "AUTHORIZED_PENDING_REVIEW":
-                        case "PENDING_AUTHENTICATION":
-                        case "PENDING_REVIEW":
-                        case "INVALID_REQUEST":
-                            paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
-                            createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
-                            break;
-                        case "DECLINED":
-                        case "AUTHORIZED_RISK_DECLINED":
-                        case "CONSUMER_AUTHENTICATION_FAILED":
-                            paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
-                            break;
-                    }
-
-                    createPaymentResponse.Status = paymentStatus;
                     if (paymentsResponse.ProcessorInformation != null)
                     {
                         try
@@ -899,7 +805,7 @@ namespace Cybersource.Services
                 }
                 else
                 {
-                    _context.Vtex.Logger.Debug("CreatePayment", null, "Null Response");
+                    _context.Vtex.Logger.Warn("CreatePayment", null, "Null Response");
                 }
             }
             catch (Exception ex)
@@ -911,6 +817,11 @@ namespace Cybersource.Services
                     ( "PaymentId", createPaymentRequest.PaymentId )
                 });
             }
+
+            _context.Vtex.Logger.Info("CreatePayment", "Response", createPaymentRequest.OrderId, new[] {
+                ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
+                ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
+                ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
 
             return (createPaymentResponse, paymentsResponse);
         }
@@ -1074,18 +985,10 @@ namespace Cybersource.Services
                     else
                     {
                         // Try to get transaction from Cybersource
-                        CreateSearchRequest searchRequest = new CreateSearchRequest
-                        {
-                            Query = $"clientReferenceInformation.code:{referenceNumber}",
-                            Sort = "submitTimeUtc:desc",
-                            Limit = 2000
-                        };
-
-                        SearchResponse searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest);
+                        SearchResponse searchResponse = await this.SearchTransaction(referenceNumber);
                         if (searchResponse != null)
                         {
-                            _context.Vtex.Logger.Debug("SearchResponse", null, "SearchResponse", new[] { ("orderId", paymentData.CreatePaymentRequest.OrderId), ("paymentId", paymentData.PaymentId), ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });
-                            foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals("ics_bill") && ai.ReasonCode.Equals("100"))))
+                            foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
                             {
                                 string captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
                                 decimal captureValue = 0m;
@@ -1410,7 +1313,6 @@ namespace Cybersource.Services
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
             if (paymentData != null && paymentData.CreatePaymentResponse != null)
             {
-                _context.Vtex.Logger.Debug("SetupPayerAuth", null, "Loaded PaymentData", new[] { ("orderId", createPaymentRequest.OrderId), ("paymentId", createPaymentRequest.PaymentId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)), ("paymentData", JsonConvert.SerializeObject(paymentData)) });
                 return paymentData.CreatePaymentResponse;
             }
 
@@ -1651,8 +1553,6 @@ namespace Cybersource.Services
                             regionCode = GetAdministrativeAreaPanama(region);
                             break;
                     }
-
-                    _context.Vtex.Logger.Debug("GetAdministrativeArea", null, $"'{region}', '{countryCode}' = '{regionCode}'");
                 }
             }
             catch (Exception ex)
@@ -2531,6 +2431,185 @@ namespace Cybersource.Services
             }
 
             return reconciliationId;
+        }
+
+        public async Task<RetrieveTransaction> RetrieveTransaction(string requestId)
+        {
+            RetrieveTransaction retrieveTransaction = await _cybersourceApi.RetrieveTransaction(requestId);
+            return retrieveTransaction;
+        }
+
+        public async Task<SearchResponse> SearchTransaction(string referenceNumber)
+        {
+            SearchResponse searchResponse = null;
+            CreateSearchRequest searchRequest = new CreateSearchRequest
+            {
+                Query = $"clientReferenceInformation.code:{referenceNumber}",
+                Sort = "submitTimeUtc:desc",
+                Limit = 2000
+            };
+
+            searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest);
+            return searchResponse;
+        }
+
+        private async Task<(CreatePaymentResponse createPaymentResponse, PaymentsResponse paymentsResponse, string paymentStatus, bool doCancel)> GetPaymentStatus(CreatePaymentResponse createPaymentResponse, CreatePaymentRequest createPaymentRequest, PaymentsResponse paymentsResponse, bool isPayerAuth)
+        {
+            string paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
+            bool doCancel = false;
+
+            // AUTHORIZED
+            // PARTIAL_AUTHORIZED
+            // AUTHORIZED_PENDING_REVIEW
+            // AUTHORIZED_RISK_DECLINED
+            // PENDING_AUTHENTICATION
+            // PENDING_REVIEW
+            // DECLINED
+            // INVALID_REQUEST
+            switch (paymentsResponse.Status)
+            {
+                case "AUTHORIZED":
+                case "PARTIAL_AUTHORIZED":
+                case "AUTHENTICATION_SUCCESSFUL":
+                case "SOK":
+                    if (isPayerAuth)
+                    {
+                        if (!string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.VeresEnrolled) &&
+                            !paymentsResponse.ConsumerAuthenticationInformation.VeresEnrolled.Equals("Y"))
+                        {
+                            //Y - Authentication Successful
+                            //U - Authentication Could Not Be Performed
+                            //B - Bypassed Authentication
+                            //N – Cardholder not participating
+                            paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                            doCancel = true;
+                            paymentsResponse.Status = "REFUSED";
+                            break;
+                        }
+
+                        // MC
+                        if ((paymentsResponse.PaymentInformation.card.type.Equals("002") &&
+                            string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.UcafCollectionIndicator)) ||
+                            (!string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.UcafCollectionIndicator) &&
+                            paymentsResponse.ConsumerAuthenticationInformation.UcafCollectionIndicator.Equals("0")))
+                        {
+                            paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                            doCancel = true;
+                            paymentsResponse.Status = "REFUSED";
+                            break;
+                        }
+
+                        // Visa or Amex
+                        if ((paymentsResponse.PaymentInformation.card.type.Equals("001") || paymentsResponse.PaymentInformation.card.type.Equals("003")) &&
+                            (string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.Eci)) ||
+                            (!string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.Eci) &&
+                            (paymentsResponse.ConsumerAuthenticationInformation.Eci.Equals("00") ||
+                            paymentsResponse.ConsumerAuthenticationInformation.Eci.Equals("07"))))
+                        {
+                            //05 - Authentication successful para Visa / Amex
+                            //02 - Authentication successful para Mastercard
+                            //06 - Authentication attempted para Visa / Amex
+                            //01 - Authentication attempted para Mastercard
+                            //07 - Authentication failed para Visa / Amex
+                            //00 - Authentication failed para Mastercard
+                            paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                            doCancel = true;
+                            paymentsResponse.Status = "REFUSED";
+                            break;
+                        }
+                    }
+
+                    // Check for pre-auth fraud status
+                    SendAntifraudDataResponse antifraudDataResponse = await _cybersourceRepository.GetAntifraudData(createPaymentRequest.TransactionId);
+                    if (antifraudDataResponse != null)
+                    {
+                        paymentStatus = antifraudDataResponse.Status;
+                    }
+                    else
+                    {
+                        paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
+                    }
+
+                    break;
+
+                case "AUTHORIZED_PENDING_REVIEW":
+                case "PENDING_AUTHENTICATION":
+                case "PENDING_REVIEW":
+                case "INVALID_REQUEST":
+                    paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
+                    createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
+                    break;
+                case "DECLINED":
+                case "AUTHORIZED_RISK_DECLINED":
+                case "CONSUMER_AUTHENTICATION_FAILED":
+                    paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                    break;
+                case "ERROR":
+                    string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
+                    SearchResponse searchResponse = await this.SearchTransaction(referenceNumber);
+                    if(searchResponse != null)
+                    {
+                        // First transaction should be the most recent
+                        TransactionSummary transactionSummary = searchResponse.Embedded.TransactionSummaries.First();
+                        string authValueString = string.Empty;
+                        string captureValueString = string.Empty;
+                        foreach (Application application in transactionSummary.ApplicationInformation.Applications)
+                        {
+                            if (application.Name.Equals(CybersourceConstants.Applications.Authorize) && application.ReasonCode.Equals("100"))
+                            {
+                                authValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
+                            }
+
+                            if (application.Name.Equals(CybersourceConstants.Applications.Capture) && application.ReasonCode.Equals("100"))
+                            {
+                                captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
+                            }
+                        }
+
+                        paymentsResponse = new PaymentsResponse
+                        {
+                            ConsumerAuthenticationInformation = transactionSummary.ConsumerAuthenticationInformation,
+                            ClientReferenceInformation = transactionSummary.ClientReferenceInformation,
+                            Id = transactionSummary.Id,
+                            ReconciliationId = transactionSummary.ApplicationInformation.Applications.First().ReconciliationId,
+                            OrderInformation = transactionSummary.OrderInformation,
+                            ProcessorInformation = transactionSummary.ProcessorInformation,
+                            Status = transactionSummary.ApplicationInformation.RFlag,
+                            SubmitTimeUtc = transactionSummary.SubmitTimeUtc,
+                            Message = "Transaction(s) retrieved from Cybersource."
+                        };
+
+                        paymentsResponse.OrderInformation.amountDetails.authorizedAmount = authValueString;
+                        paymentsResponse.OrderInformation.amountDetails.totalAmount = captureValueString;
+                        if (paymentsResponse.ProcessorInformation != null)
+                        {
+                            paymentsResponse.ProcessorInformation.TransactionId = transactionSummary.Id;
+                        }
+
+                        if(paymentsResponse.ConsumerAuthenticationInformation != null)
+                        {
+                            paymentsResponse.ConsumerAuthenticationInformation.Eci = paymentsResponse.ConsumerAuthenticationInformation.EciRaw;
+                        }
+
+                        if(!paymentsResponse.Status.Equals("ERROR"))
+                        {
+                            // If status is not ERROR (to prevent an infinate loop) re-run this function to apply Payer Auth and Anti-fraud logic
+                            (createPaymentResponse, paymentsResponse, paymentStatus, doCancel) = await this.GetPaymentStatus(createPaymentResponse, createPaymentRequest, paymentsResponse, isPayerAuth);
+                        }
+                    }
+                    break;
+                default:
+                    _context.Vtex.Logger.Warn("CreatePayment", null, $"Invalid Status: {paymentsResponse.Status}", new[]
+                    {
+                                ("OrderId", createPaymentRequest.OrderId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
+                                ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
+                                ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
+                            });
+                    break;
+            }
+
+            createPaymentResponse.Status = paymentStatus;
+            return (createPaymentResponse, paymentsResponse, paymentStatus, doCancel);
         }
     }
 }
