@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - (CYBRSOURCE-53 & CYBRSOURCE-54) If there is an error processing payment, attempt to retrieve the transaction from Cybersource
 
+## [1.8.1] - 2022-11-01
+
+### Changed
+- vm2 package updated to 3.9.11 due a critical security vulnerability
+
 ## [1.8.0] - 2022-10-20
 
 ### Added
