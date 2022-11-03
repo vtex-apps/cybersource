@@ -1070,6 +1070,10 @@ namespace Cybersource.Services
                         {
                             totalAmount = refundPaymentRequest.Value.ToString()
                         }
+                    },
+                    processingInformation = new ProcessingInformation
+                    {
+                        reconciliationId = paymentData.CaptureId
                     }
                 };
 
@@ -2636,6 +2640,7 @@ namespace Cybersource.Services
             if (objToCopy != null)
             {
                 string objAsString = JsonConvert.SerializeObject(objToCopy);
+                Console.WriteLine($"DeepCopy: [{objAsString}]");
                 return JsonConvert.DeserializeObject<T>(objAsString);
             }
             else
