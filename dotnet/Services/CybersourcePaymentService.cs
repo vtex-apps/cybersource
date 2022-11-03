@@ -1070,6 +1070,10 @@ namespace Cybersource.Services
                         {
                             totalAmount = refundPaymentRequest.Value.ToString()
                         }
+                    },
+                    processingInformation = new ProcessingInformation
+                    {
+                        reconciliationId = paymentData.CaptureId
                     }
                 };
 
