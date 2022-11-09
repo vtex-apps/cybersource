@@ -554,7 +554,7 @@ namespace Cybersource.Services
                     }
                 }
 
-                long shippingTax = 0;
+                decimal taxRate = 0;
                 foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
                 {
                     string taxAmount = string.Empty;
@@ -572,11 +572,7 @@ namespace Cybersource.Services
                                 {
                                     if (priceTag.IsPercentual ?? false)
                                     {
-                                        shippingTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
-                                    }
-                                    else
-                                    {
-                                        shippingTax += priceTag.Value / vtexOrderItem.Quantity;
+                                        taxRate = (decimal)priceTag.RawValue;
                                     }
                                 }
                                 else
@@ -655,7 +651,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = ((decimal)shippingTax / 100).ToString() // taxAmount * taxRate (based on configuration in the account)
+                                    amount = (createPaymentRequest.MiniCart.ShippingValue * taxRate).ToString() // taxAmount * taxRate (based on configuration in the account)
                                 }
                             }
                         };
