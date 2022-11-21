@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Payer Auth updates
+
+### Fixed
+- (CYBRSOURCE-53 & CYBRSOURCE-54) If there is an error processing payment, attempt to retrieve the transaction from Cybersource
+
+### Added
+- Add reconciliationId to refunds
+
 ## [1.8.3] - 2022-11-10
 
 ### Added

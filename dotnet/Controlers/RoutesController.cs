@@ -47,7 +47,12 @@
                 try
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
-                    MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                    MerchantSetting merchantSettingPayerAuth = null;
+                    if (createPaymentRequest.MerchantSettings != null)
+                    {
+                        merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                    }
+
                     if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
                     {
                         createPaymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
@@ -84,14 +89,7 @@
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
-                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
-                    _context.Vtex.Logger.Debug("PayerAuth", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
-                    {
-                        ("paymentId", paymentId),
-                        ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
-                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)),
-                        ("sendResponse", JsonConvert.SerializeObject(sendResponse))
-                    });
+                    await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                 }
                 else
                 {
@@ -142,17 +140,25 @@
             Response.Headers.Add("Cache-Control", "no-cache");
             string status = CybersourceConstants.VtexAuthStatus.Undefined;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
-            if(paymentData != null && paymentData.CreatePaymentResponse != null)
+            if (paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 status = paymentData.CreatePaymentResponse.Status;
+                SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                if (sendResponse.Success)
+                {
+                    TransactionDetails transactionDetails = await _vtexApiService.GetTransactionDetails(paymentData.TransactionId);
+                    if (transactionDetails != null)
+                    {
+                        status = transactionDetails.Status.ToLower();
+                    }
+                }
             }
-
+            
             return Json(status);
         }
 
         public async Task<CreatePaymentResponse> ProcessPayerAuthentication(string paymentId, string authenticationTransactionId)
         {
-            Console.WriteLine($"ValidateAuthenticationResults = [{authenticationTransactionId}] ");
             CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
@@ -163,8 +169,8 @@
                     paymentData.AuthenticationTransactionId = authenticationTransactionId;
                     await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
                     (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, authenticationTransactionId);
-                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
-                    _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, $"{paymentData.OrderId} = {createPaymentResponse.Status}", new[]
+                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    _context.Vtex.Logger.Info("ValidateAuthenticationResults", null, $"{paymentData.CreatePaymentRequest.OrderId} = {paymentData.CreatePaymentResponse.Status}", new[]
                     {
                         ("paymentId", paymentId),
                         ("authenticationTransactionId", authenticationTransactionId),
@@ -235,7 +241,6 @@
                 if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
                     string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                    _context.Vtex.Logger.Debug("CapturePayment", "bodyAsText", bodyAsText);
                     CapturePaymentRequest capturePaymentRequest = JsonConvert.DeserializeObject<CapturePaymentRequest>(bodyAsText);
                     captureResponse = await this._cybersourcePaymentService.CapturePayment(capturePaymentRequest);
                 }
@@ -268,7 +273,6 @@
                 if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
                 {
                     string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-                    _context.Vtex.Logger.Debug("RefundPayment", "bodyAsText", bodyAsText);
                     RefundPaymentRequest refundPaymentRequest = JsonConvert.DeserializeObject<RefundPaymentRequest>(bodyAsText);
                     refundResponse = await this._cybersourcePaymentService.RefundPayment(refundPaymentRequest);
                 }
@@ -298,8 +302,6 @@
             methods.PaymentMethods.Add("Diners");
             methods.PaymentMethods.Add("Hipercard");
             methods.PaymentMethods.Add("Elo");
-
-            //Response.Headers.Add("Cache-Control", "private");
 
             return Json(methods);
         }
@@ -679,7 +681,6 @@
 
         public async Task<IActionResult> DecisionManagerNotify()
         {
-            //ActionResult actionResult = BadRequest();
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string result = string.Empty;
@@ -689,7 +690,6 @@
                     try
                     {
                         string bodyAsText = HttpUtility.UrlDecode(bodyAsTextRaw);
-                        //_context.Vtex.Logger.Debug("DecisionManagerNotify", null, "Request.Body", new[] { ("body", bodyAsTextRaw) });
                         bodyAsText = bodyAsText.Substring(bodyAsText.IndexOf("=") + 1);
                         try
                         {
@@ -703,7 +703,6 @@
 
                             result = await _vtexApiService.UpdateOrderStatus(caseManagementOrderStatus.Update.MerchantReferenceNumber, caseManagementOrderStatus.Update.NewDecision, caseManagementOrderStatus.Update.ReviewerComments);
                             _context.Vtex.Logger.Info("DecisionManagerNotify", null, $"{caseManagementOrderStatus.Update.MerchantReferenceNumber} : {caseManagementOrderStatus.Update.OriginalDecision} - {caseManagementOrderStatus.Update.NewDecision}", new[] { ("result", result) });
-                            //actionResult = Ok();
                         }
                         catch (Exception ex)
                         {
@@ -721,8 +720,13 @@
                 }
             }
 
-            //return actionResult;
             return Ok();
+        }
+
+        public async Task<IActionResult> RetrieveTransaction(string requestId)
+        {
+            Response.Headers.Add("Cache-Control", "no-cache");
+            return Json(await _cybersourcePaymentService.RetrieveTransaction(requestId));
         }
 
         public async Task<IActionResult> TestFlattenCustomData()

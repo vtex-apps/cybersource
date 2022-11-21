@@ -55,7 +55,6 @@ namespace Cybersource.Services
                     urlBase = CybersourceConstants.SandboxApiEndpoint;
                 }
 
-            
                 var request = new HttpRequestMessage
                 {
                     Method = method,
@@ -100,8 +99,6 @@ namespace Cybersource.Services
                     string headerContent = string.Join(",", header.Value.ToArray());
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
-
-                //_context.Vtex.Logger.Debug("SendRequest", $"Production? {merchantSettings.IsLive}", $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -164,8 +161,6 @@ namespace Cybersource.Services
                     Success = response.IsSuccessStatusCode,
                     Message = responseContent
                 };
-
-                //_context.Vtex.Logger.Debug("SendReportRequest", null, $"{request.RequestUri}\n{jsonSerializedData}\nv-c-merchant-id: {merchantSettings.MerchantId}\nDate: {gmtDateTime}\nHost: {urlBase}\nDigest: {digest}\nSignature: {signatureString}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -343,9 +338,6 @@ namespace Cybersource.Services
                     ( "proxyTokenUrl", proxyTokenUrl )
                 });
             }
-            
-
-            //_context.Vtex.Logger.Debug("SendProxyDigestRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
 
             return sendResponse;
         }
@@ -383,8 +375,6 @@ namespace Cybersource.Services
                 };
 
                 sendResponse = await this.SendProxyTokenRequest(proxyTokenRequest, proxyTokenUrl);
-
-                //_context.Vtex.Logger.Debug("SendProxySignatureRequest", null, JsonConvert.SerializeObject(proxyTokenRequest));
             }
             catch (Exception ex)
             {
@@ -455,8 +445,6 @@ namespace Cybersource.Services
                     string headerContent = string.Join(",", header.Value.ToArray());
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
-
-                //_context.Vtex.Logger.Debug("SendProxyTokenRequest", null, $"{proxyTokenUrl}\n{sb}\n{jsonSerializedData}\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
@@ -477,12 +465,19 @@ namespace Cybersource.Services
         public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
         {
             PaymentsResponse paymentsResponse = null;
-
             try
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.PAYMENTS}payments";
-                SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+                SendResponse response = null;
+                if (string.IsNullOrEmpty(proxyUrl))
+                {
+                    response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                }
+                else
+                {
+                    response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+                }
                 
                 if (response != null)
                 {
@@ -493,6 +488,11 @@ namespace Cybersource.Services
                     else
                     {
                         _context.Vtex.Logger.Error("ProcessPayment", null, $"[{response.StatusCode}] {response.Message}", null, new[] { ("Request", JsonConvert.SerializeObject(payments)) });
+                        paymentsResponse = new PaymentsResponse
+                        {
+                            Status = "ERROR",
+                            Message = response.StatusCode
+                        };
                     }
                 }
                 else
@@ -665,7 +665,6 @@ namespace Cybersource.Services
             try
             {
                 string json = JsonConvert.SerializeObject(payments);
-                _context.Vtex.Logger.Debug("CreateDecisionManager", null, json);
                 string endpoint = $"{CybersourceConstants.RISK}decisions";
                 SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
                 if (response != null)
@@ -692,10 +691,8 @@ namespace Cybersource.Services
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
-            _context.Vtex.Logger.Debug("SetupPayerAuth", "request", json);
             string endpoint = $"{CybersourceConstants.RISK}authentication-setups";
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
-            _context.Vtex.Logger.Debug("SetupPayerAuth", "response", response.Message);
             if (response.Success)
             {
                 paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -708,7 +705,6 @@ namespace Cybersource.Services
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
-            _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, json);
             string endpoint = $"{CybersourceConstants.RISK}authentications";
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
             if (response.Success)
@@ -723,7 +719,6 @@ namespace Cybersource.Services
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
-            _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, json);
             string endpoint = $"{CybersourceConstants.RISK}authentication-results";
             SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
             if (response.Success)
@@ -1109,8 +1104,6 @@ namespace Cybersource.Services
             signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
             signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
 
-            //_context.Vtex.Logger.Debug("GenerateSignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
-
             return signatureHeaderValue.ToString();
         }
 
@@ -1175,8 +1168,6 @@ namespace Cybersource.Services
                 signatureHeaderValue.Append(", algorithm=\"" + CybersourceConstants.SignatureAlgorithm + "\"");
                 signatureHeaderValue.Append(", headers=\"" + headersString + "\"");
                 signatureHeaderValue.Append(", signature=\"" + base64EncodedSignature + "\"");
-
-                //_context.Vtex.Logger.Debug("GenerateProxySignatureString", null, $"{signatureString}\n\n{signatureHeaderValue}");
             }
             catch (Exception ex)
             {
