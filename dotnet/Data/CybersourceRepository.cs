@@ -128,7 +128,8 @@
                 jsonSerializedCreatePaymentRequest);
             if (!sendResponse.Success)
             {
-                _context.Vtex.Logger.Warn("SavePaymentData", null, $"Failed",
+                _context.Vtex.Logger.Error("SavePaymentData", null, $"Failed",
+                    null,
                     new[]
                 {
                         ( "StatusCode", sendResponse.StatusCode ),
@@ -480,7 +481,7 @@
 
         public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData)
         {
-            SendResponse sendResponse = null;
+            SendResponse sendResponse = new SendResponse();
             try
             {
                 var request = new HttpRequestMessage

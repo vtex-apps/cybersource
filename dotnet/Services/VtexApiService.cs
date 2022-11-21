@@ -339,6 +339,30 @@ namespace Cybersource.Services
             return getSkuResponse;
         }
 
+        public async Task<TransactionDetails> GetTransactionDetails(string transactionId)
+        {
+            TransactionDetails transactionDetails = null;
+            try
+            {
+                SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.vtexpayments.com.br/api/pvt/transactions/{transactionId}", null);
+                if (sendResponse.Success)
+                {
+                    transactionDetails = JsonConvert.DeserializeObject<TransactionDetails>(sendResponse.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetTransactionDetails", null,
+                "Error:", ex,
+                new[]
+                {
+                     ( "transactionId", transactionId )
+                });
+            }
+
+            return transactionDetails;
+        }
+
         public async Task<string> InitConfiguration()
         {
             string retval = string.Empty;
@@ -1087,9 +1111,9 @@ namespace Cybersource.Services
                                     if (updateStatus)
                                     {
                                         await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
-                                        if (paymentData.CallbackUrl != null)
+                                        if (paymentData.CreatePaymentRequest.CallbackUrl != null)
                                         {
-                                            SendResponse sendResponse = await this.PostCallbackResponse(paymentData.CallbackUrl, paymentData.CreatePaymentResponse);
+                                            SendResponse sendResponse = await this.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                                             if (sendResponse != null)
                                             {
                                                 results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} updated? {sendResponse.Success}");

@@ -61,7 +61,6 @@ namespace Cybersource.GraphQL
                 resolve: async context =>
                 {
                     string paymentId = context.GetArgument<string>("paymentId");
-                    Console.WriteLine($"    payerAuthorize paymentId = '{paymentId}'    ");
                     CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
                     PaymentsResponse paymentsResponse = null;
                     PaymentData paymentData = await cybersourceRepository.GetPaymentData(paymentId);
@@ -80,7 +79,6 @@ namespace Cybersource.GraphQL
                         }
                     }
 
-                    Console.WriteLine($"    payerAuthorize paymentResponse.Status = '{createPaymentResponse.Status}'    ");
                     return createPaymentResponse.Status; // approved, denied, undefined
                 });
         }

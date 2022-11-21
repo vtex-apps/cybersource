@@ -34,5 +34,6 @@ namespace Cybersource.Services
         Task<BinLookup> BinLookup(string bin);
         Task<HttpStatusCode> IsValidAuthUser();
         Task<ValidatedUser> ValidateUserToken(string token);
+        Task<TransactionDetails> GetTransactionDetails(string transactionId);
     }
 }
