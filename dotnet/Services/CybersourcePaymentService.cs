@@ -624,7 +624,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = (((decimal)itemTax / 100) * vtexItem.Quantity).ToString()
+                                    amount = ((itemTax * vtexItem.Quantity) / 100).ToString()
                                 }
                             };
                         }
