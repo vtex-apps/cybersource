@@ -624,7 +624,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = ((itemTax * vtexItem.Quantity) / 100).ToString()
+                                    amount = ((itemTax * vtexItem.Quantity) / 100m).ToString()
                                 }
                             };
                         }
@@ -660,11 +660,11 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = useRate ? (createPaymentRequest.MiniCart.ShippingValue * taxRate).ToString() : shippingTaxAmount.ToString()   // taxAmount * taxRate (based on configuration in the account)
+                                    amount = useRate ? (createPaymentRequest.MiniCart.ShippingValue * taxRate).ToString("0.00") : shippingTaxAmount.ToString("0.00")   // taxAmount * taxRate (based on configuration in the account)
                                 }
                             }
                         };
-
+                        
                         payment.orderInformation.lineItems.Add(lineItem);
                     }
                 }
