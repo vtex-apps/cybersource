@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.8.6] - 2022-11-23
+
 ### Fixed
 
 - Decimal places to two digits for EC tax fields
