@@ -564,7 +564,7 @@ namespace Cybersource.Services
                     string taxAmount = string.Empty;
                     string commodityCode = string.Empty;
                     long itemTax = 0L;
-                    VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => i.Id.Equals(vtexItem.Id));
+                    VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => (i.Id.Equals(vtexItem.Id)) && (i.Quantity.Equals(vtexItem.Quantity)));
                     if (vtexOrderItem != null)
                     {
                         foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
@@ -649,6 +649,16 @@ namespace Cybersource.Services
                         };
 
                         // Add shipping tax as a line item
+                        decimal taxDetailAmount = 0m;
+                        if (useRate)
+                        {
+                            taxDetailAmount = createPaymentRequest.MiniCart.ShippingValue * taxRate;
+                        }
+                        else
+                        {
+                            taxDetailAmount = (decimal)shippingTaxAmount;
+                        }
+
                         LineItem lineItem = new LineItem
                         {
                             productName = "ADMINISTRACION MANEJO DE PRODUCTO",
@@ -660,7 +670,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = useRate ? (createPaymentRequest.MiniCart.ShippingValue * taxRate).ToString("0.00") : shippingTaxAmount.ToString("0.00")   // taxAmount * taxRate (based on configuration in the account)
+                                    amount = taxDetailAmount.ToString()   // taxAmount * taxRate (based on configuration in the account)
                                 }
                             }
                         };
