@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.8.7] - 2022-11-25
+
 ### Fixed
 
 - Rounding for EC tax fields
