@@ -72,6 +72,16 @@ strategy:
     parallel: false
     specs:
       - cypress/integration/1.0-ConfigureAffiliation.spec.js
+  splitAndNonSplitSkuTest: 
+    enabled: true
+    sendDashboard: true
+    hardTries: 1
+    stopOnFail: true
+    parallel: false
+    specs:
+      - cypress/integration/sku.spec.js
+    dependency:
+      - cypress/integration/1.0-ConfigureAffiliation.spec.js
   basicTests:
     enabled: true
     sendDashboard: true
@@ -79,7 +89,7 @@ strategy:
     stopOnFail: false
     parallel: true
     specs:
-      - cypress/integration/sku.spec.js
+      
       - cypress/integration/2.1-singleProduct.spec.js
       - cypress/integration/2.2-multiProduct.spec.js
       - cypress/integration/2.3-promotionalProduct.spec.js
@@ -87,7 +97,7 @@ strategy:
       - cypress/integration/2.5-discountShipping.spec.js
       - cypress/integration/2.6-externalSeller.spec.js
     dependency:
-      - cypress/integration/1.0-ConfigureAffiliation.spec.js
+      - cypress/integration/sku.spec.js
   refund:
     enabled: true
     sendDashboard: true
