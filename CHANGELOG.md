@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Set maxJobs from 3 to 2 & Increase basicTests hardRetries from 1 to 2
+
 ## [1.8.7] - 2022-11-25
 
 ### Fixed
