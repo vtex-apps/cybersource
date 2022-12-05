@@ -14,6 +14,9 @@ namespace Cybersource.Services
 
         Task<CreatePaymentResponse> SetupPayerAuth(CreatePaymentRequest createPaymentRequest);
         Task<PaymentsResponse> CheckPayerAuthEnrollment(CreatePaymentRequest createPaymentRequest);
+        Task<PaymentsResponse> ValidateAuthenticationResults(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId);
+
+        Task<(CreatePaymentResponse createPaymentResponse, PaymentsResponse paymentsResponse, string paymentStatus, bool doCancel)> GetPaymentStatus(CreatePaymentResponse createPaymentResponse, CreatePaymentRequest createPaymentRequest, PaymentsResponse paymentsResponse, bool isPayerAuth);
 
         Task<SendAntifraudDataResponse> SendAntifraudData(SendAntifraudDataRequest sendAntifraudDataRequest);
         Task<SendAntifraudDataResponse> GetAntifraudStatus(string id);

@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -670,7 +667,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = taxDetailAmount.ToString()   // taxAmount * taxRate (based on configuration in the account)
+                                    amount = Math.Round(taxDetailAmount, 2, MidpointRounding.AwayFromZero).ToString()   // taxAmount * taxRate (based on configuration in the account)
                                 }
                             }
                         };
@@ -739,20 +736,7 @@ namespace Cybersource.Services
 
                 bool isPayerAuth = false;
                 Payments payment = await this.BuildPayment(createPaymentRequest);
-                if (!string.IsNullOrEmpty(authenticationTransactionId))
-                {
-                    isPayerAuth = true;
-                    payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
-                    {
-                        AuthenticationTransactionId = authenticationTransactionId
-                    };
-
-                    payment.processingInformation.actionList = new List<string>
-                    {
-                        nameof(CybersourceConstants.ActionList.VALIDATE_CONSUMER_AUTHENTICATION)
-                    };
-                }
-                else if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
+                if (string.IsNullOrEmpty(authenticationTransactionId) && !string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
                     // Check Payer Auth Enrollment
                     isPayerAuth = true;
@@ -1446,6 +1430,34 @@ namespace Cybersource.Services
             }
 
             _context.Vtex.Logger.Debug("CheckPayerAuthEnrollment", null, string.Empty, new[]
+            {
+                ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
+                ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
+            });
+
+            return paymentsResponse;
+        }
+
+        public async Task<PaymentsResponse> ValidateAuthenticationResults(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId)
+        {
+            PaymentsResponse paymentsResponse = null;
+            
+            try
+            {
+                Payments payment = await this.BuildPayment(createPaymentRequest);
+                payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
+                {
+                    AuthenticationTransactionId = authenticationTransactionId
+                };
+
+                paymentsResponse = await _cybersourceApi.ValidateAuthenticationResults(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("ValidateAuthenticationResults", null, "Error", ex);
+            }
+
+            _context.Vtex.Logger.Debug("ValidateAuthenticationResults", null, string.Empty, new[]
             {
                 ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
                 ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
@@ -2507,7 +2519,7 @@ namespace Cybersource.Services
             return searchResponse;
         }
 
-        private async Task<(CreatePaymentResponse createPaymentResponse, PaymentsResponse paymentsResponse, string paymentStatus, bool doCancel)> GetPaymentStatus(CreatePaymentResponse createPaymentResponse, CreatePaymentRequest createPaymentRequest, PaymentsResponse paymentsResponse, bool isPayerAuth)
+        public async Task<(CreatePaymentResponse createPaymentResponse, PaymentsResponse paymentsResponse, string paymentStatus, bool doCancel)> GetPaymentStatus(CreatePaymentResponse createPaymentResponse, CreatePaymentRequest createPaymentRequest, PaymentsResponse paymentsResponse, bool isPayerAuth)
         {
             string paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
             bool doCancel = false;
@@ -2598,6 +2610,7 @@ namespace Cybersource.Services
                     case "DECLINED":
                     case "AUTHORIZED_RISK_DECLINED":
                     case "CONSUMER_AUTHENTICATION_FAILED":
+                    case "AUTHENTICATION_FAILED":
                         paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
                         break;
                     case "ERROR":

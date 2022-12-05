@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Payer Auth Validation is now a separate call
+- Round shipping tax to two decimal places
+
 ## [1.8.7] - 2022-11-25
 
 ### Fixed
