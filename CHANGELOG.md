@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Payer Auth Validation is now a separate call
 - Round shipping tax to two decimal places
 
+### Changed
 - Move all settlements related testcases to settlements.spec.js
 - Updated cy-runnner strategy, set maxJobs from 3 to 2, increase basicTests hardRetries from 1 to 2
 
