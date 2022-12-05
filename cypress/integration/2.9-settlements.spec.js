@@ -1,20 +1,86 @@
 import {
   verifyPaymentSettled,
-  paymentAndAPITestCases,
+  paymentTestCases,
+  APITestCases,
+  verifyCyberSourceAPI,
 } from '../support/testcase.js'
-import { promotionProduct } from '../support/outputvalidation.js'
 import { loginViaCookies } from '../support/common/support.js'
 import { getTestVariables } from '../support/utils.js'
+import {
+  singleProduct,
+  multiProduct,
+  discountProduct,
+  discountShipping,
+  requestRefund,
+  externalSeller,
+  promotionProduct,
+} from '../support/outputvalidation.js'
 
-describe('Verify settlements for promotional product', () => {
-  const { prefix, env } = promotionProduct
-
+describe('Verify settlements for ordered products', () => {
   loginViaCookies()
 
-  paymentAndAPITestCases(
+  // SingleProduct API testcase
+  APITestCases(
+    { prefix: singleProduct.prefix, approved: true },
+    {
+      ...getTestVariables(singleProduct.prefix),
+      orderIdEnv: requestRefund.fullRefundEnv,
+    }
+  )
+
+  // MultiProduct API testcase
+  APITestCases(
+    { prefix: multiProduct.prefix, approved: true },
+    {
+      ...getTestVariables(multiProduct.prefix),
+      orderIdEnv: requestRefund.partialRefundEnv,
+    }
+  )
+
+  // discountProduct
+  APITestCases(
+    { prefix: discountProduct.prefix, approved: true },
+    {
+      ...getTestVariables(discountProduct.prefix),
+      orderIdEnv: discountProduct.env,
+    }
+  )
+
+  // discountShipping
+  APITestCases(
+    { prefix: discountShipping.prefix, approved: true },
+    {
+      ...getTestVariables(discountShipping.prefix),
+      orderIdEnv: discountShipping.env,
+    }
+  )
+
+  const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(
+    externalSeller.prefix
+  )
+
+  // externalSeller
+  verifyCyberSourceAPI({
+    prefix: externalSeller.prefix,
+    transactionIdEnv,
+    paymentTransactionIdEnv,
+    approved: true,
+  })
+
+  paymentTestCases(
     null,
-    { prefix, approved: true },
-    { ...getTestVariables(prefix), orderIdEnv: env }
+    { prefix: promotionProduct.prefix, approved: true },
+    {
+      ...getTestVariables(promotionProduct.prefix),
+      orderIdEnv: promotionProduct.env,
+    }
+  )
+  APITestCases(
+    { prefix: promotionProduct.prefix, approved: true },
+    {
+      ...getTestVariables(promotionProduct.prefix),
+      orderIdEnv: promotionProduct.env,
+    }
   )
   verifyPaymentSettled(promotionProduct.prefix, promotionProduct.env)
 })
