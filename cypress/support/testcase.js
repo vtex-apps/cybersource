@@ -382,10 +382,10 @@ function approvePayment(orderIdEnv, paymentTransactionIdEnv) {
   })
 }
 
-export function paymentAndAPITestCases(
+export function paymentTestCases(
   product,
   { prefix, approved },
-  { transactionIdEnv, orderIdEnv, paymentTransactionIdEnv }
+  { transactionIdEnv, orderIdEnv }
 ) {
   if (product) {
     completePayment(prefix, orderIdEnv)
@@ -394,7 +394,12 @@ export function paymentAndAPITestCases(
 
     invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
   }
+}
 
+export function APITestCases(
+  { prefix, approved },
+  { transactionIdEnv, paymentTransactionIdEnv, orderIdEnv }
+) {
   if (approved) {
     verifyCyberSourceAPI({
       prefix,

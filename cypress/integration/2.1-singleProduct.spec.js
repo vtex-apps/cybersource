@@ -2,10 +2,7 @@ import { loginViaCookies, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { singleProduct, requestRefund } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
-import {
-  paymentAndAPITestCases,
-  orderTaxAPITestCase,
-} from '../support/testcase.js'
+import { paymentTestCases, orderTaxAPITestCase } from '../support/testcase.js'
 
 describe('Single Product Testcase', () => {
   loginViaCookies()
@@ -45,7 +42,7 @@ describe('Single Product Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  paymentAndAPITestCases(
+  paymentTestCases(
     singleProduct,
     { prefix, approved: true },
     { ...getTestVariables(prefix), orderIdEnv }

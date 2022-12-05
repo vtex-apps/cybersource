@@ -2,10 +2,7 @@ import { loginViaCookies, updateRetry } from '../support/common/support.js'
 import { discountShipping } from '../support/outputvalidation.js'
 import selectors from '../support/common/selectors.js'
 import { getTestVariables } from '../support/utils.js'
-import {
-  paymentAndAPITestCases,
-  orderTaxAPITestCase,
-} from '../support/testcase.js'
+import { paymentTestCases, orderTaxAPITestCase } from '../support/testcase.js'
 
 describe('Discount Shipping Testcase', () => {
   loginViaCookies()
@@ -42,7 +39,7 @@ describe('Discount Shipping Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  paymentAndAPITestCases(
+  paymentTestCases(
     discountShipping,
     { prefix, approved: true },
     { ...getTestVariables(prefix), orderIdEnv: env }
