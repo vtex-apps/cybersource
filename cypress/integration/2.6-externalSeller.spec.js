@@ -4,7 +4,6 @@ import selectors from '../support/common/selectors.js'
 import { getTestVariables } from '../support/utils.js'
 import {
   completePayment,
-  verifyCyberSourceAPI,
   verifyStatusInInteractionAPI,
 } from '../support/testcase.js'
 
@@ -104,13 +103,6 @@ describe('External Seller Testcase', () => {
         prefix,
         transactionIdEnv,
         orderIdEnv: externalSaleEnv,
-        paymentTransactionIdEnv,
-        approved: true,
-      })
-
-      verifyCyberSourceAPI({
-        prefix,
-        transactionIdEnv,
         paymentTransactionIdEnv,
         approved: true,
       })

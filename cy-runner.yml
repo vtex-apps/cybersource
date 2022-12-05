@@ -98,6 +98,21 @@ strategy:
       - cypress/integration/2.6-externalSeller.spec.js
     dependency:
       - cypress/integration/sku.spec.js
+  verifySettlements: 
+    enabled: true
+    sendDashboard: true
+    hardTries: 2
+    stopOnFail: false
+    parallel: false
+    specs:
+      - cypress/integration/2.9-settlements.spec.js
+    dependency:
+      - cypress/integration/2.1-singleProduct.spec.js
+      - cypress/integration/2.2-multiProduct.spec.js
+      - cypress/integration/2.3-promotionalProduct.spec.js
+      - cypress/integration/2.4-discountProduct.spec.js
+      - cypress/integration/2.5-discountShipping.spec.js
+      - cypress/integration/2.6-externalSeller.spec.js
   refund:
     enabled: true
     sendDashboard: true
@@ -107,8 +122,5 @@ strategy:
     specs:
       - cypress/integration/2.7-fullRefund.spec.js
       - cypress/integration/2.8-partialRefund.spec.js
-      - cypress/integration/2.9-settlements.spec.js
     dependency:
-      - cypress/integration/2.1-singleProduct.spec.js
-      - cypress/integration/2.2-multiProduct.spec.js
-      - cypress/integration/2.3-promotionalProduct.spec.js
+      - cypress/integration/2.9-settlements.spec.js

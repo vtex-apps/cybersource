@@ -2,10 +2,7 @@ import { loginViaCookies, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { discountProduct } from '../support/outputvalidation'
 import { getTestVariables } from '../support/utils.js'
-import {
-  paymentAndAPITestCases,
-  orderTaxAPITestCase,
-} from '../support/testcase.js'
+import { paymentTestCases, orderTaxAPITestCase } from '../support/testcase.js'
 
 describe('Discount Product Testcase', () => {
   loginViaCookies()
@@ -46,7 +43,7 @@ describe('Discount Product Testcase', () => {
     cy.get(selectors.Discounts).last().should('be.visible')
   })
 
-  paymentAndAPITestCases(
+  paymentTestCases(
     discountProduct,
     { prefix, approved: true },
     { ...getTestVariables(prefix), orderIdEnv: env }

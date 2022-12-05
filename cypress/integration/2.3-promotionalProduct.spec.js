@@ -3,7 +3,7 @@ import selectors from '../support/common/selectors.js'
 import { promotionProduct } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
 import {
-  paymentAndAPITestCases,
+  paymentTestCases,
   // orderTaxAPITestCase,
 } from '../support/testcase.js'
 
@@ -54,7 +54,7 @@ describe('Promotional Product Testcase', () => {
       .should('have.text', 'Free')
   })
 
-  paymentAndAPITestCases(
+  paymentTestCases(
     promotionProduct,
     { prefix, approved: false },
     { ...getTestVariables(prefix), orderIdEnv: env }

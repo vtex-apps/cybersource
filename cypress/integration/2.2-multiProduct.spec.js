@@ -1,10 +1,7 @@
 import { loginViaCookies, updateRetry } from '../support/common/support.js'
 import { multiProduct, requestRefund } from '../support/outputvalidation'
 import selectors from '../support/common/selectors.js'
-import {
-  paymentAndAPITestCases,
-  orderTaxAPITestCase,
-} from '../support/testcase.js'
+import { paymentTestCases, orderTaxAPITestCase } from '../support/testcase.js'
 import { getTestVariables } from '../support/utils.js'
 
 describe('Multi Product Testcase', () => {
@@ -50,7 +47,7 @@ describe('Multi Product Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  paymentAndAPITestCases(
+  paymentTestCases(
     multiProduct,
     { prefix, approved: true },
     { ...getTestVariables(prefix), orderIdEnv }
