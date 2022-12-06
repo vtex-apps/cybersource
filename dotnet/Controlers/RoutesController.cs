@@ -143,13 +143,16 @@
             if (paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 status = paymentData.CreatePaymentResponse.Status;
-                SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
-                if (sendResponse.Success)
+                if (!status.Equals(CybersourceConstants.VtexAuthStatus.Undefined))
                 {
-                    TransactionDetails transactionDetails = await _vtexApiService.GetTransactionDetails(paymentData.TransactionId);
-                    if (transactionDetails != null)
+                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    if (sendResponse.Success)
                     {
-                        status = transactionDetails.Status.ToLower();
+                        TransactionDetails transactionDetails = await _vtexApiService.GetTransactionDetails(paymentData.TransactionId);
+                        if (transactionDetails != null)
+                        {
+                            status = transactionDetails.Status.ToLower();
+                        }
                     }
                 }
             }
@@ -166,17 +169,29 @@
             {
                 if (!string.IsNullOrEmpty(authenticationTransactionId))
                 {
+                    string paymentStatus;
+                    bool doCancel;
                     paymentData.AuthenticationTransactionId = authenticationTransactionId;
                     await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
-                    (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, authenticationTransactionId);
-                    SendResponse sendResponse = await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    paymentsResponse = await _cybersourcePaymentService.ValidateAuthenticationResults(paymentData.CreatePaymentRequest, authenticationTransactionId);
+                    (createPaymentResponse, paymentsResponse, paymentStatus, doCancel) = await _cybersourcePaymentService.GetPaymentStatus(createPaymentResponse, paymentData.CreatePaymentRequest, paymentsResponse, true);
+                    paymentData.CreatePaymentResponse = createPaymentResponse;
+                    // If Validation is Approved do authorization
+                    if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Approved))
+                    {
+                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, authenticationTransactionId);
+                    }
+                    else
+                    {
+                        await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
+                    }
+
                     _context.Vtex.Logger.Info("ValidateAuthenticationResults", null, $"{paymentData.CreatePaymentRequest.OrderId} = {paymentData.CreatePaymentResponse.Status}", new[]
                     {
                         ("paymentId", paymentId),
                         ("authenticationTransactionId", authenticationTransactionId),
                         ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
-                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)),
-                        ("sendResponse", JsonConvert.SerializeObject(sendResponse))
+                        ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
                     });
                 }
                 else
