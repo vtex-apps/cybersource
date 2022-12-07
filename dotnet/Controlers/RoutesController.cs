@@ -48,12 +48,29 @@
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                     MerchantSetting merchantSettingPayerAuth = null;
-                    if (createPaymentRequest.MerchantSettings != null)
+                    bool doPayerAuth = false;
+                    try
                     {
-                        merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                        if (createPaymentRequest.MerchantSettings != null)
+                        {
+                            merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
+                            {
+                                doPayerAuth = true;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("CreatePayment", "UsePayerAuth",
+                        "Error: ", ex,
+                        new[]
+                        {
+                        ("body", bodyAsText)
+                        });
                     }
 
-                    if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
+                    if (doPayerAuth)
                     {
                         createPaymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
                     }
@@ -81,6 +98,8 @@
         public async Task<IActionResult> PayerAuth(string paymentId)
         {
             Response.Headers.Add("Cache-Control", "no-cache");
+            string paymentStatus;
+            bool doCancel;
             CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
@@ -88,8 +107,18 @@
             {
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
-                    (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
-                    await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    paymentsResponse = await _cybersourcePaymentService.CheckPayerAuthEnrollment(paymentData);
+                    (createPaymentResponse, paymentsResponse, paymentStatus, doCancel) = await _cybersourcePaymentService.GetPaymentStatus(createPaymentResponse, paymentData.CreatePaymentRequest, paymentsResponse, true);
+                    paymentData.ConsumerAuthenticationInformation = paymentsResponse.ConsumerAuthenticationInformation;
+                    if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Approved))
+                    {
+                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, null, paymentsResponse.ConsumerAuthenticationInformation);
+                        await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    }
+                    else
+                    {
+                        await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
+                    }
                 }
                 else
                 {
