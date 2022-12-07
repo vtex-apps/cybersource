@@ -48,12 +48,29 @@
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                     MerchantSetting merchantSettingPayerAuth = null;
-                    if (createPaymentRequest.MerchantSettings != null)
+                    bool doPayerAuth = false;
+                    try
                     {
-                        merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                        if (createPaymentRequest.MerchantSettings != null)
+                        {
+                            merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
+                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
+                            {
+                                doPayerAuth = true;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("CreatePayment", "UsePayerAuth",
+                        "Error: ", ex,
+                        new[]
+                        {
+                        ("body", bodyAsText)
+                        });
                     }
 
-                    if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
+                    if (doPayerAuth)
                     {
                         createPaymentResponse = await this._cybersourcePaymentService.SetupPayerAuth(createPaymentRequest);
                     }
