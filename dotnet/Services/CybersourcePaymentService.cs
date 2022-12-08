@@ -736,7 +736,34 @@ namespace Cybersource.Services
 
                 bool isPayerAuth = false;
                 Payments payment = await this.BuildPayment(createPaymentRequest);
-                payment.consumerAuthenticationInformation = consumerAuthenticationInformation != null ? consumerAuthenticationInformation : paymentData.ConsumerAuthenticationInformation;
+                try
+                {
+                    ConsumerAuthenticationInformation consumerAuthenticationInformationToCopy = consumerAuthenticationInformation != null ? consumerAuthenticationInformation : paymentData.ConsumerAuthenticationInformation;
+                    if (consumerAuthenticationInformationToCopy != null)
+                    {
+                        payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
+                        {
+                            Eci = consumerAuthenticationInformationToCopy.Eci,
+                            EciRaw = consumerAuthenticationInformationToCopy.EciRaw,
+                            Cavv = consumerAuthenticationInformationToCopy.Cavv,
+                            Xid = consumerAuthenticationInformationToCopy.Xid,
+                            CommerceIndicator = consumerAuthenticationInformationToCopy.EcommerceIndicator, // Recieved as EcommerceIndicator, send as CommerceIndicator
+                            SpecificationVersion = consumerAuthenticationInformationToCopy.SpecificationVersion,
+                            DirectoryServerTransactionId = consumerAuthenticationInformationToCopy.DirectoryServerTransactionId,
+                            UcafCollectionIndicator = consumerAuthenticationInformationToCopy.UcafCollectionIndicator
+                        };
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _context.Vtex.Logger.Error("CreatePayment", "ConsumerAuthenticationInformation",
+                    "Error ", ex,
+                    new[]
+                    {
+                        ( "PaymentId", createPaymentRequest.PaymentId )
+                    });
+                }
+
                 paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
 
                 if (paymentsResponse != null)
@@ -1402,10 +1429,6 @@ namespace Cybersource.Services
                         ReturnUrl = $"https://{_context.Vtex.Workspace}--{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
                     };
 
-                    //payment.processingInformation.actionList = new List<string>
-                    //{
-                    //    nameof(CybersourceConstants.ActionList.CONSUMER_AUTHENTICATION)
-                    //};
                     paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, paymentData.CreatePaymentRequest.SecureProxyUrl, paymentData.CreatePaymentRequest.SecureProxyTokensUrl);
                 }
                 catch (Exception ex)

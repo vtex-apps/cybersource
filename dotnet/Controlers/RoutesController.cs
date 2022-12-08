@@ -54,7 +54,7 @@
                         if (createPaymentRequest.MerchantSettings != null)
                         {
                             merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
-                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
+                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active, StringComparison.OrdinalIgnoreCase))
                             {
                                 doPayerAuth = true;
                             }
@@ -185,13 +185,17 @@
                     }
                 }
             }
-            
+
             return Json(status);
         }
 
         public async Task<CreatePaymentResponse> ProcessPayerAuthentication(string paymentId, string authenticationTransactionId)
         {
-            CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
+            CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse
+            {
+                PaymentId = paymentId
+            };
+
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
             if (paymentData != null && paymentData.CreatePaymentRequest != null)
