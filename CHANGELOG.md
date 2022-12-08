@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.9.1] - 2022-12-08
+
 ### Fixed
 - Payer Auth Setting Check error
 
