@@ -2567,7 +2567,7 @@ namespace Cybersource.Services
                                 //N – Cardholder not participating
                                 paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
                                 doCancel = true;
-                                paymentsResponse.Status = "REFUSED 1";
+                                paymentsResponse.Status = "REFUSED";
                                 break;
                             }
 
@@ -2579,7 +2579,7 @@ namespace Cybersource.Services
                             {
                                 paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
                                 doCancel = true;
-                                paymentsResponse.Status = "REFUSED 2";
+                                paymentsResponse.Status = "REFUSED";
                                 break;
                             }
 
@@ -2598,7 +2598,7 @@ namespace Cybersource.Services
                                 //00 - Authentication failed para Mastercard
                                 paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
                                 doCancel = true;
-                                paymentsResponse.Status = "REFUSED 3";
+                                paymentsResponse.Status = "REFUSED";
                                 break;
                             }
                         }
