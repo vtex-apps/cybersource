@@ -7,7 +7,7 @@ const config = Cypress.env()
 // Constants
 const { name } = config.workspace
 
-describe('Set up affiliation and sync checkout ui custom', () => {
+describe('Set up affiliation with payer Auth as active and sync checkout ui custom', () => {
   loginViaCookies()
 
   setWorkspaceInAffiliation(name)

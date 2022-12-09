@@ -19,7 +19,7 @@ base:
     enabled: false
     channel: some-channel
   cypress:
-    devMode: false
+    devMode: true
     runHeaded: false
     getCookies: true
     maxJobs: 2
@@ -54,6 +54,7 @@ workspace:
   installApps:
     - vtex.cybersource-fraud
     - vtex.cybersource-ui
+    - vtex.cybersource-payer-auth
   removeApps: []
   wipe:
     enabled: true
@@ -64,14 +65,14 @@ workspace:
     enabled: true
 
 strategy:
-  configureAffiliation:
+  configureAffiliationWithPayerAuthAsActive:
     enabled: true
     sendDashboard: true
     hardTries: 1
     stopOnFail: true
     parallel: false
     specs:
-      - cypress/integration/1.0-ConfigureAffiliation.spec.js
+      - cypress/integration/2.1-ConfigureAffiliationWithPayerAuthActive.spec.js
   splitAndNonSplitSkuTest: 
     enabled: true
     sendDashboard: true
@@ -81,23 +82,43 @@ strategy:
     specs:
       - cypress/integration/sku.spec.js
     dependency:
-      - cypress/integration/1.0-ConfigureAffiliation.spec.js
-  basicTests:
+      - cypress/integration/2.1-ConfigureAffiliationWithPayerAuthActive.spec.js
+  payerAuthActiveTests:
     enabled: true
     sendDashboard: true
     hardTries: 2
     stopOnFail: false
     parallel: true
     specs:
-      
-      - cypress/integration/2.1-singleProduct.spec.js
-      - cypress/integration/2.2-multiProduct.spec.js
-      - cypress/integration/2.3-promotionalProduct.spec.js
-      - cypress/integration/2.4-discountProduct.spec.js
-      - cypress/integration/2.5-discountShipping.spec.js
-      - cypress/integration/2.6-externalSeller.spec.js
+      - cypress/integration/2.2-singleProduct.spec.js
+      - cypress/integration/2.8-externalSeller.spec.js
     dependency:
       - cypress/integration/sku.spec.js
+  configureAffiliationWithPayerAuthAsDisabled:
+    enabled: true
+    sendDashboard: true
+    hardTries: 2
+    stopOnFail: false
+    parallel: false
+    specs:
+      - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
+    dependency:
+      - cypress/integration/2.2-singleProduct.spec.js
+      - cypress/integration/2.8-externalSeller.spec.js
+  payerAuthDisableTests:
+    enabled: true
+    sendDashboard: true
+    hardTries: 2
+    stopOnFail: false
+    parallel: true
+    specs:
+      - cypress/integration/2.3-multiProduct.spec.js
+      - cypress/integration/2.5-promotionalProduct.spec.js
+      - cypress/integration/2.6-discountProduct.spec.js
+      - cypress/integration/2.7-discountShipping.spec.js
+    dependency:
+      - cypress/integration/2.2-singleProduct.spec.js
+      - cypress/integration/2.8-externalSeller.spec.js
   verifySettlements: 
     enabled: true
     sendDashboard: true
@@ -107,12 +128,12 @@ strategy:
     specs:
       - cypress/integration/2.9-settlements.spec.js
     dependency:
-      - cypress/integration/2.1-singleProduct.spec.js
-      - cypress/integration/2.2-multiProduct.spec.js
-      - cypress/integration/2.3-promotionalProduct.spec.js
-      - cypress/integration/2.4-discountProduct.spec.js
-      - cypress/integration/2.5-discountShipping.spec.js
-      - cypress/integration/2.6-externalSeller.spec.js
+      - cypress/integration/2.2-singleProduct.spec.js
+      - cypress/integration/2.3-multiProduct.spec.js
+      - cypress/integration/2.5-promotionalProduct.spec.js
+      - cypress/integration/2.6-discountProduct.spec.js
+      - cypress/integration/2.7-discountShipping.spec.js
+      - cypress/integration/2.8-externalSeller.spec.js
   refund:
     enabled: true
     sendDashboard: true
@@ -120,7 +141,7 @@ strategy:
     stopOnFail: false
     parallel: true
     specs:
-      - cypress/integration/2.7-fullRefund.spec.js
-      - cypress/integration/2.8-partialRefund.spec.js
+      - cypress/integration/2.10-fullRefund.spec.js
+      - cypress/integration/2.11-partialRefund.spec.js
     dependency:
       - cypress/integration/2.9-settlements.spec.js
