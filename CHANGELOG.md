@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.9.1] - 2022-12-08
 
+### Added
+- Payer Auth testcase in cypress
+
 ### Fixed
 - Payer Auth Setting Check error
 
