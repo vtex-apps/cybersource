@@ -32,7 +32,7 @@ describe('Promotional Product Testcase', () => {
     })
   })
 
-  it('Updating Shipping Information', updateRetry(3), () => {
+  it('Updating Shipping Information', updateRetry(4), () => {
     cy.checkForTaxErrors()
     // Update Shipping Section
     cy.updateShippingInformation({ postalCode })
