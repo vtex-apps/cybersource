@@ -9,5 +9,5 @@ const { name } = config.workspace
 describe('Set up affiliation with payer Auth as disabled', () => {
   loginViaCookies()
 
-  setWorkspaceInAffiliation(name, true)
+  setWorkspaceInAffiliation(name, false)
 })
