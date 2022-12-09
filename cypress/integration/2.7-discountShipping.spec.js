@@ -26,7 +26,7 @@ describe('Discount Shipping Testcase', () => {
     cy.updateProductQuantity(discountShipping, { quantity: '1' })
   })
 
-  it('Updating Shipping Information', updateRetry(3), () => {
+  it('Updating Shipping Information', updateRetry(4), () => {
     cy.checkForTaxErrors()
     // Update Shipping Section
     cy.updateShippingInformation({ postalCode })

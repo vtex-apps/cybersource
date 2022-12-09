@@ -19,7 +19,7 @@ base:
     enabled: false
     channel: some-channel
   cypress:
-    devMode: true
+    devMode: false
     runHeaded: false
     getCookies: true
     maxJobs: 2
@@ -91,7 +91,7 @@ strategy:
     parallel: true
     specs:
       - cypress/integration/2.2-singleProduct.spec.js
-      - cypress/integration/2.8-externalSeller.spec.js
+      - cypress/integration/2.3-multiProduct.spec.js
     dependency:
       - cypress/integration/sku.spec.js
   configureAffiliationWithPayerAuthAsDisabled:
@@ -104,7 +104,7 @@ strategy:
       - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
     dependency:
       - cypress/integration/2.2-singleProduct.spec.js
-      - cypress/integration/2.8-externalSeller.spec.js
+      - cypress/integration/2.3-multiProduct.spec.js
   payerAuthDisableTests:
     enabled: true
     sendDashboard: true
@@ -112,13 +112,13 @@ strategy:
     stopOnFail: false
     parallel: true
     specs:
-      - cypress/integration/2.3-multiProduct.spec.js
       - cypress/integration/2.5-promotionalProduct.spec.js
       - cypress/integration/2.6-discountProduct.spec.js
       - cypress/integration/2.7-discountShipping.spec.js
+      - cypress/integration/2.8-externalSeller.spec.js
     dependency:
       - cypress/integration/2.2-singleProduct.spec.js
-      - cypress/integration/2.8-externalSeller.spec.js
+      - cypress/integration/2.3-multiProduct.spec.js
   verifySettlements: 
     enabled: true
     sendDashboard: true
