@@ -117,7 +117,20 @@
                     }
                     else
                     {
+                        if(paymentData.CreatePaymentResponse == null)
+                        {
+                            paymentData.CreatePaymentResponse = new CreatePaymentResponse
+                            {
+                                PaymentId = paymentId,
+                                Status = paymentStatus
+                            };
+                        }
+
                         await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
+                        if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Denied))
+                        {
+                            await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                        }
                     }
                 }
                 else

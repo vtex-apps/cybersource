@@ -2706,7 +2706,7 @@ namespace Cybersource.Services
                                 ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
                             });
             }
-
+            
             createPaymentResponse.Status = paymentStatus;
             return (createPaymentResponse, paymentsResponse, paymentStatus, doCancel);
         }
