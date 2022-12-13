@@ -50,6 +50,11 @@ namespace Cybersource.Services
         }
 
         #region Payments
+        /// <summary>
+        /// Build request body for Cybersource API
+        /// </summary>
+        /// <param name="createPaymentRequest"></param>
+        /// <returns></returns>
         public async Task<Payments> BuildPayment(CreatePaymentRequest createPaymentRequest)
         {
             Payments payment = null;
@@ -359,6 +364,7 @@ namespace Cybersource.Services
                         break;
                 }
 
+                // Load order group in case the order was split
                 VtexOrder[] vtexOrders = await _vtexApiService.GetOrderGroup(createPaymentRequest.OrderId);
                 List<VtexOrderItem> vtexOrderItems = new List<VtexOrderItem>();
                 if (vtexOrders != null)
@@ -714,6 +720,14 @@ namespace Cybersource.Services
             return payment;
         }
 
+        /// <summary>
+        /// Process a Payment
+        /// /pts/v2/payments
+        /// </summary>
+        /// <param name="createPaymentRequest"></param>
+        /// <param name="authenticationTransactionId"></param>
+        /// <param name="consumerAuthenticationInformation"></param>
+        /// <returns></returns>
         public async Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId = null, ConsumerAuthenticationInformation consumerAuthenticationInformation = null)
         {
             CreatePaymentResponse createPaymentResponse = null;
@@ -871,6 +885,11 @@ namespace Cybersource.Services
             return (createPaymentResponse, paymentsResponse);
         }
 
+        /// <summary>
+        /// Cancel Payment
+        /// </summary>
+        /// <param name="cancelPaymentRequest"></param>
+        /// <returns></returns>
         public async Task<CancelPaymentResponse> CancelPayment(CancelPaymentRequest cancelPaymentRequest)
         {
             CancelPaymentResponse cancelPaymentResponse = null;
@@ -956,6 +975,11 @@ namespace Cybersource.Services
             return cancelPaymentResponse;
         }
 
+        /// <summary>
+        /// Capture Payment
+        /// </summary>
+        /// <param name="capturePaymentRequest"></param>
+        /// <returns></returns>
         public async Task<CapturePaymentResponse> CapturePayment(CapturePaymentRequest capturePaymentRequest)
         {
             CapturePaymentResponse capturePaymentResponse = null;
@@ -1078,6 +1102,11 @@ namespace Cybersource.Services
             return capturePaymentResponse;
         }
 
+        /// <summary>
+        /// Refund Payment
+        /// </summary>
+        /// <param name="refundPaymentRequest"></param>
+        /// <returns></returns>
         public async Task<RefundPaymentResponse> RefundPayment(RefundPaymentRequest refundPaymentRequest)
         {
             RefundPaymentResponse refundPaymentResponse = new RefundPaymentResponse();

@@ -95,6 +95,13 @@
             return Json(createPaymentResponse);
         }
 
+        /// <summary>
+        /// Called from cybersource-payer-auth app
+        /// Calls Check Payer Auth Enrollment API
+        /// /risk/v1/authentications
+        /// </summary>
+        /// <param name="paymentId"></param>
+        /// <returns></returns>
         public async Task<IActionResult> PayerAuth(string paymentId)
         {
             Response.Headers.Add("Cache-Control", "no-cache");
@@ -112,6 +119,7 @@
                     paymentData.ConsumerAuthenticationInformation = paymentsResponse.ConsumerAuthenticationInformation;
                     if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Approved))
                     {
+                        // If Enrollment Check is Approved, create payment
                         (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, null, paymentsResponse.ConsumerAuthenticationInformation);
                         await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                     }
@@ -129,6 +137,7 @@
                         await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
                         if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Denied))
                         {
+                            // If Enrollment Check is Denied, update checkout
                             await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                         }
                     }
@@ -147,6 +156,10 @@
             return Json(paymentsResponse);
         }
 
+        /// <summary>
+        /// Receives Post from challenge window
+        /// </summary>
+        /// <returns></returns>
         public async Task PayerAuthResponse()
         {
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
@@ -177,6 +190,11 @@
             await this.ProcessPayerAuthentication(paymentId, authenticationTransactionId);
         }
 
+        /// <summary>
+        /// Called from cybersource-payer-auth app to check stored status
+        /// </summary>
+        /// <param name="paymentId"></param>
+        /// <returns></returns>
         public async Task<IActionResult> CheckAuthStatus(string paymentId)
         {
             Response.Headers.Add("Cache-Control", "no-cache");
@@ -202,6 +220,13 @@
             return Json(status);
         }
 
+        /// <summary>
+        /// Calls Validate Authentication Results API
+        /// /risk/v1/authentication-results
+        /// </summary>
+        /// <param name="paymentId">VTEX Payment Id</param>
+        /// <param name="authenticationTransactionId"></param>
+        /// <returns></returns>
         public async Task<CreatePaymentResponse> ProcessPayerAuthentication(string paymentId, string authenticationTransactionId)
         {
             CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse
