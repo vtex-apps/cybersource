@@ -761,11 +761,16 @@ namespace Cybersource.Services
                             EciRaw = consumerAuthenticationInformationToCopy.EciRaw,
                             Cavv = consumerAuthenticationInformationToCopy.Cavv,
                             Xid = consumerAuthenticationInformationToCopy.Xid,
-                            CommerceIndicator = consumerAuthenticationInformationToCopy.EcommerceIndicator, // Recieved as EcommerceIndicator, send as CommerceIndicator
+                            EcommerceIndicator = consumerAuthenticationInformationToCopy.EcommerceIndicator,
                             SpecificationVersion = consumerAuthenticationInformationToCopy.SpecificationVersion,
                             DirectoryServerTransactionId = consumerAuthenticationInformationToCopy.DirectoryServerTransactionId,
                             UcafCollectionIndicator = consumerAuthenticationInformationToCopy.UcafCollectionIndicator
                         };
+
+                        if (!string.IsNullOrWhiteSpace(consumerAuthenticationInformationToCopy.EcommerceIndicator))
+                        {
+                            payment.processingInformation.commerceIndicator = consumerAuthenticationInformationToCopy.EcommerceIndicator;
+                        }
                     }
                 }
                 catch(Exception ex)
@@ -881,7 +886,7 @@ namespace Cybersource.Services
                 ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
                 ("createPaymentResponse", JsonConvert.SerializeObject(createPaymentResponse)),
                 ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse)) });
-
+            
             return (createPaymentResponse, paymentsResponse);
         }
 
@@ -990,10 +995,15 @@ namespace Cybersource.Services
 
                 if (paymentData == null)
                 {
-                    return capturePaymentResponse;
+                    _context.Vtex.Logger.Error("CapturePayment", null,
+                    "Could not load Payment Data ", null,
+                    new[]
+                    {
+                        ( "PaymentId", capturePaymentRequest.PaymentId )
+                    });
                 }
 
-                if (paymentData.CreatePaymentResponse != null && paymentData.ImmediateCapture)
+                if (paymentData != null && paymentData.CreatePaymentResponse != null && paymentData.ImmediateCapture)
                 {
                     capturePaymentResponse = new CapturePaymentResponse();
                     capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
@@ -1006,7 +1016,7 @@ namespace Cybersource.Services
                     return capturePaymentResponse;
                 }
 
-                string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
+                string referenceNumber = paymentData != null ? await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId) : capturePaymentRequest.TransactionId;
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
@@ -1036,7 +1046,13 @@ namespace Cybersource.Services
                     }
                 };
 
-                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, paymentData.AuthorizationId);
+                string authId = capturePaymentRequest.AuthorizationId;
+                if(paymentData != null)
+                {
+                    authId = paymentData.AuthorizationId;
+                }
+
+                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, authId);
                 if (paymentsResponse != null)
                 {
                     capturePaymentResponse = new CapturePaymentResponse();
@@ -1070,6 +1086,15 @@ namespace Cybersource.Services
                                 }
                             }
                         }
+                    }
+
+                    if(paymentData == null)
+                    {
+                        paymentData = new PaymentData
+                        {
+                            PaymentId = capturePaymentRequest.PaymentId,
+                            AuthorizationId = capturePaymentRequest.AuthorizationId
+                        };
                     }
 
                     capturePaymentResponse.Value = captureAmount;
@@ -1389,17 +1414,22 @@ namespace Cybersource.Services
             CreatePaymentResponse createPaymentResponse = null;
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
-            if (paymentData != null && paymentData.CreatePaymentResponse != null)
-            {
-                return paymentData.CreatePaymentResponse;
-            }
 
             if (paymentData == null)
             {
                 paymentData = new PaymentData
                 {
-                    CreatePaymentRequest = createPaymentRequest
+                    CreatePaymentRequest = createPaymentRequest,
+                    CreatePaymentResponse = new CreatePaymentResponse
+                    {
+                        PaymentId = createPaymentRequest.PaymentId,
+                        Status = CybersourceConstants.VtexAuthStatus.Undefined
+                    }
                 };
+            }
+            else if(paymentData.CreatePaymentResponse != null)
+            {
+                return paymentData.CreatePaymentResponse;
             }
 
             Payments payment = await this.BuildPayment(createPaymentRequest);
@@ -1423,7 +1453,8 @@ namespace Cybersource.Services
                 paymentData = new PaymentData
                 {
                     CreatePaymentRequest = createPaymentRequest,
-                    PayerAuthReferenceId = paymentsResponse.ConsumerAuthenticationInformation.ReferenceId
+                    PayerAuthReferenceId = paymentsResponse.ConsumerAuthenticationInformation.ReferenceId,
+                    CreatePaymentResponse = createPaymentResponse
                 };
 
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
@@ -2695,7 +2726,7 @@ namespace Cybersource.Services
                                 Message = "Transaction(s) retrieved from Cybersource.",
                                 PaymentInformation = DeepCopy<PaymentInformation>(transactionSummary.PaymentInformation)
                             };
-
+                            
                             paymentsResponse.OrderInformation.amountDetails.authorizedAmount = authValueString;
                             paymentsResponse.OrderInformation.amountDetails.totalAmount = captureValueString;
                             if (paymentsResponse.ProcessorInformation != null)
@@ -2713,9 +2744,14 @@ namespace Cybersource.Services
                                 // If status is not ERROR (to prevent an infinate loop) re-run this function to apply Payer Auth and Anti-fraud logic
                                 (createPaymentResponse, paymentsResponse, paymentStatus, doCancel) = await this.GetPaymentStatus(createPaymentResponse, createPaymentRequest, paymentsResponse, isPayerAuth);
                             }
+                            else
+                            {
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                            }
                         }
                         break;
                     default:
+                        paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
                         _context.Vtex.Logger.Warn("CreatePayment", null, $"Invalid Status: {paymentsResponse.Status}", new[]
                         {
                                 ("OrderId", createPaymentRequest.OrderId), ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest)),
@@ -2745,7 +2781,6 @@ namespace Cybersource.Services
             if (objToCopy != null)
             {
                 string objAsString = JsonConvert.SerializeObject(objToCopy);
-                Console.WriteLine($"DeepCopy: [{objAsString}]");
                 return JsonConvert.DeserializeObject<T>(objAsString);
             }
             else

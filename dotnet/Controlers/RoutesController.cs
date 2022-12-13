@@ -120,7 +120,8 @@
                     if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Approved))
                     {
                         // If Enrollment Check is Approved, create payment
-                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, null, paymentsResponse.ConsumerAuthenticationInformation);
+                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, paymentsResponse.ConsumerAuthenticationInformation.AuthenticationTransactionId, paymentsResponse.ConsumerAuthenticationInformation);
+                        paymentData.CreatePaymentResponse = createPaymentResponse;
                         await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                     }
                     else
@@ -132,6 +133,10 @@
                                 PaymentId = paymentId,
                                 Status = paymentStatus
                             };
+                        }
+                        else
+                        {
+                            paymentData.CreatePaymentResponse.Status = paymentStatus;
                         }
 
                         await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
