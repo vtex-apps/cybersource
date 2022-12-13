@@ -172,6 +172,9 @@ namespace Cybersource.Models
         [JsonProperty("specificationVersion")]
         public string SpecificationVersion { get; set; }
 
+        [JsonProperty("paSpecificationVersion")]
+        public string PaSpecificationVersion { get; set; }
+
         [JsonProperty("authenticationType")]
         public string AuthenticationType { get; set; }
 
@@ -303,6 +306,9 @@ namespace Cybersource.Models
 
         [JsonProperty("ucafCollectionIndicator")]
         public string UcafCollectionIndicator { get; set; }
+
+        [JsonProperty("ucafAuthenticationData")]
+        public string UcafAuthenticationData { get; set; }
 
         [JsonProperty("directoryServerTransactionId")]
         public string DirectoryServerTransactionId { get; set; }

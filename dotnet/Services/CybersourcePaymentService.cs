@@ -762,9 +762,10 @@ namespace Cybersource.Services
                             Cavv = consumerAuthenticationInformationToCopy.Cavv,
                             Xid = consumerAuthenticationInformationToCopy.Xid,
                             EcommerceIndicator = consumerAuthenticationInformationToCopy.EcommerceIndicator,
-                            SpecificationVersion = consumerAuthenticationInformationToCopy.SpecificationVersion,
+                            PaSpecificationVersion = consumerAuthenticationInformationToCopy.SpecificationVersion,
                             DirectoryServerTransactionId = consumerAuthenticationInformationToCopy.DirectoryServerTransactionId,
-                            UcafCollectionIndicator = consumerAuthenticationInformationToCopy.UcafCollectionIndicator
+                            UcafCollectionIndicator = consumerAuthenticationInformationToCopy.UcafCollectionIndicator,
+                            UcafAuthenticationData = consumerAuthenticationInformationToCopy.UcafAuthenticationData
                         };
 
                         if (!string.IsNullOrWhiteSpace(consumerAuthenticationInformationToCopy.EcommerceIndicator))
