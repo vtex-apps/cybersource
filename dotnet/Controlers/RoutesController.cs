@@ -121,7 +121,8 @@
                         // If Enrollment Check is Approved, create payment
                         (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, paymentsResponse.ConsumerAuthenticationInformation.AuthenticationTransactionId, paymentsResponse.ConsumerAuthenticationInformation);
                         paymentData.CreatePaymentResponse = createPaymentResponse;
-                        await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                        await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
+                        //await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                     }
                     else
                     {
@@ -148,8 +149,9 @@
                 }
                 else
                 {
-                    createPaymentResponse = new CreatePaymentResponse
+                    paymentsResponse = new PaymentsResponse
                     {
+                        Status = CybersourceConstants.VtexAuthStatus.Denied,
                         Message = "Missing PayerAuthReferenceId"
                     };
 
