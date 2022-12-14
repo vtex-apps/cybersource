@@ -154,7 +154,7 @@
                         Message = "Missing PayerAuthReferenceId"
                     };
 
-                    _context.Vtex.Logger.Debug("PayerAuth", null, "Missing PayerAuthReferenceId");
+                    _context.Vtex.Logger.Error("PayerAuth", null, "Missing PayerAuthReferenceId");
                 }
             }
 

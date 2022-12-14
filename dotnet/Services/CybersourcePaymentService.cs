@@ -1491,6 +1491,8 @@ namespace Cybersource.Services
                     };
 
                     paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, paymentData.CreatePaymentRequest.SecureProxyUrl, paymentData.CreatePaymentRequest.SecureProxyTokensUrl);
+                    paymentData.ConsumerAuthenticationInformation = paymentsResponse.ConsumerAuthenticationInformation;
+                    await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
                 }
                 catch (Exception ex)
                 {
