@@ -14,5 +14,6 @@ namespace Cybersource.Models
         public string PayerAuthReferenceId { get; set; }
         public string AuthenticationTransactionId { get; set; }
         public ConsumerAuthenticationInformation ConsumerAuthenticationInformation { get; set; }
+        public string OrderId { get; set; }
     }
 }

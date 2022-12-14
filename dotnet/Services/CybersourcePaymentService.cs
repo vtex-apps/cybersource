@@ -1017,7 +1017,19 @@ namespace Cybersource.Services
                     return capturePaymentResponse;
                 }
 
-                string referenceNumber = paymentData != null ? await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId) : capturePaymentRequest.TransactionId;
+                string referenceNumber = capturePaymentRequest.TransactionId;
+                if (paymentData != null)
+                {
+                    if (!string.IsNullOrEmpty(paymentData.OrderId))
+                    {
+                        referenceNumber = paymentData.OrderId;
+                    }
+                    else if (paymentData.CreatePaymentRequest != null && !string.IsNullOrEmpty(paymentData.CreatePaymentRequest.OrderId))
+                    {
+                        referenceNumber = paymentData.CreatePaymentRequest.OrderId;
+                    }
+                }
+
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
