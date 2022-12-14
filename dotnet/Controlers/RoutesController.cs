@@ -116,7 +116,6 @@
                 {
                     paymentsResponse = await _cybersourcePaymentService.CheckPayerAuthEnrollment(paymentData);
                     (createPaymentResponse, paymentsResponse, paymentStatus, doCancel) = await _cybersourcePaymentService.GetPaymentStatus(createPaymentResponse, paymentData.CreatePaymentRequest, paymentsResponse, true);
-                    paymentData.ConsumerAuthenticationInformation = paymentsResponse.ConsumerAuthenticationInformation;
                     if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Approved))
                     {
                         // If Enrollment Check is Approved, create payment
