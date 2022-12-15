@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.9.1] - 2022-12-08
 
+### Changed
+- [ENGINEERS-969] - Skip payer auth active testcase 
+
 ### Added
 - Payer Auth testcase in cypress
 

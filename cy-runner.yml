@@ -65,14 +65,22 @@ workspace:
     enabled: true
 
 strategy:
-  configureAffiliationWithPayerAuthAsActive:
+  # configureAffiliationWithPayerAuthAsActive:
+  #   enabled: true
+  #   sendDashboard: true
+  #   hardTries: 1
+  #   stopOnFail: true
+  #   parallel: false
+  #   specs:
+  #     - cypress/integration/2.1-ConfigureAffiliationWithPayerAuthActive.spec.js
+  configureAffiliationWithPayerAuthAsDisabled:
     enabled: true
     sendDashboard: true
-    hardTries: 1
-    stopOnFail: true
+    hardTries: 2
+    stopOnFail: false
     parallel: false
     specs:
-      - cypress/integration/2.1-ConfigureAffiliationWithPayerAuthActive.spec.js
+      - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
   splitAndNonSplitSkuTest: 
     enabled: true
     sendDashboard: true
@@ -82,7 +90,7 @@ strategy:
     specs:
       - cypress/integration/sku.spec.js
     dependency:
-      - cypress/integration/2.1-ConfigureAffiliationWithPayerAuthActive.spec.js
+      - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
   payerAuthActiveTests:
     enabled: true
     sendDashboard: true
@@ -94,17 +102,17 @@ strategy:
       - cypress/integration/2.3-multiProduct.spec.js
     dependency:
       - cypress/integration/sku.spec.js
-  configureAffiliationWithPayerAuthAsDisabled:
-    enabled: true
-    sendDashboard: true
-    hardTries: 2
-    stopOnFail: false
-    parallel: false
-    specs:
-      - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
-    dependency:
-      - cypress/integration/2.2-singleProduct.spec.js
-      - cypress/integration/2.3-multiProduct.spec.js
+  # configureAffiliationWithPayerAuthAsDisabled:
+  #   enabled: true
+  #   sendDashboard: true
+  #   hardTries: 2
+  #   stopOnFail: false
+  #   parallel: false
+  #   specs:
+  #     - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
+  #   dependency:
+  #     - cypress/integration/2.2-singleProduct.spec.js
+  #     - cypress/integration/2.3-multiProduct.spec.js
   payerAuthDisableTests:
     enabled: true
     sendDashboard: true
