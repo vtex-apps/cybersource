@@ -54,7 +54,7 @@
                         if (createPaymentRequest.MerchantSettings != null)
                         {
                             merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.UsePayerAuth));
-                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active))
+                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active, StringComparison.OrdinalIgnoreCase))
                             {
                                 doPayerAuth = true;
                             }
@@ -95,9 +95,18 @@
             return Json(createPaymentResponse);
         }
 
+        /// <summary>
+        /// Called from cybersource-payer-auth app
+        /// Calls Check Payer Auth Enrollment API
+        /// /risk/v1/authentications
+        /// </summary>
+        /// <param name="paymentId"></param>
+        /// <returns></returns>
         public async Task<IActionResult> PayerAuth(string paymentId)
         {
             Response.Headers.Add("Cache-Control", "no-cache");
+            string paymentStatus;
+            bool doCancel;
             CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
@@ -105,23 +114,58 @@
             {
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
-                    (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest);
-                    await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    paymentsResponse = await _cybersourcePaymentService.CheckPayerAuthEnrollment(paymentData);
+                    (createPaymentResponse, paymentsResponse, paymentStatus, doCancel) = await _cybersourcePaymentService.GetPaymentStatus(createPaymentResponse, paymentData.CreatePaymentRequest, paymentsResponse, true);
+                    if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Approved))
+                    {
+                        // If Enrollment Check is Approved, create payment
+                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, paymentsResponse.ConsumerAuthenticationInformation.AuthenticationTransactionId, paymentsResponse.ConsumerAuthenticationInformation);
+                        paymentData.CreatePaymentResponse = createPaymentResponse;
+                        await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
+                        //await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                    }
+                    else
+                    {
+                        if(paymentData.CreatePaymentResponse == null)
+                        {
+                            paymentData.CreatePaymentResponse = new CreatePaymentResponse
+                            {
+                                PaymentId = paymentId,
+                                Status = paymentStatus
+                            };
+                        }
+                        else
+                        {
+                            paymentData.CreatePaymentResponse.Status = paymentStatus;
+                        }
+
+                        await _cybersourceRepository.SavePaymentData(paymentId, paymentData);
+                        if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Denied))
+                        {
+                            // If Enrollment Check is Denied, update checkout
+                            await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                        }
+                    }
                 }
                 else
                 {
-                    createPaymentResponse = new CreatePaymentResponse
+                    paymentsResponse = new PaymentsResponse
                     {
+                        Status = CybersourceConstants.VtexAuthStatus.Denied,
                         Message = "Missing PayerAuthReferenceId"
                     };
 
-                    _context.Vtex.Logger.Debug("PayerAuth", null, "Missing PayerAuthReferenceId");
+                    _context.Vtex.Logger.Error("PayerAuth", null, "Missing PayerAuthReferenceId");
                 }
             }
 
             return Json(paymentsResponse);
         }
 
+        /// <summary>
+        /// Receives Post from challenge window
+        /// </summary>
+        /// <returns></returns>
         public async Task PayerAuthResponse()
         {
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
@@ -152,6 +196,11 @@
             await this.ProcessPayerAuthentication(paymentId, authenticationTransactionId);
         }
 
+        /// <summary>
+        /// Called from cybersource-payer-auth app to check stored status
+        /// </summary>
+        /// <param name="paymentId"></param>
+        /// <returns></returns>
         public async Task<IActionResult> CheckAuthStatus(string paymentId)
         {
             Response.Headers.Add("Cache-Control", "no-cache");
@@ -173,13 +222,24 @@
                     }
                 }
             }
-            
+
             return Json(status);
         }
 
+        /// <summary>
+        /// Calls Validate Authentication Results API
+        /// /risk/v1/authentication-results
+        /// </summary>
+        /// <param name="paymentId">VTEX Payment Id</param>
+        /// <param name="authenticationTransactionId"></param>
+        /// <returns></returns>
         public async Task<CreatePaymentResponse> ProcessPayerAuthentication(string paymentId, string authenticationTransactionId)
         {
-            CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
+            CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse
+            {
+                PaymentId = paymentId
+            };
+
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
             if (paymentData != null && paymentData.CreatePaymentRequest != null)

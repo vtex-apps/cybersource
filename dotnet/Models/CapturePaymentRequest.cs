@@ -15,5 +15,8 @@ namespace Cybersource.Models
 
         [JsonProperty("requestId")]
         public string RequestId { get; set; }
+
+        [JsonProperty("authorizationId")]
+        public string AuthorizationId { get; set; }
     }
 }

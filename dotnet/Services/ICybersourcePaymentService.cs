@@ -7,13 +7,13 @@ namespace Cybersource.Services
 {
     public interface ICybersourcePaymentService
     {
-        Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId = null);
+        Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId = null, ConsumerAuthenticationInformation consumerAuthenticationInformation = null);
         Task<CancelPaymentResponse> CancelPayment(CancelPaymentRequest cancelPaymentRequest);
         Task<CapturePaymentResponse> CapturePayment(CapturePaymentRequest capturePaymentRequest);
         Task<RefundPaymentResponse> RefundPayment(RefundPaymentRequest refundPaymentRequest);
 
         Task<CreatePaymentResponse> SetupPayerAuth(CreatePaymentRequest createPaymentRequest);
-        Task<PaymentsResponse> CheckPayerAuthEnrollment(CreatePaymentRequest createPaymentRequest);
+        Task<PaymentsResponse> CheckPayerAuthEnrollment(PaymentData paymentData);
         Task<PaymentsResponse> ValidateAuthenticationResults(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId);
 
         Task<(CreatePaymentResponse createPaymentResponse, PaymentsResponse paymentsResponse, string paymentStatus, bool doCancel)> GetPaymentStatus(CreatePaymentResponse createPaymentResponse, CreatePaymentRequest createPaymentRequest, PaymentsResponse paymentsResponse, bool isPayerAuth);

@@ -90,7 +90,7 @@
             SendResponse sendResponse = await this.SendRequest(
                 HttpMethod.Get,
                 $"http://vbase.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/buckets/{this._applicationName}/{CybersourceConstants.BUCKET_PAYMENT}/files/{paymentIdentifier}",
-                null);
+                null, true);
             if (sendResponse.StatusCode == HttpStatusCode.NotFound.ToString())
             {
                 _context.Vtex.Logger.Warn("GetPaymentData", null, $"Payment Id '{paymentIdentifier}' Not Found.");
@@ -146,7 +146,7 @@
             SendResponse sendResponse = await this.SendRequest(
                 HttpMethod.Get,
                 $"http://vbase.{this._environmentVariableProvider.Region}.vtex.io/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}/{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.HEADER_VTEX_WORKSPACE]}/buckets/{this._applicationName}/{CybersourceConstants.BUCKET_ANTIFRAUD}/files/{id}",
-                null);
+                null, true);
             if (sendResponse.StatusCode == HttpStatusCode.NotFound.ToString())
             {
                 _context.Vtex.Logger.Warn("GetAntifraudData", null, "Not Found.", new[] { ( "id", id ) });
@@ -479,7 +479,7 @@
             return IsSuccessStatusCode;
         }
 
-        public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData)
+        public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData, bool noCache = false)
         {
             SendResponse sendResponse = new SendResponse();
             try
@@ -493,6 +493,11 @@
                 if (!string.IsNullOrEmpty(jsonSerializedData))
                 {
                     request.Content = new StringContent(jsonSerializedData, Encoding.UTF8, CybersourceConstants.APPLICATION_JSON);
+                }
+
+                if(noCache)
+                {
+                    request.Headers.Add("Cache-Control", "no-cache");
                 }
 
                 request.Headers.Add(CybersourceConstants.USE_HTTPS_HEADER_NAME, "true");
