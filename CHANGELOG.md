@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Payer Auth updates
 
+## [1.10.0] - 2022-12-19
+
 ### Added
-- Discover Card
+- Discover as supported payment method
 
 ## [1.9.2] - 2022-12-15
 

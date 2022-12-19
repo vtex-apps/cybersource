@@ -81,10 +81,10 @@
                 }
                 catch (Exception ex)
                 {
-                    _context.Vtex.Logger.Error("CreatePayment", null, 
-                    "Payment Error: ", ex, 
-                    new[] 
-                    { 
+                    _context.Vtex.Logger.Error("CreatePayment", null,
+                    "Payment Error: ", ex,
+                    new[]
+                    {
                         ("body", bodyAsText)
                     });
                 }
@@ -110,7 +110,7 @@
             CreatePaymentResponse createPaymentResponse = new CreatePaymentResponse();
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(paymentId);
-            if(paymentData != null && paymentData.CreatePaymentRequest != null)
+            if (paymentData != null && paymentData.CreatePaymentRequest != null)
             {
                 if (!string.IsNullOrEmpty(paymentData.PayerAuthReferenceId))
                 {
@@ -126,7 +126,7 @@
                     }
                     else
                     {
-                        if(paymentData.CreatePaymentResponse == null)
+                        if (paymentData.CreatePaymentResponse == null)
                         {
                             paymentData.CreatePaymentResponse = new CreatePaymentResponse
                             {
@@ -307,10 +307,10 @@
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("CancelPayment", null, 
-                "Error: ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("CancelPayment", null,
+                "Error: ", ex,
+                new[]
+                {
                     ("paymentId", paymentId)
                 });
             }
@@ -339,10 +339,10 @@
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("CapturePayment", null, 
-                "Error: ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("CapturePayment", null,
+                "Error: ", ex,
+                new[]
+                {
                     ("paymentId", paymentId)
                 });
             }
@@ -371,10 +371,10 @@
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("RefundPayment", null, 
-                "Error: ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("RefundPayment", null,
+                "Error: ", ex,
+                new[]
+                {
                     ("paymentId", paymentId)
                 });
             }
@@ -422,6 +422,11 @@
                     new PaymentMethod
                     {
                         Name = "Mastercard",
+                        AllowsSplit = "onCapture"
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "Discover",
                         AllowsSplit = "onCapture"
                     },
                     new PaymentMethod
@@ -566,7 +571,7 @@
                     SendAntifraudDataRequest sendAntifraudDataRequest = JsonConvert.DeserializeObject<SendAntifraudDataRequest>(bodyAsText);
                     sendAntifraudDataResponse = await this._cybersourcePaymentService.SendAntifraudData(sendAntifraudDataRequest);
                     sw.Stop();
-                    _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[] 
+                    _context.Vtex.Logger.Debug("SendAntifraudPreAnalysisData", null, $"Elapsed Time = '{sw.Elapsed.TotalMilliseconds}' ", new[]
                     {
                         ("sendAntifraudDataRequest", bodyAsText),
                         ("sendAntifraudDataResponse", JsonConvert.SerializeObject(sendAntifraudDataResponse))
@@ -612,10 +617,10 @@
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetAntifraudStatus", null, 
-                "Error: ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("GetAntifraudStatus", null,
+                "Error: ", ex,
+                new[]
+                {
                     ("transactionId", transactionId)
                 });
             }
@@ -703,7 +708,7 @@
 
             try
             {
-                if(useCyberTax)
+                if (useCyberTax)
                 {
                     result = await _vtexApiService.InitConfiguration();
                 }
@@ -714,10 +719,10 @@
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("ToggleTax", null, 
-                "Error: ", ex, 
-                new[] 
-                { 
+                _context.Vtex.Logger.Error("ToggleTax", null,
+                "Error: ", ex,
+                new[]
+                {
                     ( "useCyberTax", useCyberTax.ToString() )
                 });
             }

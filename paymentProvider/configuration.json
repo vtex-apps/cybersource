@@ -21,6 +21,10 @@
       "allowsSplit": "onCapture"
     },
     {
+      "name": "Discover",
+      "allowsSplit": "onCapture"
+    },
+    {
       "name": "Hipercard",
       "allowsSplit": "onCapture"
     },
