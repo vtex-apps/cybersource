@@ -143,7 +143,7 @@
                         if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Denied))
                         {
                             // If Enrollment Check is Denied, update checkout
-                            await _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
+                            _ = _vtexApiService.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                         }
                     }
                 }
@@ -256,7 +256,7 @@
                     // If Validation is Approved do authorization
                     if (paymentStatus.Equals(CybersourceConstants.VtexAuthStatus.Approved))
                     {
-                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, authenticationTransactionId);
+                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(paymentData.CreatePaymentRequest, authenticationTransactionId, paymentsResponse.ConsumerAuthenticationInformation);
                     }
                     else
                     {
