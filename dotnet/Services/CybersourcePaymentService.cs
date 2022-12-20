@@ -155,8 +155,8 @@ namespace Cybersource.Services
                         {
                             totalAmount = createPaymentRequest.Value.ToString(),
                             currency = createPaymentRequest.Currency,
-                            taxAmount = createPaymentRequest.MiniCart.TaxValue.ToString(),
-                            freightAmount = createPaymentRequest.MiniCart.ShippingValue.ToString()
+                            taxAmount = createPaymentRequest.MiniCart.TaxValue.ToString("0.00"),
+                            freightAmount = createPaymentRequest.MiniCart.ShippingValue.ToString("0.00")
                         },
                         billTo = new BillTo
                         {
@@ -601,7 +601,7 @@ namespace Cybersource.Services
                             }
                         }
 
-                        taxAmount = ((decimal)itemTax / 100).ToString();
+                        taxAmount = ((decimal)itemTax / 100).ToString("0.00");
                         commodityCode = vtexOrderItem.TaxCode;
                     }
 
