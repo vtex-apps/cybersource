@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Tax Amount field default
+
 ## [1.10.1] - 2022-12-20
 
 ### Fixed

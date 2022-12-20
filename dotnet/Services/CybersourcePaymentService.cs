@@ -564,7 +564,7 @@ namespace Cybersource.Services
                 double shippingTaxAmount = 0;
                 foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
                 {
-                    string taxAmount = string.Empty;
+                    string taxAmount = "0.00";
                     string commodityCode = string.Empty;
                     long itemTax = 0L;
                     VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => (i.Id.Equals(vtexItem.Id)) && (i.Quantity.Equals(vtexItem.Quantity)));
