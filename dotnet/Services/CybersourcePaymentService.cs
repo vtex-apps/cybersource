@@ -1100,6 +1100,11 @@ namespace Cybersource.Services
                             }
                         }
                     }
+                    
+                    if(captureAmount == 0m)
+                    {
+                        capturePaymentResponse.SettleId = string.Empty;
+                    }
 
                     if(paymentData == null)
                     {
@@ -1199,6 +1204,11 @@ namespace Cybersource.Services
                     if (paymentsResponse.RefundAmountDetails != null && paymentsResponse.RefundAmountDetails.RefundAmount != null)
                     {
                         refundPaymentResponse.Value = decimal.Parse(paymentsResponse.RefundAmountDetails.RefundAmount);
+                    }
+                    
+                    if(refundPaymentResponse.Value == 0m)
+                    {
+                        refundPaymentResponse.RefundId = string.Empty;
                     }
                 }
             }
