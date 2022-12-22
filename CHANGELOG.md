@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Verify that Capture and Refund amounts are greater than zero
+
 ## [1.10.2] - 2022-12-20
 
 ### Fixed
