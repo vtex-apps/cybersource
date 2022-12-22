@@ -2229,43 +2229,43 @@ namespace Cybersource.Services
             // Diners: / ^3(?:0[15] |[68]\d)\d{ 11}$/
             // Elo:    / ^[456](?:011 | 38935 | 51416 | 576 | 04175 | 067 | 06699 | 36368 | 36297)\d{ 10} (?:\d{ 2})?$/
             //https://www.regular-expressions.info/creditcard.html
-            if (Regex.Match(cardNumber, @"^4[0-9]{5}$").Success)
+            if (Regex.Match(cardNumber, @"^4[0-9]{5}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Visa;
             }
 
-            if (Regex.Match(cardNumber, @"^(?:5[1-5][0-9]{3}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{3}|27[01][0-9]|2720)[0-9]$").Success)
+            if (Regex.Match(cardNumber, @"^(?:5[1-5][0-9]{3}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{3}|27[01][0-9]|2720)[0-9]$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.MasterCard;
             }
 
-            if (Regex.Match(cardNumber, @"^3[47][0-9]{4}$").Success)
+            if (Regex.Match(cardNumber, @"^3[47][0-9]{4}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.AmericanExpress;
             }
 
-            if (Regex.Match(cardNumber, @"^65[4-9][0-9]{3}|64[4-9][0-9]{3}|6011[0-9]{2}|(622(?:12[6-9]|1[3-9][0-9]|[2-8][0-9][0-9]|9[01][0-9]|92[0-5])[0-9]{3})$").Success)
+            if (Regex.Match(cardNumber, @"^65[4-9][0-9]{3}|64[4-9][0-9]{3}|6011[0-9]{2}|(622(?:12[6-9]|1[3-9][0-9]|[2-8][0-9][0-9]|9[01][0-9]|92[0-5])[0-9]{3})$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Discover;
             }
 
-            if (Regex.Match(cardNumber, @"^(?:2131|1800|35\d{3})\d{1}$").Success)
+            if (Regex.Match(cardNumber, @"^(?:2131|1800|35\d{3})\d{1}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.JCB;
             }
 
-            if (Regex.Match(cardNumber, @"^3(?:0[0-5]|[68][0-9])[0-9]{3}$").Success)
+            if (Regex.Match(cardNumber, @"^3(?:0[0-5]|[68][0-9])[0-9]{3}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Diners;
             }
 
             //if (Regex.Match(cardNumber, @"^(636368|438935|504175|451416|636297|5067[0-9]{2}|4576[0-9]{2}|4011[0-9]{2})$").Success)
-            if (Regex.Match(cardNumber, @"^[456](?:011|38935|51416|576|04175|067|06699|36368|36297)?$").Success)
+            if (Regex.Match(cardNumber, @"^[456](?:011|38935|51416|576|04175|067|06699|36368|36297)?$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Elo;
             }
 
-            if (Regex.Match(cardNumber, @"^(38|60)\d{4}?$").Success)
+            if (Regex.Match(cardNumber, @"^(38|60)\d{4}?$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Hipercard;
             }
