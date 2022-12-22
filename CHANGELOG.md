@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Payer Auth performance updates
 
+## [1.10.3] - 2022-12-22
+
+### Fixed
+- Verify that Capture and Refund amounts are greater than zero
+
 ## [1.10.2] - 2022-12-20
 
 ### Fixed
