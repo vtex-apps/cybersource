@@ -2703,6 +2703,7 @@ namespace Cybersource.Services
                             break;
 
                         case "AUTHORIZED_PENDING_REVIEW":
+                        case "AUTHORIZED_RISK_DECLINED":
                         case "PENDING_AUTHENTICATION":
                         case "PENDING_REVIEW":
                         case "INVALID_REQUEST":
@@ -2710,7 +2711,6 @@ namespace Cybersource.Services
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
                             break;
                         case "DECLINED":
-                        case "AUTHORIZED_RISK_DECLINED":
                         case "CONSUMER_AUTHENTICATION_FAILED":
                         case "AUTHENTICATION_FAILED":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
