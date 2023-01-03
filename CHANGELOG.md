@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+Moved case "AUTHORIZED_RISK_DECLINED" to Undefined (pending review)
+
 ## [1.10.3] - 2022-12-22
 
 ### Fixed
