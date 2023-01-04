@@ -166,8 +166,8 @@ namespace Cybersource.Models
         [JsonProperty("ecommerceIndicator")]
         public string EcommerceIndicator { get; set; }
 
-        //[JsonProperty("commerceIndicator")]
-        //public string CommerceIndicator { get; set; }
+        [JsonProperty("indicator")]
+        public string Indicator { get; set; }
 
         [JsonProperty("specificationVersion")]
         public string SpecificationVersion { get; set; }

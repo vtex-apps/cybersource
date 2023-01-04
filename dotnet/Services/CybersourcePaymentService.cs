@@ -772,6 +772,12 @@ namespace Cybersource.Services
                         {
                             payment.processingInformation.commerceIndicator = consumerAuthenticationInformationToCopy.EcommerceIndicator;
                         }
+                        else if (!string.IsNullOrWhiteSpace(consumerAuthenticationInformationToCopy.Indicator))
+                        {
+                            payment.processingInformation.commerceIndicator = consumerAuthenticationInformationToCopy.Indicator;
+                        }
+
+                        _context.Vtex.Logger.Debug("CreatePayment", "ConsumerAuthenticationInformation", $"{JsonConvert.SerializeObject(payment.consumerAuthenticationInformation)} | CommerceIndicator: {payment.processingInformation.commerceIndicator}");
                     }
                 }
                 catch(Exception ex)
