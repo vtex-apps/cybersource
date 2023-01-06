@@ -86,7 +86,7 @@ export default {
     fullRefundEnv: 'order1',
     // orderId variable name for getPartialRefund
     partialRefundEnv: 'order2',
-    getFullRefundTotal: 11497,
-    getPartialRefundTotal: 11497,
+    getFullRefundTotal: 10510,
+    getPartialRefundTotal: 10510,
   },
 }
