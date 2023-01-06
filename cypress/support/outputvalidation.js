@@ -54,8 +54,8 @@ export default {
   promotionProduct: {
     prefix: 'promotionalProduct',
     postalCode: '90290',
-    totalAmount: '$ 27.13',
-    tax: '$ 2.36',
+    totalAmount: '$ 24.87',
+    tax: '$ 0.10',
     subTotal: '$ 39.54',
     discount: '$ -19.77',
     productName: PRODUCTS.greenConventional,
