@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- (CYBRSOURCE-62) Custom Capture payload for Ecuador
+
 ### Changed
 - [ENGINEERS-1029] - Updated tax values in cypress tests 
 
