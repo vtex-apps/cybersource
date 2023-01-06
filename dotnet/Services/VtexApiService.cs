@@ -91,10 +91,16 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
-        public async Task<VtexOrder> GetOrderInformation(string orderId)
+        public async Task<VtexOrder> GetOrderInformation(string orderId, bool fromOMS = false)
         {
+            string orderSource = "checkout";
+            if(fromOMS)
+            {
+                orderSource = "oms";
+            }
+
             VtexOrder vtexOrder = null;
-            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/checkout/pvt/orders/{orderId}", null);
+            SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/{orderSource}/pvt/orders/{orderId}", null);
             if (sendResponse.Success)
             {
                 vtexOrder = JsonConvert.DeserializeObject<VtexOrder>(sendResponse.Message);

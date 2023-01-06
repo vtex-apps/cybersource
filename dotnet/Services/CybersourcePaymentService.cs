@@ -559,132 +559,7 @@ namespace Cybersource.Services
                     }
                 }
 
-                decimal taxRate = 0;
-                bool useRate = false;
-                double shippingTaxAmount = 0;
-                foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
-                {
-                    string taxAmount = "0.00";
-                    string commodityCode = string.Empty;
-                    long itemTax = 0L;
-                    VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => (i.Id.Equals(vtexItem.Id)) && (i.Quantity.Equals(vtexItem.Quantity)));
-                    if (vtexOrderItem != null)
-                    {
-                        foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
-                        {
-                            string name = priceTag.Name.ToLower();
-                            if (name.Contains("tax@") || name.Contains("taxhub@"))
-                            {
-                                if (name.Contains("shipping"))
-                                {
-                                    if (priceTag.IsPercentual ?? false)
-                                    {
-                                        taxRate = (decimal)priceTag.RawValue;
-                                        useRate = true;
-                                    }
-                                    else
-                                    {
-                                        shippingTaxAmount += priceTag.RawValue;
-                                    }
-                                }
-                                else
-                                {
-                                    if (priceTag.IsPercentual ?? false)
-                                    {
-                                        itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
-                                    }
-                                    else
-                                    {
-                                        itemTax += priceTag.Value / vtexOrderItem.Quantity;
-                                    }
-                                }
-                            }
-                        }
-
-                        taxAmount = ((decimal)itemTax / 100).ToString("0.00");
-                        commodityCode = vtexOrderItem.TaxCode;
-                    }
-
-                    try
-                    {
-                        LineItem lineItem = new LineItem
-                        {
-                            productSKU = vtexItem.Id,
-                            productName = vtexItem.Name,
-                            unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)).ToString("0.00"), // Discount is negative
-                            quantity = vtexItem.Quantity.ToString(),
-                            discountAmount = vtexItem.Discount.ToString("0.00"),
-                            taxAmount = taxAmount,
-                            commodityCode = commodityCode
-                        };
-
-                        if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
-                        {
-                            decimal unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity));
-                            lineItem.taxAmount = itemTax > 0 ? (unitPrice * vtexItem.Quantity).ToString("0.00") : "0.00";
-                            lineItem.taxDetails = new TaxDetail[]
-                            {
-                                new TaxDetail
-                                {
-                                    type = "national",
-                                    amount = ((itemTax * vtexItem.Quantity) / 100m).ToString("0.00")
-                                }
-                            };
-                        }
-
-                        payment.orderInformation.lineItems.Add(lineItem);
-                    }
-                    catch(Exception ex)
-                    {
-                        _context.Vtex.Logger.Error("BuildPayment", "LineItems", "Error", ex);
-                    }
-                }
-
-                try
-                {
-                    if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
-                    {
-                        payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
-                        payment.orderInformation.invoiceDetails = new InvoiceDetails
-                        {
-                            purchaseOrderNumber = createPaymentRequest.OrderId,
-                            taxable = createPaymentRequest.MiniCart.TaxValue > 0m
-                        };
-
-                        // Add shipping tax as a line item
-                        decimal taxDetailAmount = 0m;
-                        if (useRate)
-                        {
-                            taxDetailAmount = createPaymentRequest.MiniCart.ShippingValue * taxRate;
-                        }
-                        else
-                        {
-                            taxDetailAmount = (decimal)shippingTaxAmount;
-                        }
-
-                        LineItem lineItem = new LineItem
-                        {
-                            productName = "ADMINISTRACION MANEJO DE PRODUCTO",
-                            unitPrice = createPaymentRequest.MiniCart.ShippingValue.ToString("0.00"), // Shipping cost without taxes
-                            quantity = "1",
-                            taxAmount = createPaymentRequest.MiniCart.ShippingValue.ToString("0.00"), // unitPrice * quantity
-                            taxDetails = new TaxDetail[]
-                            {
-                                new TaxDetail
-                                {
-                                    type = "national",
-                                    amount = Math.Round(taxDetailAmount, 2, MidpointRounding.AwayFromZero).ToString()   // taxAmount * taxRate (based on configuration in the account)
-                                }
-                            }
-                        };
-                        
-                        payment.orderInformation.lineItems.Add(lineItem);
-                    }
-                }
-                catch(Exception ex)
-                {
-                    _context.Vtex.Logger.Error("BuildPayment", "Ecuador Customization", "Error", ex);
-                }
+                this.GetItemTaxAmounts(merchantSettings, vtexOrderItems, payment, createPaymentRequest);
 
                 if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("AdditionalData")))
                 {
@@ -1060,10 +935,123 @@ namespace Cybersource.Services
                 };
 
                 string authId = capturePaymentRequest.AuthorizationId;
-                if(paymentData != null)
+                if (paymentData != null)
                 {
                     authId = paymentData.AuthorizationId;
                 }
+
+                #region Custom Payload
+                if (paymentData != null && merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                {
+                    try
+                    {
+                        bool captureFullAmount = false;
+                        if (capturePaymentRequest.Value.Equals(paymentData.CreatePaymentRequest.Value))
+                        {
+                            captureFullAmount = true;
+                        }
+
+                        payment.orderInformation.amountDetails.nationalTaxIncluded = "1";
+                        payment.orderInformation.lineItems = new List<LineItem>();
+                        VtexOrder[] vtexOrders = await _vtexApiService.GetOrderGroup(paymentData.CreatePaymentRequest.OrderId);
+                        if (vtexOrders != null)
+                        {
+                            List<VtexOrderItem> vtexOrderItems = new List<VtexOrderItem>();
+                            Dictionary<string, List<VtexOrderItem>> shippedItemsWithDate = new Dictionary<string, List<VtexOrderItem>>();
+                            foreach (VtexOrder vtexGroupOrder in vtexOrders)
+                            {
+                                foreach (VtexOrderItem vtexItem in vtexGroupOrder.Items)
+                                {
+                                    if (!vtexOrderItems.Contains(vtexItem))
+                                    {
+                                        vtexOrderItems.Add(vtexItem);
+                                    }
+                                }
+
+                                if (!captureFullAmount)
+                                {
+                                    // If not capturing the full amount we need to find the shipment info
+                                    VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation(vtexGroupOrder.OrderId, true);
+                                    if (vtexOrder != null && vtexOrder.PackageAttachment != null && vtexOrder.PackageAttachment.Packages != null)
+                                    {
+                                        foreach (Package package in vtexOrder.PackageAttachment.Packages.Reverse<Package>())
+                                        {
+                                            List<VtexOrderItem> shippedItems = new List<VtexOrderItem>();
+                                            foreach (PackageItem packageItem in package.Items)
+                                            {
+                                                VtexOrderItem vtexOrderItem = vtexOrder.Items[(int)packageItem.ItemIndex];
+                                                vtexOrderItem.Quantity = packageItem.Quantity;
+                                                vtexOrderItem.Price = packageItem.Price;
+                                                vtexOrderItem.UnitMultiplier = packageItem.UnitMultiplier;
+
+                                                shippedItems.Add(vtexOrderItem);
+                                            }
+
+                                            shippedItemsWithDate.Add(package.IssuanceDate, shippedItems);
+                                        }
+                                    }
+                                }
+                            }
+
+                            this.GetItemTaxAmounts(merchantSettings, vtexOrderItems, payment, paymentData.CreatePaymentRequest);
+
+                            if (!captureFullAmount)
+                            {
+                                // Adjust for partial shipment
+                                List<VtexOrderItem> lastShipment = shippedItemsWithDate.OrderByDescending(d => d.Key).FirstOrDefault().Value;
+                                List<LineItem> itemsToRemove = new List<LineItem>();
+                                foreach (LineItem lineItem in payment.orderInformation.lineItems)
+                                {
+                                    if (lastShipment.Select(s => s.SkuName).Contains(lineItem.productSKU))
+                                    {
+                                        VtexOrderItem shippedItem = lastShipment.FirstOrDefault(si => si.SkuName.Equals(lineItem.productSKU));
+                                        long originalQuantity = long.Parse(lineItem.quantity);
+                                        decimal percentOfTotal = (decimal)shippedItem.Quantity / originalQuantity;
+                                        lineItem.quantity = shippedItem.Quantity.ToString();
+                                        lineItem.taxAmount = (decimal.Parse(lineItem.taxAmount) * percentOfTotal).ToString("0.00");
+                                        foreach (TaxDetail taxDetail in lineItem.taxDetails)
+                                        {
+                                            taxDetail.amount = (decimal.Parse(taxDetail.amount) * percentOfTotal).ToString("0.00");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        itemsToRemove.Add(lineItem);
+                                    }
+                                }
+
+                                foreach (LineItem itemToRemove in itemsToRemove)
+                                {
+                                    payment.orderInformation.lineItems.Remove(itemToRemove);
+                                }
+                            }
+                        }
+
+                        payment.orderInformation.invoiceDetails = new InvoiceDetails
+                        {
+                            purchaseOrderNumber = $"{referenceNumber}{orderSuffix}",
+                            taxable = true
+                        };
+
+                        _context.Vtex.Logger.Debug("CapturePayment", "Ecuador custom payload",
+                            $"Capture full amount? {captureFullAmount}",
+                            new[]
+                            {
+                            ( "PaymentId", capturePaymentRequest.PaymentId ),
+                            ( "OrderInformation", JsonConvert.SerializeObject(payment.orderInformation) )
+                            });
+                    }
+                    catch(Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("CapturePayment", "Ecuador custom payload",
+                            "Error building custom payload ", null,
+                            new[]
+                            {
+                                ( "PaymentId", capturePaymentRequest.PaymentId )
+                            });
+                    }
+                }
+                #endregion Custom Payload
 
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, authId);
                 if (paymentsResponse != null)
@@ -1099,6 +1087,11 @@ namespace Cybersource.Services
                                 }
                             }
                         }
+                    }
+
+                    if(captureAmount == 0m)
+                    {
+                        capturePaymentResponse.SettleId = string.Empty;
                     }
 
                     if(paymentData == null)
@@ -1199,6 +1192,11 @@ namespace Cybersource.Services
                     if (paymentsResponse.RefundAmountDetails != null && paymentsResponse.RefundAmountDetails.RefundAmount != null)
                     {
                         refundPaymentResponse.Value = decimal.Parse(paymentsResponse.RefundAmountDetails.RefundAmount);
+                    }
+
+                    if(refundPaymentResponse.Value == 0m)
+                    {
+                        refundPaymentResponse.RefundId = string.Empty;
                     }
                 }
             }
@@ -2219,43 +2217,43 @@ namespace Cybersource.Services
             // Diners: / ^3(?:0[15] |[68]\d)\d{ 11}$/
             // Elo:    / ^[456](?:011 | 38935 | 51416 | 576 | 04175 | 067 | 06699 | 36368 | 36297)\d{ 10} (?:\d{ 2})?$/
             //https://www.regular-expressions.info/creditcard.html
-            if (Regex.Match(cardNumber, @"^4[0-9]{5}$").Success)
+            if (Regex.Match(cardNumber, @"^4[0-9]{5}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Visa;
             }
 
-            if (Regex.Match(cardNumber, @"^(?:5[1-5][0-9]{3}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{3}|27[01][0-9]|2720)[0-9]$").Success)
+            if (Regex.Match(cardNumber, @"^(?:5[1-5][0-9]{3}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{3}|27[01][0-9]|2720)[0-9]$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.MasterCard;
             }
 
-            if (Regex.Match(cardNumber, @"^3[47][0-9]{4}$").Success)
+            if (Regex.Match(cardNumber, @"^3[47][0-9]{4}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.AmericanExpress;
             }
 
-            if (Regex.Match(cardNumber, @"^65[4-9][0-9]{3}|64[4-9][0-9]{3}|6011[0-9]{2}|(622(?:12[6-9]|1[3-9][0-9]|[2-8][0-9][0-9]|9[01][0-9]|92[0-5])[0-9]{3})$").Success)
+            if (Regex.Match(cardNumber, @"^65[4-9][0-9]{3}|64[4-9][0-9]{3}|6011[0-9]{2}|(622(?:12[6-9]|1[3-9][0-9]|[2-8][0-9][0-9]|9[01][0-9]|92[0-5])[0-9]{3})$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Discover;
             }
 
-            if (Regex.Match(cardNumber, @"^(?:2131|1800|35\d{3})\d{1}$").Success)
+            if (Regex.Match(cardNumber, @"^(?:2131|1800|35\d{3})\d{1}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.JCB;
             }
 
-            if (Regex.Match(cardNumber, @"^3(?:0[0-5]|[68][0-9])[0-9]{3}$").Success)
+            if (Regex.Match(cardNumber, @"^3(?:0[0-5]|[68][0-9])[0-9]{3}$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Diners;
             }
 
             //if (Regex.Match(cardNumber, @"^(636368|438935|504175|451416|636297|5067[0-9]{2}|4576[0-9]{2}|4011[0-9]{2})$").Success)
-            if (Regex.Match(cardNumber, @"^[456](?:011|38935|51416|576|04175|067|06699|36368|36297)?$").Success)
+            if (Regex.Match(cardNumber, @"^[456](?:011|38935|51416|576|04175|067|06699|36368|36297)?$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Elo;
             }
 
-            if (Regex.Match(cardNumber, @"^(38|60)\d{4}?$").Success)
+            if (Regex.Match(cardNumber, @"^(38|60)\d{4}?$", RegexOptions.None, TimeSpan.FromMilliseconds(100)).Success)
             {
                 return CybersourceConstants.CardType.Hipercard;
             }
@@ -2796,6 +2794,136 @@ namespace Cybersource.Services
             }
 
             return (createPaymentResponse, paymentsResponse, paymentStatus, doCancel);
+        }
+
+        public void GetItemTaxAmounts(MerchantSettings merchantSettings, List<VtexOrderItem> vtexOrderItems, Payments payment, CreatePaymentRequest createPaymentRequest)
+        {
+            decimal taxRate = 0;
+            bool useRate = false;
+            double shippingTaxAmount = 0;
+            foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
+            {
+                string taxAmount = "0.00";
+                string commodityCode = string.Empty;
+                long itemTax = 0L;
+                VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => (i.Id.Equals(vtexItem.Id)) && (i.Quantity.Equals(vtexItem.Quantity)));
+                if (vtexOrderItem != null)
+                {
+                    foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
+                    {
+                        string name = priceTag.Name.ToLower();
+                        if (name.Contains("tax@") || name.Contains("taxhub@"))
+                        {
+                            if (name.Contains("shipping"))
+                            {
+                                if (priceTag.IsPercentual ?? false)
+                                {
+                                    taxRate = (decimal)priceTag.RawValue;
+                                    useRate = true;
+                                }
+                                else
+                                {
+                                    shippingTaxAmount += priceTag.RawValue;
+                                }
+                            }
+                            else
+                            {
+                                if (priceTag.IsPercentual ?? false)
+                                {
+                                    itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                                }
+                                else
+                                {
+                                    itemTax += priceTag.Value / vtexOrderItem.Quantity;
+                                }
+                            }
+                        }
+                    }
+
+                    taxAmount = ((decimal)itemTax / 100).ToString("0.00");
+                    commodityCode = vtexOrderItem.TaxCode;
+                }
+
+                try
+                {
+                    LineItem lineItem = new LineItem
+                    {
+                        productSKU = vtexItem.Id,
+                        productName = vtexItem.Name,
+                        unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity)).ToString("0.00"), // Discount is negative
+                        quantity = vtexItem.Quantity.ToString(),
+                        discountAmount = vtexItem.Discount.ToString("0.00"),
+                        taxAmount = taxAmount,
+                        commodityCode = commodityCode
+                    };
+
+                    if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                    {
+                        decimal unitPrice = (vtexItem.Price + (vtexItem.Discount / vtexItem.Quantity));
+                        lineItem.taxAmount = itemTax > 0 ? (unitPrice * vtexItem.Quantity).ToString("0.00") : "0.00";
+                        lineItem.taxDetails = new TaxDetail[]
+                        {
+                                new TaxDetail
+                                {
+                                    type = "national",
+                                    amount = ((itemTax * vtexItem.Quantity) / 100m).ToString("0.00")
+                                }
+                        };
+                    }
+
+                    payment.orderInformation.lineItems.Add(lineItem);
+                }
+                catch (Exception ex)
+                {
+                    _context.Vtex.Logger.Error("GetItemTaxAmounts", "LineItems", "Error", ex);
+                }
+            }
+
+            try
+            {
+                if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                {
+                    payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
+                    payment.orderInformation.invoiceDetails = new InvoiceDetails
+                    {
+                        purchaseOrderNumber = createPaymentRequest.OrderId,
+                        taxable = createPaymentRequest.MiniCart.TaxValue > 0m
+                    };
+
+                    // Add shipping tax as a line item
+                    decimal taxDetailAmount = 0m;
+                    if (useRate)
+                    {
+                        taxDetailAmount = createPaymentRequest.MiniCart.ShippingValue * taxRate;
+                    }
+                    else
+                    {
+                        taxDetailAmount = (decimal)shippingTaxAmount;
+                    }
+
+                    LineItem lineItem = new LineItem
+                    {
+                        productName = "ADMINISTRACION MANEJO DE PRODUCTO",
+                        unitPrice = createPaymentRequest.MiniCart.ShippingValue.ToString("0.00"), // Shipping cost without taxes
+                        quantity = "1",
+                        taxAmount = createPaymentRequest.MiniCart.ShippingValue.ToString("0.00"), // unitPrice * quantity
+                        taxDetails = new TaxDetail[]
+                        {
+                                new TaxDetail
+                                {
+                                    type = "national",
+                                    amount = Math.Round(taxDetailAmount, 2, MidpointRounding.AwayFromZero).ToString()   // taxAmount * taxRate (based on configuration in the account)
+                                }
+                        }
+                    };
+
+                    payment.orderInformation.lineItems.Add(lineItem);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetItemTaxAmounts", "Ecuador Customization", "Error", ex);
+            }
         }
 
         private static T DeepCopy<T>(object objToCopy)
