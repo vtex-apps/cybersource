@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- [ENGINEERS-1029] - Updated tax values in cypress tests 
+
 ## [1.10.4] - 2023-01-04
 
 ### Changed

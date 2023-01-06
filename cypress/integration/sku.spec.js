@@ -1,7 +1,9 @@
 import { updateRetry } from '../support/common/support.js'
 
 describe('Testing Split/Non-Split Sku', () => {
-  const tax = '$ 513.96'
+  // We are getting min tax ($ 0.10) due to cybersource test credentials
+  // Slack Conversation - https://vtex.slack.com/archives/C02J07NP3JT/p1672762261674729
+  const tax = '$ 0.10'
 
   it(
     'Verifying same sku with split of 10 products(7 and 3) then verify tax amounts via order-tax API',

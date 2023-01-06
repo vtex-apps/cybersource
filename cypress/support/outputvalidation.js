@@ -4,8 +4,10 @@ export default {
   singleProduct: {
     prefix: 'singleProduct',
     postalCode: '90290',
-    totalAmount: '$ 114.97',
-    tax: '$ 9.97',
+    totalAmount: '$ 105.10', // $ 114.97
+    // We are getting min tax ($ 0.10) due to cybersource test credentials
+    // Slack Conversation - https://vtex.slack.com/archives/C02J07NP3JT/p1672762261674729
+    tax: '$ 0.10', // $ 9.97
     productPrice: '50.00',
     subTotal: '$ 100.00',
     // singleProduct, taxExemption, vatNumber,multiProduct,refund,externalSeller uses below product
@@ -16,8 +18,8 @@ export default {
     prefix: 'multiProduct',
     postalCode: '90290',
     pickUpPostalCode: '33180',
-    totalAmount: '$ 136.87',
-    tax: '$ 11.87',
+    totalAmount: '$ 125.15', // $ 136.87
+    tax: '$ 0.15', // $ 11.87
     subTotal: '$ 120.00',
     product1Name: PRODUCTS.onion,
     product2Name: PRODUCTS.waterMelon,
@@ -28,8 +30,8 @@ export default {
   discountProduct: {
     prefix: 'discountProduct',
     postalCode: '90290',
-    totalAmount: '$ 104.03',
-    tax: '$ 9.03',
+    totalAmount: '$ 95.10', // $ 104.03
+    tax: '$ 0.10', // $ 9.03
     subTotal: '$ 100.00',
     productQuantity: '1',
     productPrice: '100.00',
@@ -40,8 +42,8 @@ export default {
   discountShipping: {
     prefix: 'discountShipping',
     postalCode: '90290',
-    totalAmount: '$ 109.50',
-    tax: '$ 9.50',
+    totalAmount: '$ 100.10', // $ 109.50
+    tax: '$ 0.10', // $ 9.50
     subTotal: '$ 100.00',
     productQuantity: '1',
     productPrice: '100.00',
@@ -52,8 +54,8 @@ export default {
   promotionProduct: {
     prefix: 'promotionalProduct',
     postalCode: '90290',
-    totalAmount: '$ 27.13',
-    tax: '$ 2.36',
+    totalAmount: '$ 24.87',
+    tax: '$ 0.10',
     subTotal: '$ 39.54',
     discount: '$ -19.77',
     productName: PRODUCTS.greenConventional,
@@ -66,11 +68,11 @@ export default {
     postalCode: '90290',
     product1Name: PRODUCTS.onion,
     product2Name: PRODUCTS.tshirt,
-    totalAmount: '$ 168.17',
-    tax: '$ 14.17',
+    totalAmount: '$ 163.04', // $ 168.17
+    tax: '$ 9.04', // $ 14.17
     directSaleAmount: '$ 55.00',
     directSaleEnv: 'directSale',
-    directSaleTax: '$ 5.23',
+    directSaleTax: '$ 0.10', // $ 5.23
     externalSellerTax: '$ 8.94',
     externalSellerAmount: '$ 107.94',
     externalSaleEnv: 'externalSaleEnv',
@@ -84,7 +86,7 @@ export default {
     fullRefundEnv: 'order1',
     // orderId variable name for getPartialRefund
     partialRefundEnv: 'order2',
-    getFullRefundTotal: 11497,
-    getPartialRefundTotal: 11497,
+    getFullRefundTotal: 10510,
+    getPartialRefundTotal: 10510,
   },
 }
