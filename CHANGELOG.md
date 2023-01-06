@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - (CYBRSOURCE-62) Custom Capture payload for Ecuador
 
+### Changed
+- [ENGINEERS-1029] - Updated tax values in cypress tests 
+
+## [1.10.4] - 2023-01-04
+
+### Changed
+- Payer Auth performance updates
+
+## [1.10.3] - 2022-12-22
+
+### Fixed
+- Verify that Capture and Refund amounts are greater than zero
+
 ## [1.10.2] - 2022-12-20
 
 ### Fixed

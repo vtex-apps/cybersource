@@ -647,6 +647,12 @@ namespace Cybersource.Services
                         {
                             payment.processingInformation.commerceIndicator = consumerAuthenticationInformationToCopy.EcommerceIndicator;
                         }
+                        else if (!string.IsNullOrWhiteSpace(consumerAuthenticationInformationToCopy.Indicator))
+                        {
+                            payment.processingInformation.commerceIndicator = consumerAuthenticationInformationToCopy.Indicator;
+                        }
+
+                        _context.Vtex.Logger.Debug("CreatePayment", "ConsumerAuthenticationInformation", $"{JsonConvert.SerializeObject(payment.consumerAuthenticationInformation)} | CommerceIndicator: {payment.processingInformation.commerceIndicator}");
                     }
                 }
                 catch(Exception ex)
@@ -1088,6 +1094,11 @@ namespace Cybersource.Services
                             }
                         }
                     }
+                    
+                    if(captureAmount == 0m)
+                    {
+                        capturePaymentResponse.SettleId = string.Empty;
+                    }
 
                     if(captureAmount == 0m)
                     {
@@ -1193,7 +1204,7 @@ namespace Cybersource.Services
                     {
                         refundPaymentResponse.Value = decimal.Parse(paymentsResponse.RefundAmountDetails.RefundAmount);
                     }
-
+                    
                     if(refundPaymentResponse.Value == 0m)
                     {
                         refundPaymentResponse.RefundId = string.Empty;
