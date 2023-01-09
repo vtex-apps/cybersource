@@ -75,6 +75,24 @@
       ]
     },
     {
+      "name": "Authorized Risk Declined",
+      "type": "select",
+      "options": [
+        {
+          "text": "Accept",
+          "value": "approved"
+        },
+        {
+          "text": "Decline",
+          "value": "denied"
+        },
+        {
+          "text": "Pending Review",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
       "name": "Merchant Id",
       "type": "text"
     },

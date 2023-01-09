@@ -123,6 +123,10 @@ namespace Cybersource.Data
             public const string UsePayerAuth = "Payer Authentication";
             public const string Disabled = "Disabled";
             public const string Active = "Active";
+            public const string AuthorizedRiskDeclined = "Authorized Risk Declined";
+            public const string Accept = "Accept";
+            public const string Decline = "Decline";
+            public const string Pending = "Pending Review";
         }
 
         public static class CaptureSetting
