@@ -87,7 +87,7 @@
           "value": "denied"
         },
         {
-          "text": "Pending Review",
+          "text": "Treat as pending authorizations",
           "value": "undefined"
         }
       ]
