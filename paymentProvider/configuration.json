@@ -75,7 +75,7 @@
       ]
     },
     {
-      "name": "Authorized Risk Declined",
+      "name": "Authorized Payments Flagged by Decision Manager",
       "type": "select",
       "options": [
         {
