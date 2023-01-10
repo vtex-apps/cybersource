@@ -493,6 +493,29 @@
                             }
                         }
                     },
+                    new CustomFieldOptions
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.AuthorizedRiskDeclined,
+                        Type = "select",
+                        Options = new List<Option>
+                        {
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.Accept,
+                                Value = CybersourceConstants.VtexAuthStatus.Approved
+                            },
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.Decline,
+                                Value = CybersourceConstants.VtexAuthStatus.Denied
+                            },
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.Pending,
+                                Value = CybersourceConstants.VtexAuthStatus.Undefined
+                            }
+                        }
+                    },
                     new CustomField
                     {
                         Name = CybersourceConstants.ManifestCustomField.MerchantId,
