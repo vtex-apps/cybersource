@@ -361,7 +361,7 @@ namespace Cybersource.Data
            { "Región de Atacama (III)", "AT" },
            { "Región de Coquimbo (IV)", "CO" },
            { "Región de Valparaíso (V)", "VS" },
-           { "Región del Libertador General Bernardo OHiggins (VI)", "LI" },
+           { "Región del Libertador General Bernardo O’Higgins (VI)", "LI" },
            { "Región del Maule (VII)", "ML" },
            { "Región del Ñuble (XVI)", "Ñuble" },
            { "Región del Biobío (VIII)", "BI" },
