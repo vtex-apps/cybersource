@@ -83,7 +83,7 @@
           "value": "approved"
         },
         {
-          "text": "Decline",
+          "text": "Treat as failed authorizations",
           "value": "denied"
         },
         {
