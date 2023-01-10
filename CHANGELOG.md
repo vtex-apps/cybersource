@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Do not set administrativeArea for Bolivia, Guatemala, Puerto Rico and the Dominican Republic
+
 ## [1.12.0] - 2023-01-10
 
 ### Added
