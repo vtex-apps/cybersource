@@ -79,7 +79,7 @@
       "type": "select",
       "options": [
         {
-          "text": "Accept",
+          "text": "Treat as successful authorizations",
           "value": "approved"
         },
         {
