@@ -75,6 +75,24 @@
       ]
     },
     {
+      "name": "Authorized Payments Flagged by Decision Manager",
+      "type": "select",
+      "options": [
+        {
+          "text": "Treat as successful authorizations",
+          "value": "approved"
+        },
+        {
+          "text": "Treat as failed authorizations",
+          "value": "denied"
+        },
+        {
+          "text": "Treat as pending authorizations",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
       "name": "Merchant Id",
       "type": "text"
     },

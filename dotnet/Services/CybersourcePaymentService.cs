@@ -2709,10 +2709,35 @@ namespace Cybersource.Services
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
                             break;
                         case "DECLINED":
-                        case "AUTHORIZED_RISK_DECLINED":
                         case "CONSUMER_AUTHENTICATION_FAILED":
                         case "AUTHENTICATION_FAILED":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                            break;
+                        case "AUTHORIZED_RISK_DECLINED":
+                            paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                            try
+                            {
+                                MerchantSetting merchantSettingRiskDeclined = null;
+                                if (createPaymentRequest.MerchantSettings != null)
+                                {
+                                    merchantSettingRiskDeclined = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.AuthorizedRiskDeclined));
+                                    if (merchantSettingRiskDeclined != null && merchantSettingRiskDeclined.Value != null)
+                                    {
+                                        paymentStatus = merchantSettingRiskDeclined.Value.ToLower();
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied; // jic
+                                _context.Vtex.Logger.Error("GetPaymentStatus", "Risk Declined Setting",
+                                "Error: ", ex,
+                                new[]
+                                {
+                                    ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest))
+                                });
+                            }
+
                             break;
                         case "ERROR":
                             string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
