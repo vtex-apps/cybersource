@@ -1718,6 +1718,12 @@ namespace Cybersource.Services
                         case "PA": // Panama
                             regionCode = GetAdministrativeAreaPanama(region);
                             break;
+                        case "BO": // Bolivia
+                        case "GT": // Guatemala
+                        case "PR": // Puerto Rico
+                        case "DO": // Dominican Republic
+                            regionCode = null;
+                            break;
                     }
                 }
             }
