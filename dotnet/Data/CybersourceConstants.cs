@@ -123,7 +123,7 @@ namespace Cybersource.Data
             public const string UsePayerAuth = "Payer Authentication";
             public const string Disabled = "Disabled";
             public const string Active = "Active";
-            public const string AuthorizedRiskDeclined = "Authorized Risk Declined";
+            public const string AuthorizedRiskDeclined = "Authorized Payments Flagged by Decision Manager";
             public const string Accept = "Accept";
             public const string Decline = "Decline";
             public const string Pending = "Pending Review";
@@ -336,40 +336,40 @@ namespace Cybersource.Data
            { "ZWE", "ZW" },    // Zimbabwe
         };
 
-        //AisÈn del General Carlos Ib·Òez del Campo   CL.AI   AI  CI02    XI  94,271  108,494 41,890  Coihaique
+        //Ais√©n del General Carlos Ib√°√±ez del Campo   CL.AI   AI  CI02    XI  94,271  108,494 41,890  Coihaique
         //Antofagasta CL.AN                 AN  CI03    II  530,879 126,049 48,668  Antofagasta
-        //AraucanÌa   CL.AR                 AR  CI04    IX  889,492 31,842  12,294  Temuco
+        //Araucan√≠a   CL.AR                 AR  CI04    IX  889,492 31,842  12,294  Temuco
         //Arica and Parinacota    CL.AP     AP  CI16    XV  212,813 16,873  6,515   Arica
-        //Atacama CL.AT                     AT  CI05    III 284,992 75,176  29,026  CopiapÛ
-        //BÌo-BÌo CL.BI                     BI  CI06    VIII    1,950,482   37,069  14,312  ConcepciÛn
+        //Atacama CL.AT                     AT  CI05    III 284,992 75,176  29,026  Copiap√≥
+        //B√≠o-B√≠o CL.BI                     BI  CI06    VIII    1,950,482   37,069  14,312  Concepci√≥n
         //Coquimbo    CL.CO                 CO  CI07    IV  687,806 40,580  15,668  La Serena
         //Libertador General Bernardo O'Higgins	CL.LI	LI	CI08	VI	851,406	16,387	6,327	Rancagua
         //Los Lagos   CL.LG                 LL  CI14    X   767,714 48,584  18,758  Puerto Montt
-        //Los RÌos    CL.LR                 LR  CI17    XIV 364,183 18,430  7,116   Valdivia
-        //Magallanes y Ant·rtica Chilena  CL.MA   MA  CI10    XII 155,332 132,291 51,078  Punta Arenas
+        //Los R√≠os    CL.LR                 LR  CI17    XIV 364,183 18,430  7,116   Valdivia
+        //Magallanes y Ant√°rtica Chilena  CL.MA   MA  CI10    XII 155,332 132,291 51,078  Punta Arenas
         //Maule   CL.ML                     ML  CI11    VII 955,048 30,296  11,697  Talca
-        //—uble   CL.NB           XVI 480,609 13,178  5,088   Chill·n
-        //RegiÛn Metropolitana de Santiago    CL.RM   RM  CI12        6,604,835   15,403  5,947   Santiago
-        //Tarapac·    CL.TP                 TA  CI15    I   295,095 42,226  16,303  Iquique
-        //ValparaÌso  CL.VS                 VS  CI01    V   1,697,581   16,396  6,331   ValparaÌso
+        //√ëuble   CL.NB           XVI 480,609 13,178  5,088   Chill√°n
+        //Regi√≥n Metropolitana de Santiago    CL.RM   RM  CI12        6,604,835   15,403  5,947   Santiago
+        //Tarapac√°    CL.TP                 TA  CI15    I   295,095 42,226  16,303  Iquique
+        //Valpara√≠so  CL.VS                 VS  CI01    V   1,697,581   16,396  6,331   Valpara√≠so
         internal static readonly Dictionary<string, string> AdministrativeAreasChile = new Dictionary<string, string>()
         {
-           { "RegiÛn Metropolitana", "RM" },
-           { "RegiÛn de Arica y Parinacota (XV)", "AP" },
-           { "RegiÛn de Tarapac· (I)", "TA" },
-           { "RegiÛn de Antofagasta (II)", "AN" },
-           { "RegiÛn de Atacama (III)", "AT" },
-           { "RegiÛn de Coquimbo (IV)", "CO" },
-           { "RegiÛn de ValparaÌso (V)", "VS" },
-           { "RegiÛn del Libertador General Bernardo OíHiggins (VI)", "LI" },
-           { "RegiÛn del Maule (VII)", "ML" },
-           { "RegiÛn del —uble (XVI)", "—uble" },
-           { "RegiÛn del BiobÌo (VIII)", "BI" },
-           { "RegiÛn de La AraucanÌa (IX)", "AR" },
-           { "RegiÛn de Los RÌos (XIV)", "LR" },
-           { "RegiÛn de Los Lagos (X)", "LL" },
-           { "RegiÛn de AysÈn del General Carlos Ib·Òez del Campo (XI)", "AI" },
-           { "RegiÛn de Magallanes y la Ant·rtica Chilena (XII)", "MA" },
+           { "Regi√≥n Metropolitana", "RM" },
+           { "Regi√≥n de Arica y Parinacota (XV)", "AP" },
+           { "Regi√≥n de Tarapac√° (I)", "TA" },
+           { "Regi√≥n de Antofagasta (II)", "AN" },
+           { "Regi√≥n de Atacama (III)", "AT" },
+           { "Regi√≥n de Coquimbo (IV)", "CO" },
+           { "Regi√≥n de Valpara√≠so (V)", "VS" },
+           { "Regi√≥n del Libertador General Bernardo O¬íHiggins (VI)", "LI" },
+           { "Regi√≥n del Maule (VII)", "ML" },
+           { "Regi√≥n del √ëuble (XVI)", "√ëuble" },
+           { "Regi√≥n del Biob√≠o (VIII)", "BI" },
+           { "Regi√≥n de La Araucan√≠a (IX)", "AR" },
+           { "Regi√≥n de Los R√≠os (XIV)", "LR" },
+           { "Regi√≥n de Los Lagos (X)", "LL" },
+           { "Regi√≥n de Ays√©n del General Carlos Ib√°√±ez del Campo (XI)", "AI" },
+           { "Regi√≥n de Magallanes y la Ant√°rtica Chilena (XII)", "MA" },
         };
 
         public enum ActionList
