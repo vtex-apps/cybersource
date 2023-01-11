@@ -1722,6 +1722,8 @@ namespace Cybersource.Services
                         case "GT": // Guatemala
                         case "PR": // Puerto Rico
                         case "DO": // Dominican Republic
+                        case "CR": // Costa Rica
+                        case "SV": // El Salvador
                             regionCode = null;
                             break;
                     }
