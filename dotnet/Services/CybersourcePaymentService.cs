@@ -941,7 +941,7 @@ namespace Cybersource.Services
                 };
 
                 string authId = capturePaymentRequest.AuthorizationId;
-                if (paymentData != null)
+                if (paymentData != null && !string.IsNullOrEmpty(paymentData.AuthorizationId))
                 {
                     authId = paymentData.AuthorizationId;
                 }
