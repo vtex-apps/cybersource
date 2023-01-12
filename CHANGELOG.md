@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Do not set administrativeArea for Costa Rica and El Salvador
 
+## [1.13.1] - 2023-01-12
+
+### Fixed
+- Empty authorization id on capture
+
 ## [1.13.0] - 2023-01-10
 
 ### Changed
