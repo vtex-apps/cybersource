@@ -2,10 +2,7 @@ import { loginViaCookies, updateRetry } from '../support/common/support.js'
 import selectors from '../support/common/selectors.js'
 import { promotionProduct } from '../support/outputvalidation.js'
 import { getTestVariables } from '../support/utils.js'
-import {
-  paymentTestCases,
-  // orderTaxAPITestCase,
-} from '../support/testcase.js'
+import { paymentTestCases, orderTaxAPITestCase } from '../support/testcase.js'
 
 describe('Promotional Product Testcase', () => {
   loginViaCookies()
@@ -14,7 +11,7 @@ describe('Promotional Product Testcase', () => {
     promotionProduct
 
   // Verify tax via order tax api
-  // orderTaxAPITestCase(prefix, tax)
+  orderTaxAPITestCase(prefix, tax)
 
   it('Adding Product to Cart', updateRetry(3), () => {
     // Search the product

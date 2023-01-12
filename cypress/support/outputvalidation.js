@@ -73,7 +73,7 @@ export default {
     directSaleAmount: '$ 55.00',
     directSaleEnv: 'directSale',
     directSaleTax: '$ 0.10', // $ 5.23
-    externalSellerTax: '$ 8.94',
+    externalSellerTax: '$ 0.10',
     externalSellerAmount: '$ 107.94',
     externalSaleEnv: 'externalSaleEnv',
     subTotal: '$ 144.00',
