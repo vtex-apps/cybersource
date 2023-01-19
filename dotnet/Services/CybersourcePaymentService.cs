@@ -1181,7 +1181,7 @@ namespace Cybersource.Services
                     }
                 };
 
-                if(merchantSettings.Processor.Equals(CybersourceConstants.Processors.Banorte))
+                if(!string.IsNullOrEmpty(merchantSettings.Processor) && merchantSettings.Processor.Equals(CybersourceConstants.Processors.Banorte))
                 {
                     payment.processingInformation = new ProcessingInformation
                     {
@@ -1208,6 +1208,18 @@ namespace Cybersource.Services
                     {
                         refundPaymentResponse.RefundId = string.Empty;
                     }
+                }
+
+                if(string.IsNullOrEmpty(refundPaymentResponse.RefundId))
+                {
+                    _context.Vtex.Logger.Error("RefundPayment", null,
+                    "Failed to Refund.", null,
+                    new[]
+                    {
+                        ( "PaymentId", refundPaymentRequest.PaymentId ),
+                        ( "Message", refundPaymentResponse.Message ),
+                        ( "Code", refundPaymentResponse.Code )
+                    });
                 }
             }
             catch (Exception ex)
