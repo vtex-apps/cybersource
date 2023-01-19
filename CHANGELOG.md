@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Only add reconciliationId to refunds for Banote
+- Verify Status is PENDING for Captures and Refunds
+
 ### Changed
 - [ENGINEERS-1078] - Now, cybersource returns relatedTransactions only after refund
   So, array length would be 1 instead of 2.

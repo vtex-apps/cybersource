@@ -1067,7 +1067,7 @@ namespace Cybersource.Services
                     capturePaymentResponse.RequestId = capturePaymentRequest.RequestId;
                     capturePaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
                     capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
-                    capturePaymentResponse.SettleId = paymentsResponse.Id;
+                    capturePaymentResponse.SettleId = paymentsResponse.Status.Equals("PENDING") ? paymentsResponse.Id : string.Empty;
 
                     decimal captureAmount = 0m;
                     if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
@@ -1095,11 +1095,6 @@ namespace Cybersource.Services
                         }
                     }
                     
-                    if(captureAmount == 0m)
-                    {
-                        capturePaymentResponse.SettleId = string.Empty;
-                    }
-
                     if(captureAmount == 0m)
                     {
                         capturePaymentResponse.SettleId = string.Empty;
@@ -1183,12 +1178,16 @@ namespace Cybersource.Services
                         {
                             totalAmount = refundPaymentRequest.Value.ToString()
                         }
-                    },
-                    processingInformation = new ProcessingInformation
-                    {
-                        reconciliationId = paymentData.CaptureId
                     }
                 };
+
+                if(merchantSettings.Processor.Equals(CybersourceConstants.Processors.Banorte))
+                {
+                    payment.processingInformation = new ProcessingInformation
+                    {
+                        reconciliationId = paymentData.CaptureId
+                    };
+                }    
 
                 PaymentsResponse paymentsResponse = await _cybersourceApi.RefundCapture(payment, paymentData.CaptureId);
                 if (paymentsResponse != null)
@@ -1197,7 +1196,7 @@ namespace Cybersource.Services
                     refundPaymentResponse.PaymentId = refundPaymentRequest.PaymentId;
                     refundPaymentResponse.RequestId = refundPaymentRequest.RequestId;
                     refundPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
-                    refundPaymentResponse.RefundId = paymentsResponse.Id;
+                    refundPaymentResponse.RefundId = paymentsResponse.Status.Equals("PENDING") ? paymentsResponse.Id : string.Empty;
                     refundPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
 
                     if (paymentsResponse.RefundAmountDetails != null && paymentsResponse.RefundAmountDetails.RefundAmount != null)
