@@ -1044,13 +1044,13 @@ namespace Cybersource.Services
                             new[]
                             {
                             ( "PaymentId", capturePaymentRequest.PaymentId ),
-                            ( "OrderInformation", JsonConvert.SerializeObject(payment.orderInformation) )
+                            ( "payment", JsonConvert.SerializeObject(payment) )
                             });
                     }
                     catch(Exception ex)
                     {
                         _context.Vtex.Logger.Error("CapturePayment", "Ecuador custom payload",
-                            "Error building custom payload ", null,
+                            "Error building custom payload ", ex,
                             new[]
                             {
                                 ( "PaymentId", capturePaymentRequest.PaymentId )

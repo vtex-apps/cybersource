@@ -9,6 +9,12 @@ namespace Cybersource.Models
         [JsonProperty("id")]
         public string Id { get; set; }
 
+        [JsonProperty("rootId")]
+        public string RootId { get; set; }
+
+        [JsonProperty("reconciliationId")]
+        public string ReconciliationId { get; set; }
+
         [JsonProperty("submitTimeUTC")]
         public DateTimeOffset SubmitTimeUtc { get; set; }
 
@@ -47,6 +53,9 @@ namespace Cybersource.Models
 
         [JsonProperty("paymentInformation")]
         public PaymentInformation PaymentInformation { get; set; }
+
+        [JsonProperty("paymentInsightsInformation")]
+        public PaymentInsightsInformation PaymentInsightsInformation { get; set; }
 
         [JsonProperty("processingInformation")]
         public ProcessingInformation ProcessingInformation { get; set; }
@@ -339,6 +348,12 @@ namespace Cybersource.Models
 
         [JsonProperty("decision")]
         public string Decision { get; set; }
+    }
+
+    public partial class PaymentInsightsInformation
+    {
+        [JsonProperty("responseInsights")]
+        public BuyerInformation ResponseInsights { get; set; }
     }
 
     public class ConsumerAuthenticationInformationWrapper : ConsumerAuthenticationInformation

@@ -957,6 +957,7 @@ namespace Cybersource.Services
                 SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
                 if (response != null)
                 {
+                    _context.Vtex.Logger.Debug("RetrieveTransaction", null, response.Message);
                     retrieveTransaction = JsonConvert.DeserializeObject<RetrieveTransaction>(response.Message);
                 }
             }
