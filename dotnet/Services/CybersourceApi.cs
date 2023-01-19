@@ -99,6 +99,8 @@ namespace Cybersource.Services
                     string headerContent = string.Join(",", header.Value.ToArray());
                     sb.AppendLine($"{headerName} : {headerContent}");
                 }
+
+                _context.Vtex.Logger.Debug("SendRequest", null, $"{request.RequestUri}\n{sb}\n{jsonSerializedData}\n\n[{response.StatusCode}]\n{responseContent}");
             }
             catch (Exception ex)
             {
