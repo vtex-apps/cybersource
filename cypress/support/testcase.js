@@ -76,6 +76,7 @@ export function completePayment(
 function verifyPaymentStarted(interactionResponse) {
   const expectedStatus = 'Payment Started'
   const expectedMessage = 'Authorization response parsed'
+
   const index = interactionResponse.body.findIndex(
     ob => ob.Status === expectedStatus && ob.Message.includes(expectedMessage)
   )
@@ -210,7 +211,9 @@ export function verifyRefundTid({ prefix, paymentTransactionIdEnv }) {
             tid: order[paymentTransactionIdEnv],
           }).then(({ status, data }) => {
             expect(status).to.equal(200)
-            expect(data._links.relatedTransactions).to.have.lengthOf(2)
+            // relatedTransactions property gets added only after refund
+            // Slack conversation link - https://vtex.slack.com/archives/C02J07NP3JT/p1673970675492379
+            expect(data._links.relatedTransactions).to.have.lengthOf(1)
           })
         })
       })

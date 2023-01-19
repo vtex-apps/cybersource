@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- [ENGINEERS-1078] - Now, cybersource returns relatedTransactions only after refund
+  So, array length would be 1 instead of 2.
+
 ## [1.13.2] - 2023-01-12
 
 ### Changed
