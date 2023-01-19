@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Only add reconciliationId to refunds for Banote
+- Verify Status is PENDING for Captures and Refunds
+
 ## [1.13.3] - 2023-01-19
 
 ### Changed
