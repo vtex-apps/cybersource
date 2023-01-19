@@ -1,6 +1,7 @@
 namespace Cybersource.Models
 {
     using System;
+    using System.Collections.Generic;
     using Newtonsoft.Json;
 
     public class PaymentsResponse
@@ -63,16 +64,19 @@ namespace Cybersource.Models
     public class Links
     {
         [JsonProperty("authReversal")]
-        public AuthReversal AuthReversal { get; set; }
+        public TeansactionLink AuthReversal { get; set; }
 
         [JsonProperty("self")]
-        public AuthReversal Self { get; set; }
+        public TeansactionLink Self { get; set; }
 
         [JsonProperty("capture")]
-        public AuthReversal Capture { get; set; }
+        public TeansactionLink Capture { get; set; }
+
+        [JsonProperty("relatedTransactions")]
+        public List<TeansactionLink> RelatedTransactions { get; set; }
     }
 
-    public class AuthReversal
+    public class TeansactionLink
     {
         [JsonProperty("method")]
         public string Method { get; set; }
