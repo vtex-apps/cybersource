@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Removed threeDSServerTransactionId & acsTransactionId from Payer Auth requests
+- Removed referenceDataNumber from Item
+- For Banorte, installmentPlan Type is 2 for AMEX, 1 for everything else
+
 ## [1.13.4] - 2023-01-19
 
 ### Fixed
