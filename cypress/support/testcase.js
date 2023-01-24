@@ -198,24 +198,52 @@ export function verifyAntiFraud({
   })
 }
 
+function callCybersourceAPI(orderId) {
+  return cy.getVtexItems().then(vtex => {
+    cy.task('cybersourceAPI', {
+      vtex,
+      tid: orderId,
+    })
+  })
+}
+
 export function verifyRefundTid({ prefix, paymentTransactionIdEnv }) {
   it(
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
     updateRetry(5),
     () => {
       cy.addDelayBetweenRetries(5000)
-      cy.getVtexItems().then(vtex => {
-        cy.getOrderItems().then(order => {
-          cy.task('cybersourceAPI', {
-            vtex,
-            tid: order[paymentTransactionIdEnv],
-          }).then(({ status, data }) => {
+      cy.getOrderItems().then(order => {
+        callCybersourceAPI(order[paymentTransactionIdEnv]).then(
+          ({ status, data }) => {
             expect(status).to.equal(200)
+            expect(data._links.relatedTransactions).to.have.lengthOf(1)
+
             // relatedTransactions property gets added only after refund
             // Slack conversation link - https://vtex.slack.com/archives/C02J07NP3JT/p1673970675492379
-            expect(data._links.relatedTransactions).to.have.lengthOf(1)
-          })
-        })
+
+            callCybersourceAPI(
+              data._links.relatedTransactions[0].href.split('/').at(-1)
+            ).then(({ status, data }) => {
+              expect(status).to.equal(200)
+              expect(data.applicationInformation.applications).to.have.lengthOf(
+                2
+              )
+              expect(
+                data.applicationInformation.applications[0].name
+              ).to.be.equal('ics_credit')
+              expect(
+                data.applicationInformation.applications[0].rMessage
+              ).to.be.equal('Request was processed successfully.')
+              expect(
+                data.applicationInformation.applications[1].name
+              ).to.be.equal('ics_credit_auth')
+              expect(
+                data.applicationInformation.applications[1].rMessage
+              ).to.be.equal('Request was processed successfully.')
+            })
+          }
+        )
       })
     }
   )
