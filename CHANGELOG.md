@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Removed referenceDataNumber from Item
 - For Banorte, installmentPlan Type is 2 for AMEX, 1 for everything else
 
+### Added
+-  Verify relatedTransactions property from refund transaction 
+
 ## [1.13.4] - 2023-01-19
 
 ### Fixed
