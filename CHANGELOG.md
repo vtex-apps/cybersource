@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+-  Verify relatedTransactions property from refund transaction 
+
 ## [1.13.4] - 2023-01-19
 
 ### Fixed
