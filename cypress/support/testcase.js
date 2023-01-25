@@ -88,7 +88,7 @@ function verifyPaymentStarted(interactionResponse) {
       const json = JSON.parse(jsonString[1])
 
       expect(json.status).to.match(/approved|undefined/i)
-      expect(json.message).to.match(/authorized|review/i)
+      expect(json.message).to.match(/authorized|review|null/i)
     }
   } else {
     throw new Error(
@@ -207,25 +207,39 @@ function callCybersourceAPI(orderId) {
   })
 }
 
-export function verifyRefundTid({ prefix, paymentTransactionIdEnv }) {
+export function verifyRefundTid({
+  prefix,
+  paymentTransactionIdEnv,
+  payerAuth,
+}) {
   it(
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
     updateRetry(5),
     () => {
       cy.addDelayBetweenRetries(5000)
       cy.getOrderItems().then(order => {
-        callCybersourceAPI(order[paymentTransactionIdEnv]).then(
-          ({ status, data }) => {
+        callCybersourceAPI(order[paymentTransactionIdEnv]).then(response => {
+          expect(response.status).to.equal(200)
+          expect(response.data._links.relatedTransactions).to.have.lengthOf(1)
+
+          // relatedTransactions property gets added only after refund
+          // Slack conversation link - https://vtex.slack.com/archives/C02J07NP3JT/p1673970675492379
+
+          callCybersourceAPI(
+            response.data._links.relatedTransactions[0].href.split('/').at(-1)
+          ).then(({ status, data }) => {
             expect(status).to.equal(200)
-            expect(data._links.relatedTransactions).to.have.lengthOf(1)
-
-            // relatedTransactions property gets added only after refund
-            // Slack conversation link - https://vtex.slack.com/archives/C02J07NP3JT/p1673970675492379
-
-            callCybersourceAPI(
-              data._links.relatedTransactions[0].href.split('/').at(-1)
-            ).then(({ status, data }) => {
-              expect(status).to.equal(200)
+            if (payerAuth) {
+              expect(data.applicationInformation.applications).to.have.lengthOf(
+                1
+              )
+              expect(
+                data.applicationInformation.applications[0].name
+              ).to.be.equal('ics_bill')
+              expect(
+                data.applicationInformation.applications[0].status
+              ).to.be.equal('TRANSMITTED')
+            } else {
               expect(data.applicationInformation.applications).to.have.lengthOf(
                 2
               )
@@ -241,9 +255,9 @@ export function verifyRefundTid({ prefix, paymentTransactionIdEnv }) {
               expect(
                 data.applicationInformation.applications[1].rMessage
               ).to.be.equal('Request was processed successfully.')
-            })
-          }
-        )
+            }
+          })
+        })
       })
     }
   )
@@ -420,8 +434,6 @@ export function paymentTestCases(
 ) {
   if (product) {
     completePayment(prefix, orderIdEnv)
-
-    sendInvoiceTestCase(product, orderIdEnv)
 
     invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
   }

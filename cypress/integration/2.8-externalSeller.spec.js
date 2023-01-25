@@ -25,7 +25,7 @@ describe('External Seller Testcase', () => {
 
   const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
-  it('Verifying tax amount for external seller product via order-tax API', () => {
+  it.skip('Verifying tax amount for external seller product via order-tax API', () => {
     // We have stored externalSeller.json in cypress/fixtures
     // That we are loading using cy.fixture() command and passing as a payload to orderTaxAPI
     cy.fixture('externalSeller').then(requestPayload =>

@@ -1,4 +1,8 @@
-import { requestRefund, multiProduct } from '../support/outputvalidation.js'
+import {
+  requestRefund,
+  multiProduct,
+  externalSeller,
+} from '../support/outputvalidation.js'
 import { loginViaCookies } from '../support/common/support.js'
 import { refund } from '../support/common/refund_apis.js'
 import { getRefundPayload } from '../support/refund_payload.js'
@@ -26,13 +30,16 @@ describe('Testing Cybersource transaction API for partial refund', () => {
       total: requestRefund.getPartialRefundTotal, // Amount
       title: 'partial', // Refund Type for test case title
       env: requestRefund.partialRefundEnv, // variable name where we stored the orderid in node environment
+      externalSeller,
     },
-    getRefundPayload
+    getRefundPayload,
+    { sendInvoice: true, startHandling: true }
   )
 
   // verify cybersource transaction
   verifyRefundTid({
     prefix: 'partialRefund',
     paymentTransactionIdEnv,
+    payerAuth: false,
   })
 })

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- [ENGINEERS-1055] - Enabled ordertax api testcase in promotional product
+- [ENGINEERS-1039] - Enabled payer auth testcase
+
 ### Added
 -  Verify relatedTransactions property from refund transaction 
 
@@ -41,9 +45,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Do not set administrativeArea for Bolivia, Guatemala, Puerto Rico and the Dominican Republic
 
 ## [1.12.0] - 2023-01-10
-
-### Changed
-- Enabled ordertax api testcase in promotional product & in externalseller tests 
 
 ### Added
 Added option to set status for the "AUTHORIZED_RISK_DECLINED" case
