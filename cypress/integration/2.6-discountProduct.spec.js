@@ -45,7 +45,7 @@ describe('Discount Product Testcase', () => {
 
   paymentTestCases(
     discountProduct,
-    { prefix, approved: true, payerAuth: true },
+    { prefix, approved: false, payerAuth: true },
     { ...getTestVariables(prefix), orderIdEnv: env }
   )
 })

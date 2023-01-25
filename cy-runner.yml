@@ -92,7 +92,6 @@ strategy:
     specs:
       - cypress/integration/2.2-singleProduct.spec.js
       - cypress/integration/2.6-discountProduct.spec.js
-      - cypress/integration/2.7-discountShipping.spec.js
     dependency:
       - cypress/integration/sku.spec.js
   configureAffiliationWithPayerAuthAsDisabled:
@@ -106,7 +105,6 @@ strategy:
     dependency:
       - cypress/integration/2.2-singleProduct.spec.js
       - cypress/integration/2.6-discountProduct.spec.js
-      - cypress/integration/2.7-discountShipping.spec.js
   payerAuthDisableTests:
     enabled: true
     sendDashboard: true
@@ -117,6 +115,7 @@ strategy:
       - cypress/integration/2.3-multiProduct.spec.js
       - cypress/integration/2.5-promotionalProduct.spec.js
       - cypress/integration/2.8-externalSeller.spec.js
+      - cypress/integration/2.7-discountShipping.spec.js
     dependency:
       - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
   verifySettlements: 
