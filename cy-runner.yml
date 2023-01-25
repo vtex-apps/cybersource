@@ -82,7 +82,7 @@ strategy:
     specs:
       - cypress/integration/sku.spec.js
     dependency:
-      - cypress/integration/2.4-ConfigureAffiliationWithPayerAuthDisable.spec.js
+      - cypress/integration/2.1-ConfigureAffiliationWithPayerAuthActive.spec.js
   payerAuthActiveTests:
     enabled: true
     sendDashboard: true
