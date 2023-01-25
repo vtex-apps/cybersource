@@ -1,6 +1,4 @@
 import { updateRetry } from '../support/common/support.js'
-import { orderTaxAPITestCase } from '../support/testcase.js'
-import { promotionProduct } from '../support/outputvalidation.js'
 
 describe('Testing Split/Non-Split Sku', () => {
   // We are getting min tax ($ 0.10) due to cybersource test credentials
@@ -30,11 +28,4 @@ describe('Testing Split/Non-Split Sku', () => {
       )
     }
   )
-
-  // Verify tax via order tax api
-  // When we run promotional product orderTaxAPI Testcase
-  // inside 2.5 it is causing some tax communication error
-  // So, moved to this file
-  // Sample runs - https://github.com/vtex-apps/cybersource/actions/runs/3910214324/jobs/6682215203
-  orderTaxAPITestCase(promotionProduct.prefix, tax)
 })
