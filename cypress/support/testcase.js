@@ -15,11 +15,12 @@ export function orderTaxAPITestCase(fixtureName, tax) {
   })
 }
 
-export function completePayment(
+export function completePayment({
   prefix,
   orderIdEnv = false,
-  externalSellerEnv = false
-) {
+  externalSellerEnv = false,
+  payerAuth = false,
+}) {
   it(`In ${prefix} - Completing the Payment & save OrderId`, () => {
     cy.intercept('**/gatewayCallback/**').as('callback')
 
@@ -67,7 +68,7 @@ export function completePayment(
       cy.get(selectors.BuyNowBtn).last().click()
       cy.wait('@callback', { timeout: 40000 })
         .its('response.statusCode', { timeout: 5000 })
-        .should('eq', 204)
+        .should('eq', payerAuth ? 428 : 204)
       saveOrderId(orderIdEnv, externalSellerEnv)
     })
   })
@@ -429,11 +430,11 @@ function approvePayment(orderIdEnv, paymentTransactionIdEnv) {
 
 export function paymentTestCases(
   product,
-  { prefix, approved },
+  { prefix, approved, payerAuth },
   { transactionIdEnv, orderIdEnv }
 ) {
   if (product) {
-    completePayment(prefix, orderIdEnv)
+    completePayment({ prefix, orderIdEnv, payerAuth })
 
     invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
   }

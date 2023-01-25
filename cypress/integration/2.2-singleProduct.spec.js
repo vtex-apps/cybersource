@@ -44,7 +44,7 @@ describe('Single Product Testcase', () => {
 
   paymentTestCases(
     singleProduct,
-    { prefix, approved: true },
+    { prefix, approved: true, payerAuth: true },
     { ...getTestVariables(prefix), orderIdEnv }
   )
 })
