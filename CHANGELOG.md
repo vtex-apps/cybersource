@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.13.5] - 2023-01-26
+
 ### Changed
 - Removed threeDSServerTransactionId & acsTransactionId from Payer Auth requests
 - Removed referenceDataNumber from Item
