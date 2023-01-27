@@ -222,13 +222,48 @@ export function verifyRefundTid({
         callCybersourceAPI(order[paymentTransactionIdEnv]).then(response => {
           expect(response.status).to.equal(200)
 
-          // If payer auth is enabled we will get two relatedTransactions
-          // If payer auth is disabled we will get one relatedTransactions
+          // If payer auth is enabled we will get two items in relatedTransactions
+          // If payer auth is disabled we will get one item in relatedTransactions
+          let refundTransactionIndex = null
 
           if (payerAuth) {
+            /*
+            For payer auth, from cybersource API in relatedTransactions array 
+            we will get two transactionIds
+
+            tid - 6748193168966998104953
+            relatedTransactions -
+            "relatedTransactions": [
+              {
+                "href": "https://apitest.cybersource.com/tss/v2/transactions/6748199174926264604951",
+                "method": "GET"
+              },
+              {
+                "href": "https://apitest.cybersource.com/tss/v2/transactions/6748193742576012804953",
+                "method": "GET"
+              }
+            ]
+             
+            6748193168966998104953 and 6748193742576012804953 ends with 4953
+            So, 6748193742576012804953 will have ics_bill information
+
+            */
+
+            const lastFourDigitsFromTransactionId =
+              order[paymentTransactionIdEnv].slice(-4)
+
+            const icsBillIndex =
+              response.data._links.relatedTransactions.findIndex(ob =>
+                ob.href.endsWith(lastFourDigitsFromTransactionId)
+              )
+
+            refundTransactionIndex = icsBillIndex === 1 ? 0 : 1
+
             expect(response.data._links.relatedTransactions).to.have.lengthOf(2)
             callCybersourceAPI(
-              response.data._links.relatedTransactions[0].href.split('/').at(-1)
+              response.data._links.relatedTransactions[icsBillIndex].href
+                .split('/')
+                .at(-1)
             ).then(({ status, data }) => {
               expect(status).to.equal(200)
               expect(data.applicationInformation.applications).to.have.lengthOf(
@@ -246,7 +281,7 @@ export function verifyRefundTid({
           }
 
           const refundTransactionId = response.data._links.relatedTransactions[
-            payerAuth ? 1 : 0
+            payerAuth ? refundTransactionIndex : 0
           ].href
             .split('/')
             .at(-1)
