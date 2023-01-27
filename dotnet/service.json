@@ -134,7 +134,7 @@
     },
     "retrieveTransaction": {
       "path": "/cybersource/payment-provider/retrieve-transaction/:requestId",
-      "public": true
+      "public": false
     }
   },
   "events": {

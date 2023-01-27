@@ -322,14 +322,14 @@ namespace Cybersource.Models
         [JsonProperty("directoryServerTransactionId")]
         public string DirectoryServerTransactionId { get; set; }
 
-        [JsonProperty("threeDSServerTransactionId")]
-        public Guid ThreeDsServerTransactionId { get; set; }
+        //[JsonProperty("threeDSServerTransactionId")]
+        //public Guid ThreeDsServerTransactionId { get; set; }
 
         [JsonProperty("acsOperatorID")]
         public string AcsOperatorId { get; set; }
 
-        [JsonProperty("acsTransactionId")]
-        public Guid AcsTransactionId { get; set; }
+        //[JsonProperty("acsTransactionId")]
+        //public Guid AcsTransactionId { get; set; }
     }
 
     public partial class StrongAuthentication

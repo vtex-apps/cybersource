@@ -316,7 +316,7 @@ namespace Cybersource.Services
                             payment.installmentInformation = new InstallmentInformation
                             {
                                 totalCount = numberOfInstallments,
-                                planType = "02"
+                                planType = cardBrandName.Equals(CybersourceConstants.CardType.AmericanExpress) ? "02" : "01"
                             };
                         }
                         else

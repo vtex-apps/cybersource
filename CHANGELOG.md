@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Changed
-- [ENGINEERS-1055] - Enabled ordertax api testcase in promotional product
 - [ENGINEERS-1039] - Enabled payer auth testcase
+
+## [1.13.6] - 2023-01-26
+
+### Changed
+- Retrieve Transaction Route made private
+
+## [1.13.5] - 2023-01-26
+
+### Changed
+- Removed threeDSServerTransactionId & acsTransactionId from Payer Auth requests
+- Removed referenceDataNumber from Item
+- For Banorte, installmentPlan Type is 2 for AMEX, 1 for everything else
 
 ### Added
 -  Verify relatedTransactions property from refund transaction 
