@@ -221,16 +221,16 @@ export function verifyRefundTid({
       cy.getOrderItems().then(order => {
         callCybersourceAPI(order[paymentTransactionIdEnv]).then(response => {
           expect(response.status).to.equal(200)
-          expect(response.data._links.relatedTransactions).to.have.lengthOf(1)
 
-          // relatedTransactions property gets added only after refund
-          // Slack conversation link - https://vtex.slack.com/archives/C02J07NP3JT/p1673970675492379
+          // If payer auth is enabled we will get two relatedTransactions
+          // If payer auth is disabled we will get one relatedTransactions
 
-          callCybersourceAPI(
-            response.data._links.relatedTransactions[0].href.split('/').at(-1)
-          ).then(({ status, data }) => {
-            expect(status).to.equal(200)
-            if (payerAuth) {
+          if (payerAuth) {
+            expect(response.data._links.relatedTransactions).to.have.lengthOf(2)
+            callCybersourceAPI(
+              response.data._links.relatedTransactions[0].href.split('/').at(-1)
+            ).then(({ status, data }) => {
+              expect(status).to.equal(200)
               expect(data.applicationInformation.applications).to.have.lengthOf(
                 1
               )
@@ -239,24 +239,33 @@ export function verifyRefundTid({
               ).to.be.equal('ics_bill')
               expect(
                 data.applicationInformation.applications[0].status
-              ).to.be.equal('TRANSMITTED')
-            } else {
-              expect(data.applicationInformation.applications).to.have.lengthOf(
-                2
-              )
-              expect(
-                data.applicationInformation.applications[0].name
-              ).to.be.equal('ics_credit')
-              expect(
-                data.applicationInformation.applications[0].rMessage
-              ).to.be.equal('Request was processed successfully.')
-              expect(
-                data.applicationInformation.applications[1].name
-              ).to.be.equal('ics_credit_auth')
-              expect(
-                data.applicationInformation.applications[1].rMessage
-              ).to.be.equal('Request was processed successfully.')
-            }
+              ).to.be.equal('PENDING')
+            })
+          } else {
+            expect(response.data._links.relatedTransactions).to.have.lengthOf(1)
+          }
+
+          const refundTransactionId = response.data._links.relatedTransactions[
+            payerAuth ? 1 : 0
+          ].href
+            .split('/')
+            .at(-1)
+
+          callCybersourceAPI(refundTransactionId).then(({ status, data }) => {
+            expect(status).to.equal(200)
+            expect(data.applicationInformation.applications).to.have.lengthOf(2)
+            expect(
+              data.applicationInformation.applications[0].name
+            ).to.be.equal('ics_credit')
+            expect(
+              data.applicationInformation.applications[0].rMessage
+            ).to.be.equal('Request was processed successfully.')
+            expect(
+              data.applicationInformation.applications[1].name
+            ).to.be.equal('ics_credit_auth')
+            expect(
+              data.applicationInformation.applications[1].rMessage
+            ).to.be.equal('Request was processed successfully.')
           })
         })
       })
@@ -278,6 +287,7 @@ export function verifyCyberSourceAPI({
           `${transactionAPI(vtex.baseUrl)}/${item[transactionIdEnv]}/payments`,
           VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
         ).then(paymentResponse => {
+          expect(paymentResponse.body[0].tid).to.be.not.null
           cy.setOrderItem(paymentTransactionIdEnv, paymentResponse.body[0].tid)
 
           cy.task('cybersourceAPI', {

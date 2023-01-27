@@ -13,7 +13,7 @@ describe('Testing Cybersource transaction API for full refund', () => {
   // Load test setup
   loginViaCookies()
 
-  const { prefix } = singleProduct
+  const { prefix, totalAmount } = singleProduct
   const { transactionIdEnv, paymentTransactionIdEnv } = getTestVariables(prefix)
 
   it('Verify whether we have an order to request for full refund', () => {
@@ -27,7 +27,7 @@ describe('Testing Cybersource transaction API for full refund', () => {
   // Request full refund for the ordered product added in 2.1-singleProduct.spec.js
   refund(
     {
-      total: requestRefund.getFullRefundTotal, // Amount
+      total: totalAmount, // Amount
       title: 'full', // Refund Type for test case title
       env: requestRefund.fullRefundEnv, // variable name where we stored the orderid in node environment
       externalSeller,
