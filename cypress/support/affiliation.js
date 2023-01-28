@@ -16,11 +16,26 @@ export function setWorkspaceInAffiliation(workspace = null, payerAuth = true) {
           el => el.name === 'workspace'
         )
 
+        const paymentSettleIndex = response.body.configuration.findIndex(
+          el => el.name === 'autoSettle'
+        )
+
         const payerAuthIndex = response.body.configuration.findIndex(
           el => el.name === 'Payer Authentication'
         )
 
+        const captureSettingIndex = response.body.configuration.findIndex(
+          el => el.name === 'Capture Setting'
+        )
+
         response.body.configuration[workspaceIndex].value = workspace
+
+        response.body.configuration[paymentSettleIndex].value = payerAuth
+          ? 'provider'
+          : 'after_authorization'
+        response.body.configuration[captureSettingIndex].value = payerAuth
+          ? 'DelayedCapture'
+          : 'AuthAndCapture'
         response.body.configuration[payerAuthIndex].value = payerAuth
           ? 'active'
           : 'disabled'

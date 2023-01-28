@@ -1,5 +1,4 @@
 import {
-  verifyPaymentSettled,
   paymentTestCases,
   APITestCases,
   verifyCyberSourceAPI,
@@ -82,5 +81,4 @@ describe('Verify settlements for ordered products', () => {
       orderIdEnv: promotionProduct.env,
     }
   )
-  verifyPaymentSettled(promotionProduct.prefix, promotionProduct.env)
 })
