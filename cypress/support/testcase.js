@@ -217,7 +217,7 @@ export function verifyRefundTid({
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
     updateRetry(5),
     () => {
-      cy.addDelayBetweenRetries(5000)
+      cy.addDelayBetweenRetries(8000)
       cy.getOrderItems().then(order => {
         callCybersourceAPI(order[paymentTransactionIdEnv]).then(response => {
           expect(response.status).to.equal(200)

@@ -138,7 +138,7 @@ strategy:
     sendDashboard: true
     hardTries: 2
     stopOnFail: false
-    parallel: true
+    parallel: false
     specs:
       - cypress/integration/2.10-fullRefund.spec.js
       - cypress/integration/2.11-partialRefund.spec.js
