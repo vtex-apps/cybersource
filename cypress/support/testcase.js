@@ -405,7 +405,9 @@ export function invoiceAPITestCase(
             expect(response.status).to.equal(200)
             const [{ transactionId }] = response.body.paymentData.transactions
 
+            expect(transactionId).to.not.equal(undefined)
             cy.setOrderItem(transactionIdEnv, transactionId)
+
             if (approved) {
               expect(response.body.status).to.match(/cancel|invoiced|handling/)
             } else {
