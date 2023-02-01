@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Changed
+- [ENGINEERS-1109] - Fix payer auth refund tests
+
+### Changed
 - [ENGINEERS-1039] - Enabled payer auth testcase
 
 ## [1.13.6] - 2023-01-26
