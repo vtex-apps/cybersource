@@ -208,6 +208,43 @@ function callCybersourceAPI(orderId) {
   })
 }
 
+function icsBillValidation(applications) {
+  expect(applications).to.have.lengthOf(1)
+  expect(applications[0].name).to.be.equal('ics_bill')
+  // expect(applications[0].status).to.be.equal('PENDING')
+}
+
+function icsCreditValidation(applications) {
+  expect(applications).to.have.lengthOf(2)
+  expect(applications[0].name).to.be.equal('ics_credit')
+  expect(applications[0].rMessage).to.be.equal(
+    'Request was processed successfully.'
+  )
+  expect(applications[1].name).to.be.equal('ics_credit_auth')
+  expect(applications[1].rMessage).to.be.equal(
+    'Request was processed successfully.'
+  )
+}
+
+function verifyCreditorBill({ payerAuth, transactionId, icsBillAtZeroIndex }) {
+  callCybersourceAPI(transactionId).then(({ status, data }) => {
+    cy.log(`Using this transactionId - ${transactionId}`)
+    expect(status).to.equal(200)
+    const { applications } = data.applicationInformation
+
+    if (payerAuth) {
+      if (Cypress.env(icsBillAtZeroIndex)) {
+        // if icsBill is at zero index then automatically icsCredit will be there in 1st index
+        icsCreditValidation(applications)
+      } else {
+        icsBillValidation(applications)
+      }
+    } else {
+      icsCreditValidation(applications)
+    }
+  })
+}
+
 export function verifyRefundTid({
   prefix,
   paymentTransactionIdEnv,
@@ -217,18 +254,23 @@ export function verifyRefundTid({
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
     updateRetry(5),
     () => {
+      // If payer auth is enabled then we will get two transactionIds in relatedTransactions
+      // else we will get only one transactionId in relatedTransactions
+      // From that, we are not sure which index will have ics_bill / ics_credit information
+      // So, we use this icsBillAtIndexZero
+      // if it is true, then id at 1st index will have credit information and 0th index will have bill information
+      // else id at 0th index will have credit information and 1st index will have bill information
+      const icsBillAtZeroIndex = 'ICS_BILL_AT_ZERO_INDEX'
+
+      Cypress.env(icsBillAtZeroIndex, false)
+
       cy.addDelayBetweenRetries(8000)
       cy.getOrderItems().then(order => {
         callCybersourceAPI(order[paymentTransactionIdEnv]).then(response => {
           expect(response.status).to.equal(200)
-
-          // If payer auth is enabled we will get two items in relatedTransactions
-          // If payer auth is disabled we will get one item in relatedTransactions
-          let refundTransactionIndex = null
-
           if (payerAuth) {
             /*
-            For payer auth, from cybersource API in relatedTransactions array 
+            eg: When payer auth enabled, from cybersource API in relatedTransactions array 
             we will get two transactionIds
 
             tid - 6748193168966998104953
@@ -242,65 +284,41 @@ export function verifyRefundTid({
                 "href": "https://apitest.cybersource.com/tss/v2/transactions/6748193742576012804953",
                 "method": "GET"
               }
-            ]
-             
-            6748193168966998104953 and 6748193742576012804953 ends with 4953
-            So, 6748193742576012804953 will have ics_bill information
-
+            ]            
             */
 
-            const lastFourDigitsFromTransactionId =
-              order[paymentTransactionIdEnv].slice(-4)
-
-            const icsBillIndex =
-              response.data._links.relatedTransactions.findIndex(ob =>
-                ob.href.endsWith(lastFourDigitsFromTransactionId)
-              )
-
-            refundTransactionIndex = icsBillIndex === 1 ? 0 : 1
-
             expect(response.data._links.relatedTransactions).to.have.lengthOf(2)
-            callCybersourceAPI(
-              response.data._links.relatedTransactions[icsBillIndex].href
+            cy.log(
+              `Using this transactionId - ${response.data._links.relatedTransactions[0].href
                 .split('/')
-                .at(-1)
+                .at(-1)}`
+            )
+            callCybersourceAPI(
+              response.data._links.relatedTransactions[0].href.split('/').at(-1)
             ).then(({ status, data }) => {
               expect(status).to.equal(200)
-              expect(data.applicationInformation.applications).to.have.lengthOf(
-                1
-              )
-              expect(
-                data.applicationInformation.applications[0].name
-              ).to.be.equal('ics_bill')
-              expect(
-                data.applicationInformation.applications[0].status
-              ).to.be.equal('PENDING')
+              const { applications } = data.applicationInformation
+
+              // if applications length is 1 then it is ics_bill otherwise ics_credit
+              if (applications.length === 1) {
+                Cypress.env(icsBillAtZeroIndex, true)
+                icsBillValidation(applications)
+              } else {
+                icsCreditValidation(applications)
+              }
             })
           } else {
             expect(response.data._links.relatedTransactions).to.have.lengthOf(1)
           }
 
-          const refundTransactionId = response.data._links.relatedTransactions[
-            payerAuth ? refundTransactionIndex : 0
-          ].href
-            .split('/')
-            .at(-1)
-
-          callCybersourceAPI(refundTransactionId).then(({ status, data }) => {
-            expect(status).to.equal(200)
-            expect(data.applicationInformation.applications).to.have.lengthOf(2)
-            expect(
-              data.applicationInformation.applications[0].name
-            ).to.be.equal('ics_credit')
-            expect(
-              data.applicationInformation.applications[0].rMessage
-            ).to.be.equal('Request was processed successfully.')
-            expect(
-              data.applicationInformation.applications[1].name
-            ).to.be.equal('ics_credit_auth')
-            expect(
-              data.applicationInformation.applications[1].rMessage
-            ).to.be.equal('Request was processed successfully.')
+          verifyCreditorBill({
+            payerAuth,
+            transactionId: response.data._links.relatedTransactions[
+              payerAuth ? 1 : 0
+            ].href
+              .split('/')
+              .at(-1),
+            icsBillAtZeroIndex,
           })
         })
       })
