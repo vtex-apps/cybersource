@@ -1077,7 +1077,7 @@ namespace Cybersource.Services
                     else
                     {
                         // Try to get transaction from Cybersource
-                        SearchResponse searchResponse = await this.SearchTransaction(referenceNumber);
+                        SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}");
                         if (searchResponse != null)
                         {
                             foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
@@ -2761,7 +2761,14 @@ namespace Cybersource.Services
                         case "ERROR":
                             string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
                             await Task.Delay(6000); // wait for transaction to be available
-                            SearchResponse searchResponse = await this.SearchTransaction(referenceNumber);
+                            string orderSuffix = string.Empty;
+                            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                            if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
+                            {
+                                orderSuffix = merchantSettings.OrderSuffix.Trim();
+                            }
+
+                            SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}");
                             if (searchResponse != null)
                             {
                                 _context.Vtex.Logger.Warn("GetPaymentStatus", null, "Loaded Transactions from Cybersource", new[] { ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });

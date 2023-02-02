@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Add optional Order Suffix to refernce number when searching Cyberouse transactions
+
 ### Changed
 - [ENGINEERS-1109] - Fix payer auth refund tests
 
