@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Added ListOrders policy
+
 ## [1.13.8] - 2023-02-03
 
 ### Changed
