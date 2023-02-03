@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- installmentInformation.planType always 1
+
 ## [1.13.7] - 2023-02-02
 
 ### Fixed
