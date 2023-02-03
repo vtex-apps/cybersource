@@ -42,6 +42,9 @@
       "name": "read-write-apps-settings"
     },
     {
+      "name": "ListOrders"
+    },
+    {
       "name": "outbound-access",
       "attrs": {
         "host": "{{account}}.vtexcommercestable.com.br",
