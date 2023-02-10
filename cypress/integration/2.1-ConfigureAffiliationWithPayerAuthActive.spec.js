@@ -1,6 +1,10 @@
 import { syncCheckoutUICustom } from '../support/common/testcase.js'
 import { setWorkspaceInAffiliation } from '../support/affiliation.js'
 import { loginViaCookies } from '../support/common/support.js'
+import {
+  updateCybersourceConfiguration,
+  ORDER_SUFFIX,
+} from '../support/appSettings.js'
 
 const config = Cypress.env()
 
@@ -12,4 +16,5 @@ describe('Set up affiliation with payer Auth as active and sync checkout ui cust
 
   setWorkspaceInAffiliation(name)
   syncCheckoutUICustom()
+  updateCybersourceConfiguration(ORDER_SUFFIX)
 })

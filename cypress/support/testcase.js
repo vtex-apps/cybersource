@@ -4,6 +4,7 @@ import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
 import { getTestVariables } from './utils.js'
 import { externalSeller } from './outputvalidation.js'
+import { ORDER_SUFFIX } from './appSettings.js'
 
 export function orderTaxAPITestCase(fixtureName, tax) {
   // Verify tax amounts via order-tax API
@@ -226,22 +227,35 @@ function icsCreditValidation(applications) {
   )
 }
 
-function verifyCreditorBill({ payerAuth, transactionId, icsBillAtZeroIndex }) {
+function verifyCreditorBill({
+  env,
+  payerAuth,
+  transactionId,
+  icsBillAtZeroIndex,
+}) {
   callCybersourceAPI(transactionId).then(({ status, data }) => {
     cy.log(`Using this transactionId - ${transactionId}`)
     expect(status).to.equal(200)
     const { applications } = data.applicationInformation
 
-    if (payerAuth) {
-      if (Cypress.env(icsBillAtZeroIndex)) {
-        // if icsBill is at zero index then automatically icsCredit will be there in 1st index
-        icsCreditValidation(applications)
+    cy.getOrderItems().then(order => {
+      if (payerAuth) {
+        // In 2.1 testcase we set order_suffix as ORDER_SUFFIX
+        // So, verify that here in data.clientReferenceInformation.code
+        expect(data.clientReferenceInformation.code).contain(ORDER_SUFFIX)
+        if (Cypress.env(icsBillAtZeroIndex)) {
+          // if icsBill is at zero index then automatically icsCredit will be there in 1st index
+          icsCreditValidation(applications)
+        } else {
+          icsBillValidation(applications)
+        }
       } else {
-        icsBillValidation(applications)
+        expect(data.clientReferenceInformation.code).equal(
+          order[env].split('-01')[0]
+        )
+        icsCreditValidation(applications)
       }
-    } else {
-      icsCreditValidation(applications)
-    }
+    })
   })
 }
 
@@ -249,8 +263,9 @@ export function verifyRefundTid({
   prefix,
   paymentTransactionIdEnv,
   payerAuth,
+  env,
 }) {
-  it(
+  it.only(
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
     updateRetry(5),
     () => {
@@ -312,6 +327,7 @@ export function verifyRefundTid({
           }
 
           verifyCreditorBill({
+            env,
             payerAuth,
             transactionId: response.data._links.relatedTransactions[
               payerAuth ? 1 : 0

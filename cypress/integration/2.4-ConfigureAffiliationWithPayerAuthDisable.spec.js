@@ -1,5 +1,6 @@
 import { setWorkspaceInAffiliation } from '../support/affiliation.js'
 import { loginViaCookies } from '../support/common/support.js'
+import { updateCybersourceConfiguration } from '../support/appSettings.js'
 
 const config = Cypress.env()
 
@@ -10,4 +11,5 @@ describe('Set up affiliation with payer Auth as disabled', () => {
   loginViaCookies()
 
   setWorkspaceInAffiliation(name, false)
+  updateCybersourceConfiguration()
 })
