@@ -265,7 +265,7 @@ export function verifyRefundTid({
   payerAuth,
   env,
 }) {
-  it.only(
+  it(
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
     updateRetry(5),
     () => {
