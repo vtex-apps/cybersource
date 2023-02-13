@@ -39,7 +39,6 @@ describe('Testing Cybersource transaction API for partial refund', () => {
   // verify cybersource transaction
   verifyRefundTid({
     prefix: 'partialRefund',
-    env: requestRefund.partialRefundEnv,
     paymentTransactionIdEnv,
     payerAuth: false,
   })

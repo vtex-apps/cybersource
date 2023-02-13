@@ -20,7 +20,7 @@ describe('Verify settlements for ordered products', () => {
 
   // SingleProduct API testcase
   APITestCases(
-    { prefix: singleProduct.prefix, approved: true },
+    { prefix: singleProduct.prefix, approved: true, referenceSuffix: true },
     {
       ...getTestVariables(singleProduct.prefix),
       orderIdEnv: requestRefund.fullRefundEnv,
@@ -38,7 +38,7 @@ describe('Verify settlements for ordered products', () => {
 
   // discountProduct
   APITestCases(
-    { prefix: discountProduct.prefix, approved: true },
+    { prefix: discountProduct.prefix, approved: true, referenceSuffix: true },
     {
       ...getTestVariables(discountProduct.prefix),
       orderIdEnv: discountProduct.env,

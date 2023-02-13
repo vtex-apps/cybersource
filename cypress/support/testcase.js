@@ -227,35 +227,22 @@ function icsCreditValidation(applications) {
   )
 }
 
-function verifyCreditorBill({
-  env,
-  payerAuth,
-  transactionId,
-  icsBillAtZeroIndex,
-}) {
+function verifyCreditorBill({ payerAuth, transactionId, icsBillAtZeroIndex }) {
   callCybersourceAPI(transactionId).then(({ status, data }) => {
     cy.log(`Using this transactionId - ${transactionId}`)
     expect(status).to.equal(200)
     const { applications } = data.applicationInformation
 
-    cy.getOrderItems().then(order => {
-      if (payerAuth) {
-        // In 2.1 testcase we set order_suffix as ORDER_SUFFIX
-        // So, verify that here in data.clientReferenceInformation.code
-        expect(data.clientReferenceInformation.code).contain(ORDER_SUFFIX)
-        if (Cypress.env(icsBillAtZeroIndex)) {
-          // if icsBill is at zero index then automatically icsCredit will be there in 1st index
-          icsCreditValidation(applications)
-        } else {
-          icsBillValidation(applications)
-        }
-      } else {
-        expect(data.clientReferenceInformation.code).equal(
-          order[env].split('-01')[0]
-        )
+    if (payerAuth) {
+      if (Cypress.env(icsBillAtZeroIndex)) {
+        // if icsBill is at zero index then automatically icsCredit will be there in 1st index
         icsCreditValidation(applications)
+      } else {
+        icsBillValidation(applications)
       }
-    })
+    } else {
+      icsCreditValidation(applications)
+    }
   })
 }
 
@@ -263,7 +250,6 @@ export function verifyRefundTid({
   prefix,
   paymentTransactionIdEnv,
   payerAuth,
-  env,
 }) {
   it(
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
@@ -327,7 +313,6 @@ export function verifyRefundTid({
           }
 
           verifyCreditorBill({
-            env,
             payerAuth,
             transactionId: response.data._links.relatedTransactions[
               payerAuth ? 1 : 0
@@ -347,6 +332,8 @@ export function verifyCyberSourceAPI({
   transactionIdEnv,
   paymentTransactionIdEnv,
   approved = false,
+  referenceSuffix = false,
+  orderIdEnv,
 }) {
   it(`In ${prefix} - Verifying cybersource API`, updateRetry(3), () => {
     cy.addDelayBetweenRetries(5000)
@@ -365,6 +352,16 @@ export function verifyCyberSourceAPI({
             approved,
           }).then(({ status, data }) => {
             expect(status).to.equal(200)
+            if (referenceSuffix) {
+              // In 2.1 testcase we set order_suffix as ORDER_SUFFIX
+              // So, verify that here in data.clientReferenceInformation.code
+              expect(data.clientReferenceInformation.code).contain(ORDER_SUFFIX)
+            } else {
+              expect(data.clientReferenceInformation.code).equal(
+                item[orderIdEnv].split('-01')[0]
+              )
+            }
+
             if (approved) {
               expect(data.applicationInformation.reasonCode).to.equal('100')
               expect(data.riskInformation.profile.decision).to.equal('ACCEPT')
@@ -522,7 +519,7 @@ export function paymentTestCases(
 }
 
 export function APITestCases(
-  { prefix, approved },
+  { prefix, approved, referenceSuffix },
   { transactionIdEnv, paymentTransactionIdEnv, orderIdEnv }
 ) {
   if (approved) {
@@ -531,6 +528,8 @@ export function APITestCases(
       transactionIdEnv,
       paymentTransactionIdEnv,
       approved,
+      referenceSuffix,
+      orderIdEnv,
     })
 
     verifyStatusInInteractionAPI({
