@@ -4,6 +4,7 @@ import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
 import { getTestVariables } from './utils.js'
 import { externalSeller } from './outputvalidation.js'
+import { ORDER_SUFFIX } from './appSettings.js'
 
 export function orderTaxAPITestCase(fixtureName, tax) {
   // Verify tax amounts via order-tax API
@@ -331,6 +332,8 @@ export function verifyCyberSourceAPI({
   transactionIdEnv,
   paymentTransactionIdEnv,
   approved = false,
+  referenceSuffix = false,
+  orderIdEnv,
 }) {
   it(`In ${prefix} - Verifying cybersource API`, updateRetry(3), () => {
     cy.addDelayBetweenRetries(5000)
@@ -349,6 +352,16 @@ export function verifyCyberSourceAPI({
             approved,
           }).then(({ status, data }) => {
             expect(status).to.equal(200)
+            if (referenceSuffix) {
+              // In 2.1 testcase we set order_suffix as ORDER_SUFFIX
+              // So, verify that here in data.clientReferenceInformation.code
+              expect(data.clientReferenceInformation.code).contain(ORDER_SUFFIX)
+            } else {
+              expect(data.clientReferenceInformation.code).equal(
+                item[orderIdEnv].split('-01')[0]
+              )
+            }
+
             if (approved) {
               expect(data.applicationInformation.reasonCode).to.equal('100')
               expect(data.riskInformation.profile.decision).to.equal('ACCEPT')
@@ -506,7 +519,7 @@ export function paymentTestCases(
 }
 
 export function APITestCases(
-  { prefix, approved },
+  { prefix, approved, referenceSuffix },
   { transactionIdEnv, paymentTransactionIdEnv, orderIdEnv }
 ) {
   if (approved) {
@@ -515,6 +528,8 @@ export function APITestCases(
       transactionIdEnv,
       paymentTransactionIdEnv,
       approved,
+      referenceSuffix,
+      orderIdEnv,
     })
 
     verifyStatusInInteractionAPI({
