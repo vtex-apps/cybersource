@@ -64,6 +64,7 @@ describe('Verify settlements for ordered products', () => {
     transactionIdEnv,
     paymentTransactionIdEnv,
     approved: true,
+    orderIdEnv: externalSeller.directSaleEnv,
   })
 
   paymentTestCases(
