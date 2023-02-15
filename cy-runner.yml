@@ -53,7 +53,7 @@ workspace:
     enabled: true
   installApps:
     - vtex.cybersource-fraud
-    - vtex.cybersource-ui@0.5.0
+    - vtex.cybersource-ui
     - vtex.cybersource-payer-auth
   removeApps: []
   wipe:

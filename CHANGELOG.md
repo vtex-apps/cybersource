@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Removed
+- [ENGINEERS-1144] - Remove hardcoded cybersource ui version from cybersource tests
+
 ### Added
 - [ENGINEERS-1138] - In Cypress, Added optional Order Suffix to reference number testcase
 
