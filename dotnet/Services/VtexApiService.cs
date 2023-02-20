@@ -1503,7 +1503,6 @@ namespace Cybersource.Services
         {
             VtexOrderList vtexOrderList = new VtexOrderList();
             SendResponse sendResponse = await this.SendRequest(HttpMethod.Get, $"http://{this._httpContextAccessor.HttpContext.Request.Headers[CybersourceConstants.VTEX_ACCOUNT_HEADER_NAME]}.{CybersourceConstants.ENVIRONMENT}.com.br/api/oms/pvt/orders?{queryString}", null);
-
             if (sendResponse.Success)
             {
                 vtexOrderList = JsonConvert.DeserializeObject<VtexOrderList>(sendResponse.Message);

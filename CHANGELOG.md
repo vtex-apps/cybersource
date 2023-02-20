@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Removed
+- [ENGINEERS-1144] - Remove hardcoded cybersource ui version from cybersource tests
+
+### Added
+- [ENGINEERS-1138] - In Cypress, Added optional Order Suffix to reference number testcase
+
+## [1.13.9] - 2023-02-03
+
+### Added
+- Added ListOrders policy
+
+## [1.13.8] - 2023-02-03
+
+### Changed
+- installmentInformation.planType always 1
+
+## [1.13.7] - 2023-02-02
+
+### Fixed
+- Add optional Order Suffix to refernce number when searching Cyberouse transactions
+
+### Changed
+- [ENGINEERS-1109] - Fix payer auth refund tests
+
+### Changed
+- [ENGINEERS-1039] - Enabled payer auth testcase
+
+## [1.13.6] - 2023-01-26
+
+### Changed
+- Retrieve Transaction Route made private
+
+## [1.13.5] - 2023-01-26
+
+### Changed
+- Removed threeDSServerTransactionId & acsTransactionId from Payer Auth requests
+- Removed referenceDataNumber from Item
+- For Banorte, installmentPlan Type is 2 for AMEX, 1 for everything else
+
+### Added
+-  Verify relatedTransactions property from refund transaction 
+
 ## [1.13.4] - 2023-01-19
 
 ### Fixed

@@ -71,7 +71,11 @@ describe('External Seller Testcase', () => {
     cy.verifyTotal(totalAmount)
   })
 
-  completePayment(prefix, false, externalSeller)
+  completePayment({
+    prefix,
+    orderIdEnv: false,
+    externalSellerEnv: externalSeller,
+  })
 
   describe('Testing API for External Sale', () => {
     it('Get External Sale orderId and update in Cypress env', () => {

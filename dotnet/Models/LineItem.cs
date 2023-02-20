@@ -30,7 +30,7 @@ namespace Cybersource.Models
         public string weightIdentifier { get; set; }
         public string weightUnit { get; set; }
         public string referenceDataCode { get; set; }
-        public string referenceDataNumber { get; set; }
+        //public string referenceDataNumber { get; set; }
         public string productDescription { get; set; }
         public string giftCardCurrency { get; set; }
         public string shippingDestinationTypes { get; set; }

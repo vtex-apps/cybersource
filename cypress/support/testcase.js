@@ -4,6 +4,7 @@ import { invoiceAPI, transactionAPI } from './common/apis.js'
 import selectors from './common/selectors.js'
 import { getTestVariables } from './utils.js'
 import { externalSeller } from './outputvalidation.js'
+import { ORDER_SUFFIX } from './appSettings.js'
 
 export function orderTaxAPITestCase(fixtureName, tax) {
   // Verify tax amounts via order-tax API
@@ -15,11 +16,12 @@ export function orderTaxAPITestCase(fixtureName, tax) {
   })
 }
 
-export function completePayment(
+export function completePayment({
   prefix,
   orderIdEnv = false,
-  externalSellerEnv = false
-) {
+  externalSellerEnv = false,
+  payerAuth = false,
+}) {
   it(`In ${prefix} - Completing the Payment & save OrderId`, () => {
     cy.intercept('**/gatewayCallback/**').as('callback')
 
@@ -67,7 +69,7 @@ export function completePayment(
       cy.get(selectors.BuyNowBtn).last().click()
       cy.wait('@callback', { timeout: 40000 })
         .its('response.statusCode', { timeout: 5000 })
-        .should('eq', 204)
+        .should('eq', payerAuth ? 428 : 204)
       saveOrderId(orderIdEnv, externalSellerEnv)
     })
   })
@@ -88,7 +90,7 @@ function verifyPaymentStarted(interactionResponse) {
       const json = JSON.parse(jsonString[1])
 
       expect(json.status).to.match(/approved|undefined/i)
-      expect(json.message).to.match(/authorized|review/i)
+      expect(json.message).to.match(/authorized|review|null/i)
     }
   } else {
     throw new Error(
@@ -198,22 +200,126 @@ export function verifyAntiFraud({
   })
 }
 
-export function verifyRefundTid({ prefix, paymentTransactionIdEnv }) {
+function callCybersourceAPI(orderId) {
+  return cy.getVtexItems().then(vtex => {
+    cy.task('cybersourceAPI', {
+      vtex,
+      tid: orderId,
+    })
+  })
+}
+
+function icsBillValidation(applications) {
+  expect(applications).to.have.lengthOf(1)
+  expect(applications[0].name).to.be.equal('ics_bill')
+  // expect(applications[0].status).to.be.equal('PENDING')
+}
+
+function icsCreditValidation(applications) {
+  expect(applications).to.have.lengthOf(2)
+  expect(applications[0].name).to.be.equal('ics_credit')
+  expect(applications[0].rMessage).to.be.equal(
+    'Request was processed successfully.'
+  )
+  expect(applications[1].name).to.be.equal('ics_credit_auth')
+  expect(applications[1].rMessage).to.be.equal(
+    'Request was processed successfully.'
+  )
+}
+
+function verifyCreditorBill({ payerAuth, transactionId, icsBillAtZeroIndex }) {
+  callCybersourceAPI(transactionId).then(({ status, data }) => {
+    cy.log(`Using this transactionId - ${transactionId}`)
+    expect(status).to.equal(200)
+    const { applications } = data.applicationInformation
+
+    if (payerAuth) {
+      if (Cypress.env(icsBillAtZeroIndex)) {
+        // if icsBill is at zero index then automatically icsCredit will be there in 1st index
+        icsCreditValidation(applications)
+      } else {
+        icsBillValidation(applications)
+      }
+    } else {
+      icsCreditValidation(applications)
+    }
+  })
+}
+
+export function verifyRefundTid({
+  prefix,
+  paymentTransactionIdEnv,
+  payerAuth,
+}) {
   it(
     `In ${prefix} - Verifying refundtid is created in cybersource API`,
     updateRetry(5),
     () => {
-      cy.addDelayBetweenRetries(5000)
-      cy.getVtexItems().then(vtex => {
-        cy.getOrderItems().then(order => {
-          cy.task('cybersourceAPI', {
-            vtex,
-            tid: order[paymentTransactionIdEnv],
-          }).then(({ status, data }) => {
-            expect(status).to.equal(200)
-            // relatedTransactions property gets added only after refund
-            // Slack conversation link - https://vtex.slack.com/archives/C02J07NP3JT/p1673970675492379
-            expect(data._links.relatedTransactions).to.have.lengthOf(1)
+      // If payer auth is enabled then we will get two transactionIds in relatedTransactions
+      // else we will get only one transactionId in relatedTransactions
+      // From that, we are not sure which index will have ics_bill / ics_credit information
+      // So, we use this icsBillAtIndexZero
+      // if it is true, then id at 1st index will have credit information and 0th index will have bill information
+      // else id at 0th index will have credit information and 1st index will have bill information
+      const icsBillAtZeroIndex = 'ICS_BILL_AT_ZERO_INDEX'
+
+      Cypress.env(icsBillAtZeroIndex, false)
+
+      cy.addDelayBetweenRetries(8000)
+      cy.getOrderItems().then(order => {
+        callCybersourceAPI(order[paymentTransactionIdEnv]).then(response => {
+          expect(response.status).to.equal(200)
+          if (payerAuth) {
+            /*
+            eg: When payer auth enabled, from cybersource API in relatedTransactions array 
+            we will get two transactionIds
+
+            tid - 6748193168966998104953
+            relatedTransactions -
+            "relatedTransactions": [
+              {
+                "href": "https://apitest.cybersource.com/tss/v2/transactions/6748199174926264604951",
+                "method": "GET"
+              },
+              {
+                "href": "https://apitest.cybersource.com/tss/v2/transactions/6748193742576012804953",
+                "method": "GET"
+              }
+            ]            
+            */
+
+            expect(response.data._links.relatedTransactions).to.have.lengthOf(2)
+            cy.log(
+              `Using this transactionId - ${response.data._links.relatedTransactions[0].href
+                .split('/')
+                .at(-1)}`
+            )
+            callCybersourceAPI(
+              response.data._links.relatedTransactions[0].href.split('/').at(-1)
+            ).then(({ status, data }) => {
+              expect(status).to.equal(200)
+              const { applications } = data.applicationInformation
+
+              // if applications length is 1 then it is ics_bill otherwise ics_credit
+              if (applications.length === 1) {
+                Cypress.env(icsBillAtZeroIndex, true)
+                icsBillValidation(applications)
+              } else {
+                icsCreditValidation(applications)
+              }
+            })
+          } else {
+            expect(response.data._links.relatedTransactions).to.have.lengthOf(1)
+          }
+
+          verifyCreditorBill({
+            payerAuth,
+            transactionId: response.data._links.relatedTransactions[
+              payerAuth ? 1 : 0
+            ].href
+              .split('/')
+              .at(-1),
+            icsBillAtZeroIndex,
           })
         })
       })
@@ -226,6 +332,8 @@ export function verifyCyberSourceAPI({
   transactionIdEnv,
   paymentTransactionIdEnv,
   approved = false,
+  referenceSuffix = false,
+  orderIdEnv,
 }) {
   it(`In ${prefix} - Verifying cybersource API`, updateRetry(3), () => {
     cy.addDelayBetweenRetries(5000)
@@ -235,6 +343,7 @@ export function verifyCyberSourceAPI({
           `${transactionAPI(vtex.baseUrl)}/${item[transactionIdEnv]}/payments`,
           VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
         ).then(paymentResponse => {
+          expect(paymentResponse.body[0].tid).to.be.not.null
           cy.setOrderItem(paymentTransactionIdEnv, paymentResponse.body[0].tid)
 
           cy.task('cybersourceAPI', {
@@ -243,6 +352,16 @@ export function verifyCyberSourceAPI({
             approved,
           }).then(({ status, data }) => {
             expect(status).to.equal(200)
+            if (referenceSuffix) {
+              // In 2.1 testcase we set order_suffix as ORDER_SUFFIX
+              // So, verify that here in data.clientReferenceInformation.code
+              expect(data.clientReferenceInformation.code).contain(ORDER_SUFFIX)
+            } else {
+              expect(data.clientReferenceInformation.code).equal(
+                item[orderIdEnv].split('-01')[0]
+              )
+            }
+
             if (approved) {
               expect(data.applicationInformation.reasonCode).to.equal('100')
               expect(data.riskInformation.profile.decision).to.equal('ACCEPT')
@@ -317,7 +436,9 @@ export function invoiceAPITestCase(
             expect(response.status).to.equal(200)
             const [{ transactionId }] = response.body.paymentData.transactions
 
+            expect(transactionId).to.not.equal(undefined)
             cy.setOrderItem(transactionIdEnv, transactionId)
+
             if (approved) {
               expect(response.body.status).to.match(/cancel|invoiced|handling/)
             } else {
@@ -387,20 +508,18 @@ function approvePayment(orderIdEnv, paymentTransactionIdEnv) {
 
 export function paymentTestCases(
   product,
-  { prefix, approved },
+  { prefix, approved, payerAuth },
   { transactionIdEnv, orderIdEnv }
 ) {
   if (product) {
-    completePayment(prefix, orderIdEnv)
-
-    sendInvoiceTestCase(product, orderIdEnv)
+    completePayment({ prefix, orderIdEnv, payerAuth })
 
     invoiceAPITestCase(product, { orderIdEnv, transactionIdEnv, approved })
   }
 }
 
 export function APITestCases(
-  { prefix, approved },
+  { prefix, approved, referenceSuffix },
   { transactionIdEnv, paymentTransactionIdEnv, orderIdEnv }
 ) {
   if (approved) {
@@ -409,6 +528,8 @@ export function APITestCases(
       transactionIdEnv,
       paymentTransactionIdEnv,
       approved,
+      referenceSuffix,
+      orderIdEnv,
     })
 
     verifyStatusInInteractionAPI({

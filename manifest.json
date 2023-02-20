@@ -1,7 +1,7 @@
 {
   "name": "cybersource",
   "vendor": "vtex",
-  "version": "1.13.4",
+  "version": "1.13.9",
   "title": "Cybersource",
   "description": "Cybersource payment",
   "categories": [],
@@ -40,6 +40,9 @@
     },
     {
       "name": "read-write-apps-settings"
+    },
+    {
+      "name": "ListOrders"
     },
     {
       "name": "outbound-access",
