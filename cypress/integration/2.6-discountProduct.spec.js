@@ -36,10 +36,12 @@ describe('Discount Product Testcase', () => {
 
   it('Verifying tax and total amounts,discount for a discounted product', () => {
     // Verify Tax
+    cy.qe(`Verifying the tax should have ${tax}`)
     cy.get(selectors.TaxAmtLabel).last().should('have.text', tax)
     // Verify Total
     cy.verifyTotal(totalAmount)
     // Verify Discounts
+    cy.qe(`Discounts should exist`)
     cy.get(selectors.Discounts).last().should('be.visible')
   })
 

@@ -37,6 +37,7 @@ describe('Single Product Testcase', () => {
 
   it('Verifying tax and total amounts for a product with quantity 2', () => {
     // Verify Tax
+    cy.qe(`Verifying the tax should have ${tax}`)
     cy.get(selectors.TaxAmtLabel).last().should('have.text', tax)
     // Verify Total
     cy.verifyTotal(totalAmount)

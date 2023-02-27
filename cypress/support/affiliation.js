@@ -5,6 +5,11 @@ const CYBERSOURCE_AFFILIATION_ID = '21d78653-50d6-4b06-b553-2645e67a6f5e'
 export function setWorkspaceInAffiliation(workspace = null, payerAuth = true) {
   it(`Configuring workspace as '${workspace}' in payment affiliation`, () => {
     cy.getVtexItems().then(vtex => {
+      cy.qe(`
+      curl --location --request GET '${vtex.baseUrl}/api/payments/pvt/affiliations/21d78653-50d6-4b06-b553-2645e67a6f5e' \
+--header 'X-VTEX-API-AppKey: AppKey' \
+--header 'X-VTEX-API-AppToken: AppToken' \
+      `)
       cy.request({
         method: 'GET',
         url: `${vtex.baseUrl}/api/payments/pvt/affiliations/${CYBERSOURCE_AFFILIATION_ID}`,
@@ -39,7 +44,12 @@ export function setWorkspaceInAffiliation(workspace = null, payerAuth = true) {
         response.body.configuration[payerAuthIndex].value = payerAuth
           ? 'active'
           : 'disabled'
-
+        cy.qe(`
+        curl --location --request PUT '${vtex.baseUrl}/api/payments/pvt/affiliations/21d78653-50d6-4b06-b553-2645e67a6f5e' \
+      --header 'X-VTEX-API-AppKey: AppKey' \
+      --header 'X-VTEX-API-AppToken: AppToken' \
+      --data-raw 'data'
+        `)
         cy.request({
           method: 'PUT',
           url: `${vtex.baseUrl}/api/payments/pvt/affiliations/${CYBERSOURCE_AFFILIATION_ID}`,

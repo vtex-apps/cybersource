@@ -34,6 +34,7 @@ describe('Discount Shipping Testcase', () => {
 
   it('Verify tax and total', updateRetry(3), () => {
     // Verify Tax
+    cy.qe(`Verifying the tax should have ${tax}`)
     cy.get(selectors.TaxAmtLabel).last().should('have.text', tax)
     // Verify Total
     cy.verifyTotal(totalAmount)

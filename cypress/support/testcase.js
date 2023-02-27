@@ -26,6 +26,7 @@ export function completePayment({
     cy.intercept('**/gatewayCallback/**').as('callback')
 
     // Select Credit Card Option
+    cy.qe(`Completing payment using credit card option`)
     cy.get('a[id*=creditCard]').should('be.visible').click()
 
     cy.get('body').then($body => {
@@ -41,15 +42,19 @@ export function completePayment({
     cy.getIframeBody(selectors.PaymentMethodIFrame).then($body => {
       if (!$body.find(selectors.CardExist).length) {
         // Credit cart not exist
+        cy.qe(`Enteriing credit card number 5555 5555 5555 4444`)
         cy.getIframeBody(selectors.PaymentMethodIFrame)
           .find(selectors.CreditCardNumber)
           .type('5555 5555 5555 4444')
+        cy.qe(`Entering firstName - syed`)
         cy.getIframeBody(selectors.PaymentMethodIFrame)
           .find(selectors.CreditCardHolderName)
           .type('Syed')
+        cy.qe(`Selecting expiring month from dropdown - 01`)
         cy.getIframeBody(selectors.PaymentMethodIFrame)
           .find(selectors.CreditCardExpirationMonth)
           .select('01')
+        cy.qe(`Selecting Expiry year from dropdown - 30`)
         cy.getIframeBody(selectors.PaymentMethodIFrame)
           .find(selectors.CreditCardExpirationYear)
           .select('30')
@@ -157,6 +162,11 @@ export function verifyStatusInInteractionAPI({
 
       cy.getVtexItems().then(vtex => {
         cy.getOrderItems().then(item => {
+          cy.qe(`
+          curl --location --request GET '${vtex.baseUrl}/api/oms/pvt/orders/${item[orderIdEnv]}' \
+--header 'X-VTEX-API-AppKey: AppKey' \
+--header 'X-VTEX-API-AppToken: AppToken' \
+          `)
           cy.getAPI(
             `${invoiceAPI(vtex.baseUrl)}/${item[orderIdEnv]}`,
             VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
@@ -165,6 +175,11 @@ export function verifyStatusInInteractionAPI({
             const [{ transactionId }] = response.body.paymentData.transactions
 
             cy.setOrderItem(transactionIdEnv, transactionId)
+            cy.qe(`
+            curl --location --request GET '${vtex.baseUrl}/${transactionId}/interactions' \
+--header 'X-VTEX-API-AppKey: AppKey' \
+--header 'X-VTEX-API-AppToken: AppToken' \
+            `)
             cy.getAPI(
               `${transactionAPI(vtex.baseUrl)}/${transactionId}/interactions`,
               VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
@@ -339,6 +354,11 @@ export function verifyCyberSourceAPI({
     cy.addDelayBetweenRetries(5000)
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(item => {
+        cy.qe(`
+        curl --location --request GET '${vtex.baseUrl}/api/payments/pvt/transactions/${item[transactionIdEnv]}/payments' \
+--header 'X-VTEX-API-AppKey: AppKey' \
+--header 'X-VTEX-API-AppToken: AppToken' \
+        `)
         cy.getAPI(
           `${transactionAPI(vtex.baseUrl)}/${item[transactionIdEnv]}/payments`,
           VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
@@ -425,6 +445,11 @@ export function invoiceAPITestCase(
 
       cy.getVtexItems().then(vtex => {
         cy.getOrderItems().then(item => {
+          cy.qe(`
+          curl --location --request GET '${vtex.baseUrl}/api/oms/pvt/orders/${item[orderIdEnv]}' \
+--header 'X-VTEX-API-AppKey: AppKey' \
+--header 'X-VTEX-API-AppToken: AppToken' \
+          `)
           cy.getAPI(
             `${
               orderIdEnv === externalSeller.externalSaleEnv
