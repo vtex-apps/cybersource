@@ -34,6 +34,7 @@ describe('Promotional Product Testcase', () => {
 
   it('Verifying tax, total and discounts amounts for a product with quantity 2', () => {
     // Verify Tax
+    cy.qe(`Verifying the tax should have ${tax}`)
     cy.get(selectors.TaxAmtLabel).last().should('have.text', tax)
     // Verify Total
     cy.verifyTotal(totalAmount)
@@ -43,6 +44,7 @@ describe('Promotional Product Testcase', () => {
 
   it('Verify free product is added', updateRetry(3), () => {
     // Verify free product is added
+    cy.qe(`Verifying free product is available`)
     cy.get('span[class="new-product-price"]')
       .first()
       .should('have.text', 'Free')

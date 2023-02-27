@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+-  In Cypress, Added logs for debugging
+
+
 ### Removed
 - [ENGINEERS-1144] - Remove hardcoded cybersource ui version from cybersource tests
 
