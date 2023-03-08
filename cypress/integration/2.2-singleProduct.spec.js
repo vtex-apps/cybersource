@@ -29,10 +29,10 @@ describe('Single Product Testcase', () => {
     })
   })
 
-  it('Updating Shipping Information', updateRetry(4), () => {
+  it('Updating Shipping Information', updateRetry(3), () => {
     cy.checkForTaxErrors()
     // Update Shipping Section
-    cy.updateShippingInformation({ postalCode })
+    cy.updateShippingInformation({ postalCode, timeout: 8000 })
   })
 
   it('Verifying tax and total amounts for a product with quantity 2', () => {

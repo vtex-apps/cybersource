@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- For update shipping information, reduce softRetry and set timeout to 8000
+
 ### Removed
 - [ENGINEERS-1144] - Remove hardcoded cybersource ui version from cybersource tests
 
