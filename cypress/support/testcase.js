@@ -162,11 +162,6 @@ export function verifyStatusInInteractionAPI({
 
       cy.getVtexItems().then(vtex => {
         cy.getOrderItems().then(item => {
-          cy.qe(`
-          curl --location --request GET '${vtex.baseUrl}/api/oms/pvt/orders/${item[orderIdEnv]}' \
---header 'X-VTEX-API-AppKey: AppKey' \
---header 'X-VTEX-API-AppToken: AppToken' \
-          `)
           cy.getAPI(
             `${invoiceAPI(vtex.baseUrl)}/${item[orderIdEnv]}`,
             VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
@@ -175,11 +170,7 @@ export function verifyStatusInInteractionAPI({
             const [{ transactionId }] = response.body.paymentData.transactions
 
             cy.setOrderItem(transactionIdEnv, transactionId)
-            cy.qe(`
-            curl --location --request GET '${vtex.baseUrl}/${transactionId}/interactions' \
---header 'X-VTEX-API-AppKey: AppKey' \
---header 'X-VTEX-API-AppToken: AppToken' \
-            `)
+
             cy.getAPI(
               `${transactionAPI(vtex.baseUrl)}/${transactionId}/interactions`,
               VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
@@ -354,11 +345,6 @@ export function verifyCyberSourceAPI({
     cy.addDelayBetweenRetries(5000)
     cy.getVtexItems().then(vtex => {
       cy.getOrderItems().then(item => {
-        cy.qe(`
-        curl --location --request GET '${vtex.baseUrl}/api/payments/pvt/transactions/${item[transactionIdEnv]}/payments' \
---header 'X-VTEX-API-AppKey: AppKey' \
---header 'X-VTEX-API-AppToken: AppToken' \
-        `)
         cy.getAPI(
           `${transactionAPI(vtex.baseUrl)}/${item[transactionIdEnv]}/payments`,
           VTEX_AUTH_HEADER(vtex.apiKey, vtex.apiToken)
@@ -445,11 +431,6 @@ export function invoiceAPITestCase(
 
       cy.getVtexItems().then(vtex => {
         cy.getOrderItems().then(item => {
-          cy.qe(`
-          curl --location --request GET '${vtex.baseUrl}/api/oms/pvt/orders/${item[orderIdEnv]}' \
---header 'X-VTEX-API-AppKey: AppKey' \
---header 'X-VTEX-API-AppToken: AppToken' \
-          `)
           cy.getAPI(
             `${
               orderIdEnv === externalSeller.externalSaleEnv

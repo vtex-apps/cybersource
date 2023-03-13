@@ -5,6 +5,10 @@ export const ORDER_SUFFIX = '-testing'
 const APP = 'vtex.apps-graphql@2.x'
 
 export function getAppSettings() {
+  const query = 'query' + '{appSettings(app:"vtex.cybersource-ui"){message}}'
+
+  cy.addGraphqlLogs(query)
+
   return {
     query: 'query' + '{appSettings(app:"vtex.cybersource-ui"){message}}',
     queryVariables: {},
@@ -12,6 +16,17 @@ export function getAppSettings() {
 }
 
 export function saveAppSettings(settings) {
+  const query =
+    'mutation($app:String,$settings:String)' +
+    `{saveAppSettings(app:$app,settings:$settings){message}}`
+
+  const queryVariables = {
+    app: 'vtex.cybersource-ui',
+    settings: JSON.stringify(settings),
+  }
+
+  cy.addGraphqlLogs(query, queryVariables)
+
   return {
     query:
       'mutation($app:String,$settings:String)' +
@@ -25,27 +40,12 @@ export function saveAppSettings(settings) {
 
 export function updateCybersourceConfiguration(orderSuffix = '') {
   it('Update cybersource app settings', () => {
-    cy.qe(`
-    GetApp settings query -
-     query: 'query' + '{appSettings(app:"vtex.cybersource-ui"){message}}',
-    queryVariables: {},
-    `)
     graphql(APP, getAppSettings(), ({ body }) => {
       const { message } = body.data.appSettings
       const jsonMessage = JSON.parse(message)
 
       jsonMessage.OrderSuffix = orderSuffix
 
-      cy.qe(`
-    saveAppSettings - mutation
-    query:
-    'mutation($app:String,$settings:String)' +
-    {saveAppSettings(app:$app,settings:$settings){message}},
-    queryVariables: {
-    app: 'vtex.cybersource-ui',
-    settings: JSON.stringify(settings),
-  },
-    `)
       graphql(APP, saveAppSettings(jsonMessage), response => {
         const { OrderSuffix } = JSON.parse(
           response.body.data.saveAppSettings.message
