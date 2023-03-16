@@ -2724,13 +2724,13 @@ namespace Cybersource.Services
                         case "PENDING_REVIEW":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
-                            bool isDecisionMangerInUse = true;
+                            bool isDecisionManagerInUse = true;
                             try
                             {
-                                MerchantSetting merchantSettingDecisionMangerInUse = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.DecisionMangerInUse));
-                                if (merchantSettingDecisionMangerInUse != null && merchantSettingDecisionMangerInUse.Value != null && merchantSettingDecisionMangerInUse.Value.Equals(CybersourceConstants.ManifestCustomField.Disabled, StringComparison.OrdinalIgnoreCase))
+                                MerchantSetting merchantSettingDecisionManagerInUse = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.DecisionManagerInUse));
+                                if (merchantSettingDecisionManagerInUse != null && merchantSettingDecisionManagerInUse.Value != null && merchantSettingDecisionManagerInUse.Value.Equals(CybersourceConstants.ManifestCustomField.Disabled, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    isDecisionMangerInUse = false;
+                                    isDecisionManagerInUse = false;
                                 }
                             }
                             catch (Exception ex)
