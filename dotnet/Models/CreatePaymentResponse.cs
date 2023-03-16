@@ -91,19 +91,19 @@ namespace Cybersource.Models
         /// Total time (in seconds) before we make and automatic call to /settlements no mather if the payment was approved by merchant's antifraud or not
         /// </summary>
         [JsonProperty("delayToAutoSettle")]
-        public int DelayToAutoSettle { get; set; }
+        public long DelayToAutoSettle { get; set; }
 
         /// <summary>
         /// Total time (in seconds) before we make and automatic call to /settlements after merchant's antifraud approval
         /// </summary>
         [JsonProperty("delayToAutoSettleAfterAntifraud")]
-        public int DelayToAutoSettleAfterAntifraud { get; set; }
+        public long DelayToAutoSettleAfterAntifraud { get; set; }
 
         /// <summary>
         /// Total time (in seconds) to wait for an authorization and make and automatic call to /cancellations to cancel the payment
         /// </summary>
         [JsonProperty("delayToCancel")]
-        public int DelayToCancel { get; set; }
+        public long DelayToCancel { get; set; }
 
         /// <summary>
         /// Indicate the app that will handle the payment flow at Checkout

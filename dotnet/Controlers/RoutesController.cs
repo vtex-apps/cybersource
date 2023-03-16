@@ -48,6 +48,10 @@
                 {
                     CreatePaymentRequest createPaymentRequest = JsonConvert.DeserializeObject<CreatePaymentRequest>(bodyAsText);
                     MerchantSetting merchantSettingPayerAuth = null;
+                    MerchantSetting merchantSettingCaptureDelay = null;
+                    MerchantSetting merchantSettingCaptureDelayInterval = null;
+                    long captureDelay = 0L;
+                    string delayInterval = string.Empty;
                     bool doPayerAuth = false;
                     try
                     {
@@ -57,6 +61,37 @@
                             if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.ManifestCustomField.Active, StringComparison.OrdinalIgnoreCase))
                             {
                                 doPayerAuth = true;
+                            }
+
+                            merchantSettingCaptureDelay = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureDelay));
+                            if (merchantSettingCaptureDelay != null && merchantSettingCaptureDelay.Value != null)
+                            {
+                                long.TryParse(merchantSettingCaptureDelay.Value, out captureDelay);
+                            }
+
+                            merchantSettingCaptureDelayInterval = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureDelayInterval));
+                            if (merchantSettingCaptureDelayInterval != null && merchantSettingCaptureDelayInterval.Value != null)
+                            {
+                                delayInterval = merchantSettingCaptureDelayInterval.Value;
+                            }
+
+                            if (!string.IsNullOrEmpty(delayInterval))
+                            {
+                                int multiple = 1;
+                                switch (delayInterval)
+                                {
+                                    case CybersourceConstants.CaptureIntervalSetting.Minutes:
+                                        multiple = 60;
+                                        break;
+                                    case CybersourceConstants.CaptureIntervalSetting.Hours:
+                                        multiple = 60 * 60;
+                                        break;
+                                    case CybersourceConstants.CaptureIntervalSetting.Days:
+                                        multiple = 60 * 60 * 24;
+                                        break;
+                                }
+
+                                createPaymentResponse.DelayToAutoSettle = captureDelay * multiple;
                             }
                         }
                     }
@@ -475,6 +510,34 @@
                             }
                         }
                     },
+                    new CustomField
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.CaptureDelay,
+                        Type = "text"
+                    },
+                    new CustomFieldOptions
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.CaptureDelayInterval,
+                        Type = "select",
+                        Options = new List<Option>
+                        {
+                            new Option
+                            {
+                                Text = CybersourceConstants.CaptureIntervalSetting.Minutes,
+                                Value = CybersourceConstants.CaptureIntervalSetting.Minutes
+                            },
+                            new Option
+                            {
+                                Text = CybersourceConstants.CaptureIntervalSetting.Hours,
+                                Value = CybersourceConstants.CaptureIntervalSetting.Hours
+                            },
+                            new Option
+                            {
+                                Text = CybersourceConstants.CaptureIntervalSetting.Days,
+                                Value = CybersourceConstants.CaptureIntervalSetting.Days
+                            }
+                        }
+                    },
                     new CustomFieldOptions
                     {
                         Name = CybersourceConstants.ManifestCustomField.CaptureSetting,
@@ -490,6 +553,24 @@
                             {
                                 Text = CybersourceConstants.ManifestCustomField.ImmediateCapture,
                                 Value = CybersourceConstants.CaptureSetting.ImmediateCapture
+                            }
+                        }
+                    },
+                    new CustomFieldOptions
+                    {
+                        Name = CybersourceConstants.ManifestCustomField.DecisionMangerInUse,
+                        Type = "select",
+                        Options = new List<Option>
+                        {
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.Disabled,
+                                Value = CybersourceConstants.PayerAuthenticationSetting.Disabled
+                            },
+                            new Option
+                            {
+                                Text = CybersourceConstants.ManifestCustomField.Active,
+                                Value = CybersourceConstants.PayerAuthenticationSetting.Active
                             }
                         }
                     },
