@@ -129,7 +129,7 @@ namespace Cybersource.Data
             public const string Pending = "Pending Review";
             public const string CaptureDelay = "Capture Delay";
             public const string CaptureDelayInterval = "Capture Delay Interval";
-            public const string DecisionMangerInUse = "Using Decision Manger";
+            public const string DecisionManagerInUse = "Using Decision Manager";
         }
 
         public static class CaptureSetting
