@@ -558,7 +558,7 @@
                     },
                     new CustomFieldOptions
                     {
-                        Name = CybersourceConstants.ManifestCustomField.DecisionMangerInUse,
+                        Name = CybersourceConstants.ManifestCustomField.DecisionManagerInUse,
                         Type = "select",
                         Options = new List<Option>
                         {
