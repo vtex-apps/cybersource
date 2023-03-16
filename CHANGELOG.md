@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.14.0] - 2023-03-16
+
 ### Added
 - Added option to set settle delay
 - Added option to set if Decision Manager is being used so that we can mark pending auths as denied.
