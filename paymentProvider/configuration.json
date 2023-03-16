@@ -75,6 +75,42 @@
       ]
     },
     {
+      "name": "Capture Delay",
+      "type": "text"
+    },
+    {
+      "name": "Capture Delay Interval",
+      "type": "select",
+      "options": [
+        {
+          "text": "Minutes",
+          "value": "Minutes"
+        },
+        {
+          "text": "Hours",
+          "value": "Hours"
+        },
+        {
+          "text": "Days",
+          "value": "Days"
+        }
+      ]
+    },
+    {
+      "name": "Using Decision Manager",
+      "type": "select",
+      "options": [
+        {
+          "text": "Disabled",
+          "value": "disabled"
+        },
+        {
+          "text": "Active",
+          "value": "active"
+        }
+      ]
+    },
+    {
       "name": "Authorized Payments Flagged by Decision Manager",
       "type": "select",
       "options": [

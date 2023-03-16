@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Added option to set settle delay
+- Added option to set if Decision Manager is being used so that we can mark pending auths as denied.
+
 ### Changed
 - For update shipping information, reduce softRetry and set timeout to 8000
 

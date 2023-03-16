@@ -127,12 +127,22 @@ namespace Cybersource.Data
             public const string Accept = "Accept";
             public const string Decline = "Decline";
             public const string Pending = "Pending Review";
+            public const string CaptureDelay = "Capture Delay";
+            public const string CaptureDelayInterval = "Capture Delay Interval";
+            public const string DecisionManagerInUse = "Using Decision Manager";
         }
 
         public static class CaptureSetting
         {
             public const string DelayedCapture = "DelayedCapture";
             public const string ImmediateCapture = "AuthAndCapture";
+        }
+
+        public static class CaptureIntervalSetting
+        {
+            public const string Minutes = "Minutes";
+            public const string Hours = "Hours";
+            public const string Days = "Days";
         }
 
         public static class PayerAuthenticationSetting

@@ -2719,10 +2719,38 @@ namespace Cybersource.Services
                             }
 
                             break;
-
                         case "AUTHORIZED_PENDING_REVIEW":
                         case "PENDING_AUTHENTICATION":
                         case "PENDING_REVIEW":
+                            paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
+                            createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
+                            bool isDecisionManagerInUse = true;
+                            try
+                            {
+                                MerchantSetting merchantSettingDecisionManagerInUse = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.DecisionManagerInUse));
+                                if (merchantSettingDecisionManagerInUse != null && merchantSettingDecisionManagerInUse.Value != null && merchantSettingDecisionManagerInUse.Value.Equals(CybersourceConstants.ManifestCustomField.Disabled, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    isDecisionManagerInUse = false;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied; // jic
+                                _context.Vtex.Logger.Error("GetPaymentStatus", "Decision Manager Active Setting",
+                                "Error: ", ex,
+                                new[]
+                                {
+                                    ("createPaymentRequest", JsonConvert.SerializeObject(createPaymentRequest))
+                                });
+                            }
+
+                            if(!isDecisionManagerInUse)
+                            {
+                                // If Decision Manager is not used, mark Pending as Denied
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                            }
+
+                            break;
                         case "INVALID_REQUEST":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
