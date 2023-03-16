@@ -2744,7 +2744,7 @@ namespace Cybersource.Services
                                 });
                             }
 
-                            if(!isDecisionMangerInUse)
+                            if(!isDecisionManagerInUse)
                             {
                                 // If Decision Manager is not used, mark Pending as Denied
                                 paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
