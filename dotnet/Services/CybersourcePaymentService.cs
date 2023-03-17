@@ -2720,8 +2720,6 @@ namespace Cybersource.Services
 
                             break;
                         case "AUTHORIZED_PENDING_REVIEW":
-                        case "PENDING_AUTHENTICATION":
-                        case "PENDING_REVIEW":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
                             bool isDecisionManagerInUse = true;
@@ -2751,6 +2749,8 @@ namespace Cybersource.Services
                             }
 
                             break;
+                        case "PENDING_AUTHENTICATION":
+                        case "PENDING_REVIEW":
                         case "INVALID_REQUEST":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
