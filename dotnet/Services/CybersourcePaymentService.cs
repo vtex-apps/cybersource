@@ -2735,7 +2735,7 @@ namespace Cybersource.Services
                             }
                             catch (Exception ex)
                             {
-                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied; // jic
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Approved; // jic
                                 _context.Vtex.Logger.Error("GetPaymentStatus", "Decision Manager Active Setting",
                                 "Error: ", ex,
                                 new[]
@@ -2746,8 +2746,8 @@ namespace Cybersource.Services
 
                             if(!isDecisionManagerInUse)
                             {
-                                // If Decision Manager is not used, mark Pending as Denied
-                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                                // If Decision Manager is not used, mark Pending as Approved
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
                             }
 
                             break;
