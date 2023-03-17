@@ -2720,8 +2720,6 @@ namespace Cybersource.Services
 
                             break;
                         case "AUTHORIZED_PENDING_REVIEW":
-                        case "PENDING_AUTHENTICATION":
-                        case "PENDING_REVIEW":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;
                             bool isDecisionManagerInUse = true;
@@ -2735,7 +2733,7 @@ namespace Cybersource.Services
                             }
                             catch (Exception ex)
                             {
-                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied; // jic
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Approved; // jic
                                 _context.Vtex.Logger.Error("GetPaymentStatus", "Decision Manager Active Setting",
                                 "Error: ", ex,
                                 new[]
@@ -2746,11 +2744,13 @@ namespace Cybersource.Services
 
                             if(!isDecisionManagerInUse)
                             {
-                                // If Decision Manager is not used, mark Pending as Denied
-                                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
+                                // If Decision Manager is not used, mark Pending as Approved
+                                paymentStatus = CybersourceConstants.VtexAuthStatus.Approved;
                             }
 
                             break;
+                        case "PENDING_AUTHENTICATION":
+                        case "PENDING_REVIEW":
                         case "INVALID_REQUEST":
                             paymentStatus = CybersourceConstants.VtexAuthStatus.Undefined;
                             createPaymentResponse.DelayToCancel = 5 * 60 * 60 * 24;

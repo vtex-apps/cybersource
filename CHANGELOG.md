@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- If Decision Manager is not being used, mark pending auths as approved.
+
 ## [1.14.0] - 2023-03-16
 
 ### Added
