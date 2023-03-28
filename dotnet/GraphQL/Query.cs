@@ -4,13 +4,14 @@ using GraphQL.Types;
 using System;
 using Cybersource.Models;
 using Cybersource.GraphQL.Types;
+using Cybersource.Data;
 
 namespace Cybersource.GraphQL
 {
     [GraphQLMetadata("Query")]
     public class Query : ObjectGraphType<object>
     {
-        public Query(ICybersourcePaymentService cybersourcePaymentService, IVtexApiService vtexApiService)
+        public Query(ICybersourcePaymentService cybersourcePaymentService, IVtexApiService vtexApiService, ICybersourceRepository cybersourceRepository)
         {
             Name = "Query";
 
@@ -42,6 +43,15 @@ namespace Cybersource.GraphQL
                 resolve: async context =>
                 {
                     return await vtexApiService.GetPropertyList();
+                }
+            );
+
+            FieldAsync<AppSettingsType>(
+                "getAppSettings",
+                resolve: async context =>
+                {
+                    return await context.TryAsyncResolve(
+                        async c => await cybersourceRepository.GetMerchantSettings());
                 }
             );
         }
