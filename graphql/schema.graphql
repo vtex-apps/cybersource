@@ -1,6 +1,7 @@
 type Query {
   conversionReport(startDate: String, endDate: String): ConversionReport
   merchantDefinedFields: [String]
+  getAppSettings: AppSettings
 }
 
 type Mutation {
@@ -20,4 +21,20 @@ type ConversionDetail {
   originalDecision: String
   reviewer: String
   reviewerComments: String
+}
+
+type AppSettings {
+  isLive: Boolean
+  merchantId: String
+  merchantKey: String
+  sharedSecretKey: String
+  processor: String
+  region: String
+  orderSuffix: String
+  customNsu: String
+  enableTax: Boolean
+  enableTransactionPosting: Boolean
+  salesChannelExclude: String
+  shippingProductCode: String
+  nexusRegions: String
 }
