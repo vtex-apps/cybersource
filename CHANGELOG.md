@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Use custom query for app settings
 
+## [1.15.0] - 2023-03-28
+
+### Added
+- Adjust item tax to match order tax
+
 ## [1.14.1] - 2023-03-17
 
 ### Changed

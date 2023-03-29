@@ -2888,9 +2888,11 @@ namespace Cybersource.Services
 
         public void GetItemTaxAmounts(MerchantSettings merchantSettings, List<VtexOrderItem> vtexOrderItems, Payments payment, CreatePaymentRequest createPaymentRequest)
         {
-            decimal taxRate = 0;
+            decimal taxRate = 0M;
             bool useRate = false;
-            double shippingTaxAmount = 0;
+            double shippingTaxAmount = 0D;
+            decimal taxDetailAmount = 0M;
+            long totalItemTax = 0L;
             foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
                 string taxAmount = "0.00";
@@ -2930,7 +2932,7 @@ namespace Cybersource.Services
                         }
                     }
 
-                    taxAmount = ((decimal)itemTax / 100).ToString("0.00");
+                    taxAmount = Math.Round((decimal)itemTax / 100, MidpointRounding.AwayFromZero).ToString("0.00");
                     commodityCode = vtexOrderItem.TaxCode;
                 }
 
@@ -2956,7 +2958,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = ((itemTax * vtexItem.Quantity) / 100m).ToString("0.00")
+                                    amount = Math.Round(itemTax * vtexItem.Quantity / 100m, 2, MidpointRounding.AwayFromZero).ToString("0.00")
                                 }
                         };
                     }
@@ -2967,29 +2969,31 @@ namespace Cybersource.Services
                 {
                     _context.Vtex.Logger.Error("GetItemTaxAmounts", "LineItems", "Error", ex);
                 }
+
+                totalItemTax += itemTax * vtexItem.Quantity;
+                Console.WriteLine($"[{vtexItem.Id}] {itemTax} X {vtexItem.Quantity} = {itemTax * vtexItem.Quantity} |{totalItemTax}|");
             }
 
             try
             {
+                if (useRate)
+                {
+                    taxDetailAmount = createPaymentRequest.MiniCart.ShippingValue * taxRate;
+                }
+                else
+                {
+                    taxDetailAmount = (decimal)shippingTaxAmount;
+                }
+
                 if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                 {
+                    // Add shipping tax as a line item
                     payment.orderInformation.amountDetails.nationalTaxIncluded = createPaymentRequest.MiniCart.TaxValue > 0m ? "1" : "0";
                     payment.orderInformation.invoiceDetails = new InvoiceDetails
                     {
                         purchaseOrderNumber = createPaymentRequest.OrderId,
                         taxable = createPaymentRequest.MiniCart.TaxValue > 0m
                     };
-
-                    // Add shipping tax as a line item
-                    decimal taxDetailAmount = 0m;
-                    if (useRate)
-                    {
-                        taxDetailAmount = createPaymentRequest.MiniCart.ShippingValue * taxRate;
-                    }
-                    else
-                    {
-                        taxDetailAmount = (decimal)shippingTaxAmount;
-                    }
 
                     LineItem lineItem = new LineItem
                     {
@@ -3013,6 +3017,29 @@ namespace Cybersource.Services
             catch (Exception ex)
             {
                 _context.Vtex.Logger.Error("GetItemTaxAmounts", "Ecuador Customization", "Error", ex);
+            }
+
+            try
+            {
+                decimal totalOrderTax = createPaymentRequest.MiniCart.TaxValue;
+                decimal totalItemTaxAsDecimal = Math.Round((decimal)totalItemTax / 100M, 2, MidpointRounding.AwayFromZero);
+                decimal taxDiff = totalOrderTax - totalItemTaxAsDecimal - taxDetailAmount;
+                if (taxDiff > 0M)
+                {
+                    _context.Vtex.Logger.Warn("GetItemTaxAmounts", "Tax Total Verification", $"Modfying tax amount of item '{payment.orderInformation.lineItems.First().productName}' by '{taxDiff}' ");
+                    if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
+                    {
+                        payment.orderInformation.lineItems.First().taxDetails.First().amount = (decimal.Parse(payment.orderInformation.lineItems.First().taxDetails.First().amount) + taxDiff).ToString("0.00");
+                    }
+                    else
+                    {
+                        payment.orderInformation.lineItems.First().taxAmount = (decimal.Parse(payment.orderInformation.lineItems.First().taxAmount) + taxDiff).ToString("0.00");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Vtex.Logger.Error("GetItemTaxAmounts", "Tax Total Verification", "Error", ex);
             }
         }
 
