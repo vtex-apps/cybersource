@@ -24,6 +24,7 @@ namespace Cybersource.GraphQL.Types
             Field(b => b.SalesChannelExclude, nullable: true).Description("Sales Channels to Exclude from Cybersource");
             Field(b => b.ShippingProductCode, nullable: true).Description("Shipping Product Code");
             Field(b => b.NexusRegions, nullable: true).Description("Tax Nexus Regions");
+            Field(b => b.MerchantDefinedValueSettings, type: typeof(ListGraphType<MerchantDefinedValueSettingType>)).Description("Merchant Defined Fields").Name("merchantDictionary");
         }
     }
 }

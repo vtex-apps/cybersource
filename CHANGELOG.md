@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Fixed query for Merchant Defined Data settings
+
 ## [1.16.0] - 2023-03-29
 
 ### Changed

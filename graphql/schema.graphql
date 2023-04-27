@@ -37,4 +37,11 @@ type AppSettings {
   salesChannelExclude: String
   shippingProductCode: String
   nexusRegions: String
+  merchantDictionary: [MerchantDefinedValueSetting]
+}
+
+type MerchantDefinedValueSetting {
+  userInput: String
+  goodPortion: String
+  isValid: Boolean
 }
