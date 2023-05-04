@@ -2,7 +2,7 @@ import { graphql } from './common/graphql_utils.js'
 
 export const ORDER_SUFFIX = '-testing'
 
-const APP = 'vtex.apps-graphql@2.x'
+const APP = 'vtex.apps-graphql@3.x'
 
 export function getAppSettings() {
   return {
