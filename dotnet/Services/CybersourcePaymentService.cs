@@ -71,7 +71,6 @@ namespace Cybersource.Services
                 }
 
                 string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
-
                 if (createPaymentRequest.MerchantSettings != null)
                 {
                     foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
@@ -116,9 +115,8 @@ namespace Cybersource.Services
                         }
                     }
                 }
-
+                
                 this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName);
-
                 payment = new Payments
                 {
                     merchantInformation = new MerchantInformation
@@ -226,7 +224,6 @@ namespace Cybersource.Services
                 string numberOfInstallments = createPaymentRequest.Installments.ToString("00");
                 string plan = string.Empty;
                 decimal installmentsInterestRate = createPaymentRequest.InstallmentsInterestRate;
-
                 switch (merchantSettings.Processor)
                 {
                     case CybersourceConstants.Processors.Braspag:
@@ -617,12 +614,74 @@ namespace Cybersource.Services
                         CreatePaymentRequest = createPaymentRequest
                     };
                 }
-                else if (paymentData.CreatePaymentResponse != null && string.IsNullOrEmpty(authenticationTransactionId))
+                else if (paymentData.CreatePaymentResponse != null && string.IsNullOrEmpty(authenticationTransactionId) && paymentData.CreatePaymentResponse.Status != null)
                 {
                     await _vtexApiService.ProcessConversions();
                     return (paymentData.CreatePaymentResponse, null);
                 }
+                else if (paymentData.TimedOut)
+                {
+                    try
+                    {
+                        if (createPaymentRequest.MerchantSettings != null)
+                        {
+                            MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureSetting));
+                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture, StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Need to check if there has already been a successful capture
+                                string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
+                                string orderSuffix = string.Empty;
+                                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                                if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
+                                {
+                                    orderSuffix = merchantSettings.OrderSuffix.Trim();
+                                }
 
+                                SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}");
+                                if (searchResponse != null)
+                                {
+                                    createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
+                                    createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
+                                    foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
+                                    {
+                                        string captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
+                                        decimal captureValue = 0m;
+                                        if (decimal.TryParse(captureValueString, out captureValue) && captureValue == createPaymentRequest.Value)
+                                        {
+                                            createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
+                                            createPaymentResponse.Code = "100";
+                                            createPaymentResponse.Message = "Transaction retrieved from Cybersource.";
+                                            createPaymentResponse.AuthorizationId = transactionSummary.Id;
+                                            paymentData.AuthorizationId = createPaymentResponse.AuthorizationId;
+                                            paymentData.TransactionId = createPaymentResponse.Tid;
+                                            paymentData.PaymentId = createPaymentResponse.PaymentId;
+                                            paymentData.Value = captureValue;
+                                            paymentData.RequestId = null;
+                                            paymentData.CaptureId = null;
+                                            paymentData.CreatePaymentResponse = createPaymentResponse;
+                                            paymentData.ImmediateCapture = true;
+                                            paymentData.CaptureId = paymentsResponse.Id;
+                                            paymentData.Value = captureValue;
+                                        }
+                                    }
+
+                                    await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
+                                    return (createPaymentResponse, paymentsResponse);
+                                }
+                            }
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        _context.Vtex.Logger.Error("CreatePayment", "TransactionSummaries",
+                        "Error ", ex,
+                        new[]
+                        {
+                            ( "PaymentId", createPaymentRequest.PaymentId )
+                        });
+                    }
+                }
+                
                 bool isPayerAuth = false;
                 Payments payment = await this.BuildPayment(createPaymentRequest);
                 try
@@ -666,7 +725,6 @@ namespace Cybersource.Services
                 }
 
                 paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
-
                 if (paymentsResponse != null)
                 {
                     createPaymentResponse = new CreatePaymentResponse();
@@ -736,7 +794,7 @@ namespace Cybersource.Services
                     }
 
                     await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
-                    if(doCancel)
+                    if (doCancel)
                     {
                         // Reverse Authorization due to failed 3DS condition
                         CancelPaymentRequest cancelPaymentRequest = new CancelPaymentRequest
@@ -2971,7 +3029,6 @@ namespace Cybersource.Services
                 }
 
                 totalItemTax += itemTax * vtexItem.Quantity;
-                Console.WriteLine($"[{vtexItem.Id}] {itemTax} X {vtexItem.Quantity} = {itemTax * vtexItem.Quantity} |{totalItemTax}|");
             }
 
             try
