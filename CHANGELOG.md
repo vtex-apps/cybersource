@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Added Timeout to Create Payment
+- If Auth&Bill attempt times out, check transactions in Cybersource before another attempt
+
 ## [1.16.1] - 2023-05-04
 
 ### Fixed

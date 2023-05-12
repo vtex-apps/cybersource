@@ -15,5 +15,6 @@ namespace Cybersource.Models
         public string AuthenticationTransactionId { get; set; }
         public ConsumerAuthenticationInformation ConsumerAuthenticationInformation { get; set; }
         public string OrderId { get; set; }
+        public bool TimedOut { get; set; }
     }
 }

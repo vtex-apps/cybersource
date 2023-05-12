@@ -74,25 +74,6 @@
                             {
                                 delayInterval = merchantSettingCaptureDelayInterval.Value;
                             }
-
-                            if (!string.IsNullOrEmpty(delayInterval))
-                            {
-                                int multiple = 1;
-                                switch (delayInterval)
-                                {
-                                    case CybersourceConstants.CaptureIntervalSetting.Minutes:
-                                        multiple = 60;
-                                        break;
-                                    case CybersourceConstants.CaptureIntervalSetting.Hours:
-                                        multiple = 60 * 60;
-                                        break;
-                                    case CybersourceConstants.CaptureIntervalSetting.Days:
-                                        multiple = 60 * 60 * 24;
-                                        break;
-                                }
-
-                                createPaymentResponse.DelayToAutoSettle = captureDelay * multiple;
-                            }
                         }
                     }
                     catch (Exception ex)
@@ -111,7 +92,52 @@
                     }
                     else
                     {
-                        (createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                        //(createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                        var createPaymentTask = this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
+                        var winner = await Task.WhenAny(createPaymentTask, DelayedDummyResultTask<(CreatePaymentResponse, PaymentsResponse)>(TimeSpan.FromSeconds(25)));
+                        if (winner == createPaymentTask)
+                        {
+                            //_context.Vtex.Logger.Debug("CreatePayment", "Timeout", $"Processed {createPaymentRequest.PaymentId} in time!");
+                            createPaymentResponse = winner.Result.Item1;
+                        }
+                        else
+                        {
+                            PaymentData paymentData = new PaymentData
+                            {
+                                PaymentId = createPaymentRequest.PaymentId,
+                                TimedOut = true
+                            };
+
+                            await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
+                            _context.Vtex.Logger.Warn("CreatePayment", "Timeout", $"PaymentId {createPaymentRequest.PaymentId} Timed out.");
+                            createPaymentResponse = new CreatePaymentResponse
+                            {
+                                PaymentId = createPaymentRequest.PaymentId,
+                                //Status = CybersourceConstants.VtexAuthStatus.Undefined,
+                                Message = "Awaiting response from Cybersource"
+                            };
+
+                            return BadRequest(createPaymentResponse);
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(delayInterval) && createPaymentResponse != null)
+                    {
+                        int multiple = 1;
+                        switch (delayInterval)
+                        {
+                            case CybersourceConstants.CaptureIntervalSetting.Minutes:
+                                multiple = 60;
+                                break;
+                            case CybersourceConstants.CaptureIntervalSetting.Hours:
+                                multiple = 60 * 60;
+                                break;
+                            case CybersourceConstants.CaptureIntervalSetting.Days:
+                                multiple = 60 * 60 * 24;
+                                break;
+                        }
+
+                        createPaymentResponse.DelayToAutoSettle = captureDelay * multiple;
                     }
                 }
                 catch (Exception ex)
@@ -126,7 +152,6 @@
             }
 
             Response.Headers.Add("Cache-Control", "private");
-
             return Json(createPaymentResponse);
         }
 
@@ -1011,6 +1036,12 @@
             }
 
             return Json(mdd);
+        }
+
+        static async Task<T> DelayedDummyResultTask<T>(TimeSpan delay)
+        {
+            await Task.Delay(delay);
+            return default(T);
         }
     }
 }
