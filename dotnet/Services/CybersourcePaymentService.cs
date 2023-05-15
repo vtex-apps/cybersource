@@ -892,7 +892,7 @@ namespace Cybersource.Services
                         {
                             totalAmount = paymentData.Value.ToString()
                         },
-                        reason = "canceled"
+                        reason = "34"
                     }
                 };
 
