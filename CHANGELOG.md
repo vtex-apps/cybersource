@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Changed
-- Set Reversal Resaon to "34" - suspected fraud. This is the only documented reason code
+- Set Reversal Reason to "34" - suspected fraud. This is the only documented reason code
 
 ## [1.17.0] - 2023-05-12
 
