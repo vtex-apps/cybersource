@@ -892,7 +892,7 @@ namespace Cybersource.Services
                         {
                             totalAmount = paymentData.Value.ToString()
                         },
-                        reason = "34"
+                        //reason = "34" // 34: suspected fraud
                     }
                 };
 
