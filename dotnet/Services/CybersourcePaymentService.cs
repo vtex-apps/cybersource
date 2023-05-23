@@ -55,12 +55,11 @@ namespace Cybersource.Services
         /// </summary>
         /// <param name="createPaymentRequest"></param>
         /// <returns></returns>
-        public async Task<Payments> BuildPayment(CreatePaymentRequest createPaymentRequest)
+        public async Task<Payments> BuildPayment(CreatePaymentRequest createPaymentRequest, MerchantSettings merchantSettings)
         {
             Payments payment = null;
             try
             {
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string merchantName = createPaymentRequest.MerchantName;
                 string merchantTaxId = string.Empty;
                 bool doCapture = false;
@@ -70,7 +69,6 @@ namespace Cybersource.Services
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
                 }
 
-                string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
                 if (createPaymentRequest.MerchantSettings != null)
                 {
                     foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
@@ -115,8 +113,9 @@ namespace Cybersource.Services
                         }
                     }
                 }
-                
-                this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName);
+
+                string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
+                this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName, merchantSettings);
                 payment = new Payments
                 {
                     merchantInformation = new MerchantInformation
@@ -606,6 +605,38 @@ namespace Cybersource.Services
             PaymentsResponse paymentsResponse = null;
             try
             {
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                if (createPaymentRequest.MerchantSettings != null)
+                {
+                    foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
+                    {
+                        switch (merchantSetting.Name)
+                        {
+                            case CybersourceConstants.ManifestCustomField.MerchantId:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
+                                {
+                                    merchantSettings.MerchantId = merchantSetting.Value;
+                                }
+
+                                break;
+                            case CybersourceConstants.ManifestCustomField.MerchantKey:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
+                                {
+                                    merchantSettings.MerchantKey = merchantSetting.Value;
+                                }
+
+                                break;
+                            case CybersourceConstants.ManifestCustomField.SharedSecretKey:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
+                                {
+                                    merchantSettings.SharedSecretKey = merchantSetting.Value;
+                                }
+
+                                break;
+                        }
+                    }
+                }
+
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
                 if (paymentData == null)
                 {
@@ -631,7 +662,6 @@ namespace Cybersource.Services
                                 // Need to check if there has already been a successful capture
                                 string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
                                 string orderSuffix = string.Empty;
-                                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                                 {
                                     orderSuffix = merchantSettings.OrderSuffix.Trim();
@@ -683,7 +713,7 @@ namespace Cybersource.Services
                 }
                 
                 bool isPayerAuth = false;
-                Payments payment = await this.BuildPayment(createPaymentRequest);
+                Payments payment = await this.BuildPayment(createPaymentRequest, merchantSettings);
                 try
                 {
                     ConsumerAuthenticationInformation consumerAuthenticationInformationToCopy = consumerAuthenticationInformation != null ? consumerAuthenticationInformation : paymentData.ConsumerAuthenticationInformation;
@@ -724,7 +754,7 @@ namespace Cybersource.Services
                     });
                 }
 
-                paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+                paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl, merchantSettings);
                 if (paymentsResponse != null)
                 {
                     createPaymentResponse = new CreatePaymentResponse();
@@ -748,7 +778,6 @@ namespace Cybersource.Services
                     {
                         try
                         {
-                            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                             if (!string.IsNullOrWhiteSpace(merchantSettings.CustomNsu))
                             {
                                 createPaymentResponse.Nsu = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
@@ -896,7 +925,7 @@ namespace Cybersource.Services
                     }
                 };
 
-                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessReversal(payment, paymentData.AuthorizationId);
+                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessReversal(payment, paymentData.AuthorizationId, merchantSettings);
                 if (paymentsResponse != null)
                 {
                     cancelPaymentResponse = new CancelPaymentResponse();
@@ -1117,7 +1146,7 @@ namespace Cybersource.Services
                 }
                 #endregion Custom Payload
 
-                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, authId);
+                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, authId, merchantSettings);
                 if (paymentsResponse != null)
                 {
                     capturePaymentResponse = new CapturePaymentResponse();
@@ -1247,7 +1276,7 @@ namespace Cybersource.Services
                     };
                 }    
 
-                PaymentsResponse paymentsResponse = await _cybersourceApi.RefundCapture(payment, paymentData.CaptureId);
+                PaymentsResponse paymentsResponse = await _cybersourceApi.RefundCapture(payment, paymentData.CaptureId, merchantSettings);
                 if (paymentsResponse != null)
                 {
                     refundPaymentResponse = new RefundPaymentResponse();
@@ -1413,7 +1442,7 @@ namespace Cybersource.Services
                     requestWrapper.CompanyTaxId = merchantTaxId;
                     payment.merchantDefinedInformation = await this.GetMerchantDefinedInformation(merchantSettings, requestWrapper);
 
-                    PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment);
+                    PaymentsResponse paymentsResponse = await _cybersourceApi.CreateDecisionManager(payment, merchantSettings);
 
                     sendAntifraudDataResponse = new SendAntifraudDataResponse
                     {
@@ -1523,11 +1552,43 @@ namespace Cybersource.Services
                 return paymentData.CreatePaymentResponse;
             }
 
-            Payments payment = await this.BuildPayment(createPaymentRequest);
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            if (createPaymentRequest.MerchantSettings != null)
+            {
+                foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
+                {
+                    switch (merchantSetting.Name)
+                    {
+                        case CybersourceConstants.ManifestCustomField.MerchantId:
+                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
+                            {
+                                merchantSettings.MerchantId = merchantSetting.Value;
+                            }
+
+                            break;
+                        case CybersourceConstants.ManifestCustomField.MerchantKey:
+                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
+                            {
+                                merchantSettings.MerchantKey = merchantSetting.Value;
+                            }
+
+                            break;
+                        case CybersourceConstants.ManifestCustomField.SharedSecretKey:
+                            if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
+                            {
+                                merchantSettings.SharedSecretKey = merchantSetting.Value;
+                            }
+
+                            break;
+                    }
+                }
+            }
+
+            Payments payment = await this.BuildPayment(createPaymentRequest, merchantSettings);
 
             try
             {
-                paymentsResponse = await _cybersourceApi.SetupPayerAuth(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+                paymentsResponse = await _cybersourceApi.SetupPayerAuth(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl, merchantSettings);
                 ConsumerAuthenticationInformationWrapper consumerAuthenticationInformationWrapper = new ConsumerAuthenticationInformationWrapper(paymentsResponse.ConsumerAuthenticationInformation);
                 consumerAuthenticationInformationWrapper.CreatePaymentRequestReference = createPaymentRequest.PaymentId;
                 createPaymentResponse = new CreatePaymentResponse
@@ -1572,7 +1633,39 @@ namespace Cybersource.Services
             {
                 try
                 {
-                    Payments payment = await this.BuildPayment(paymentData.CreatePaymentRequest);
+                    MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                    if (paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.MerchantSettings != null)
+                    {
+                        foreach (MerchantSetting merchantSetting in paymentData.CreatePaymentRequest.MerchantSettings)
+                        {
+                            switch (merchantSetting.Name)
+                            {
+                                case CybersourceConstants.ManifestCustomField.MerchantId:
+                                    if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
+                                    {
+                                        merchantSettings.MerchantId = merchantSetting.Value;
+                                    }
+
+                                    break;
+                                case CybersourceConstants.ManifestCustomField.MerchantKey:
+                                    if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
+                                    {
+                                        merchantSettings.MerchantKey = merchantSetting.Value;
+                                    }
+
+                                    break;
+                                case CybersourceConstants.ManifestCustomField.SharedSecretKey:
+                                    if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
+                                    {
+                                        merchantSettings.SharedSecretKey = merchantSetting.Value;
+                                    }
+
+                                    break;
+                            }
+                        }
+                    }
+
+                    Payments payment = await this.BuildPayment(paymentData.CreatePaymentRequest, merchantSettings);
                     payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
                     {
                         ReferenceId = paymentData.PayerAuthReferenceId,
@@ -1580,7 +1673,7 @@ namespace Cybersource.Services
                         ReturnUrl = $"https://{_context.Vtex.Workspace}--{_context.Vtex.Account}.myvtex.com/cybersource/payer-auth-response"
                     };
 
-                    paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, paymentData.CreatePaymentRequest.SecureProxyUrl, paymentData.CreatePaymentRequest.SecureProxyTokensUrl);
+                    paymentsResponse = await _cybersourceApi.CheckPayerAuthEnrollment(payment, paymentData.CreatePaymentRequest.SecureProxyUrl, paymentData.CreatePaymentRequest.SecureProxyTokensUrl, merchantSettings);
                     paymentData.ConsumerAuthenticationInformation = paymentsResponse.ConsumerAuthenticationInformation;
                     await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
 
@@ -1613,13 +1706,45 @@ namespace Cybersource.Services
             
             try
             {
-                Payments payment = await this.BuildPayment(createPaymentRequest);
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                if (createPaymentRequest.MerchantSettings != null)
+                {
+                    foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
+                    {
+                        switch (merchantSetting.Name)
+                        {
+                            case CybersourceConstants.ManifestCustomField.MerchantId:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
+                                {
+                                    merchantSettings.MerchantId = merchantSetting.Value;
+                                }
+
+                                break;
+                            case CybersourceConstants.ManifestCustomField.MerchantKey:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
+                                {
+                                    merchantSettings.MerchantKey = merchantSetting.Value;
+                                }
+
+                                break;
+                            case CybersourceConstants.ManifestCustomField.SharedSecretKey:
+                                if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
+                                {
+                                    merchantSettings.SharedSecretKey = merchantSetting.Value;
+                                }
+
+                                break;
+                        }
+                    }
+                }
+
+                Payments payment = await this.BuildPayment(createPaymentRequest, merchantSettings);
                 payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
                 {
                     AuthenticationTransactionId = authenticationTransactionId
                 };
 
-                paymentsResponse = await _cybersourceApi.ValidateAuthenticationResults(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl);
+                paymentsResponse = await _cybersourceApi.ValidateAuthenticationResults(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl, merchantSettings);
             }
             catch (Exception ex)
             {
@@ -1651,7 +1776,8 @@ namespace Cybersource.Services
 
         public async Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime)
         {
-            return await _cybersourceApi.RetrieveAvailableReports(dtStartTime, dtEndTime);
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            return await _cybersourceApi.RetrieveAvailableReports(dtStartTime, dtEndTime, merchantSettings);
         }
 
         public async Task<string> RetrieveAvailableReports(string startTime, string endTime)
@@ -1663,7 +1789,8 @@ namespace Cybersource.Services
 
         public async Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime)
         {
-            return await _cybersourceApi.GetPurchaseAndRefundDetails(dtStartTime, dtEndTime);
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            return await _cybersourceApi.GetPurchaseAndRefundDetails(dtStartTime, dtEndTime, merchantSettings);
         }
 
         public async Task<string> GetPurchaseAndRefundDetails(string startTime, string endTime)
@@ -2579,7 +2706,7 @@ namespace Cybersource.Services
             return merchantDefinedInformationList;
         }
 
-        public void BinLookup(string cardBin, string paymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName)
+        public void BinLookup(string cardBin, string paymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName, MerchantSettings merchantSettings)
         {
             isDebit = false;
             VtexBinLookup vtexBinLookup = _vtexApiService.VtexBinLookup(cardBin).Result;
@@ -2598,7 +2725,7 @@ namespace Cybersource.Services
             }
             else
             {
-                CybersourceBinLookupResponse cybersourceBinLookup = _cybersourceApi.BinLookup(cardBin).Result;
+                CybersourceBinLookupResponse cybersourceBinLookup = _cybersourceApi.BinLookup(cardBin, merchantSettings).Result;
                 if (cybersourceBinLookup != null && cybersourceBinLookup.PaymentAccountInformation != null && cybersourceBinLookup.PaymentAccountInformation.Card != null)
                 {
                     cardType = cybersourceBinLookup.PaymentAccountInformation.Card.Type;
@@ -2678,12 +2805,14 @@ namespace Cybersource.Services
 
         public async Task<RetrieveTransaction> RetrieveTransaction(string requestId)
         {
-            RetrieveTransaction retrieveTransaction = await _cybersourceApi.RetrieveTransaction(requestId);
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+            RetrieveTransaction retrieveTransaction = await _cybersourceApi.RetrieveTransaction(requestId, merchantSettings);
             return retrieveTransaction;
         }
 
         public async Task<SearchResponse> SearchTransaction(string referenceNumber)
         {
+            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             SearchResponse searchResponse = null;
             CreateSearchRequest searchRequest = new CreateSearchRequest
             {
@@ -2692,7 +2821,7 @@ namespace Cybersource.Services
                 Limit = 2000
             };
 
-            searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest);
+            searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest, merchantSettings);
             return searchResponse;
         }
 
