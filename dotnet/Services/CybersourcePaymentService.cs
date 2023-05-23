@@ -939,7 +939,12 @@ namespace Cybersource.Services
 
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-                string merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                string merchantName = string.Empty;
+                if (paymentData != null && paymentData.CreatePaymentResponse != null && !string.IsNullOrEmpty(paymentData.CreatePaymentRequest.MerchantName))
+                {
+                    merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                }
+
                 string merchantTaxId = string.Empty;
                 bool doCapture = false;
                 (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
@@ -2681,6 +2686,7 @@ namespace Cybersource.Services
                         case "PARTIAL_AUTHORIZED":
                         case "AUTHENTICATION_SUCCESSFUL":
                         case "SOK":
+                        case "ACCEPTED":
                             if (isPayerAuth)
                             {
                                 if (!string.IsNullOrEmpty(paymentsResponse.ConsumerAuthenticationInformation.VeresEnrolled) &&
