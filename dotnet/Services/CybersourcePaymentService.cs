@@ -947,7 +947,11 @@ namespace Cybersource.Services
 
                 string merchantTaxId = string.Empty;
                 bool doCapture = false;
-                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                if (paymentData != null && paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.MerchantSettings != null)
+                {
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                }
+
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                 {
                     orderSuffix = merchantSettings.OrderSuffix.Trim();

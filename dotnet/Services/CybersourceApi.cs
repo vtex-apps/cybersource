@@ -776,7 +776,7 @@ namespace Cybersource.Services
 
             try
             {
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings(); // TODO: Get override settings
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string organizationId = merchantSettings.MerchantId;
                 string endpoint = $"{CybersourceConstants.REPORTING}conversion-details?startTime={startTime}&endTime={endTime}&organizationId={organizationId}&";
                 SendResponse response = await this.SendReportRequest(HttpMethod.Get, endpoint, null, merchantSettings);
@@ -855,7 +855,7 @@ namespace Cybersource.Services
 
             try
             {
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings(); // TODO: Get override settings
+                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string organizationId = merchantSettings.MerchantId;
                 string endpoint = $"{CybersourceConstants.REPORTING}report-downloads?reportDate={reportDate}&organizationId={organizationId}&reportName={reportName}";
                 SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null, merchantSettings);
