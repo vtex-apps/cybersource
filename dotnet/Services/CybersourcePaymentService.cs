@@ -69,50 +69,7 @@ namespace Cybersource.Services
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
                 }
 
-                if (createPaymentRequest.MerchantSettings != null)
-                {
-                    foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
-                    {
-                        switch (merchantSetting.Name)
-                        {
-                            case CybersourceConstants.ManifestCustomField.CompanyName:
-                                merchantName = merchantSetting.Value;
-                                break;
-                            case CybersourceConstants.ManifestCustomField.CompanyTaxId:
-                                merchantTaxId = merchantSetting.Value;
-                                break;
-                            case CybersourceConstants.ManifestCustomField.CaptureSetting:
-                                if (merchantSetting.Value != null)
-                                {
-                                    doCapture = merchantSetting.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture);
-                                }
-
-                                break;
-
-                            case CybersourceConstants.ManifestCustomField.MerchantId:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
-                                {
-                                    merchantSettings.MerchantId = merchantSetting.Value;
-                                }
-
-                                break;
-                            case CybersourceConstants.ManifestCustomField.MerchantKey:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
-                                {
-                                    merchantSettings.MerchantKey = merchantSetting.Value;
-                                }
-
-                                break;
-                            case CybersourceConstants.ManifestCustomField.SharedSecretKey:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
-                                {
-                                    merchantSettings.SharedSecretKey = merchantSetting.Value;
-                                }
-
-                                break;
-                        }
-                    }
-                }
+                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
 
                 string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
                 this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName, merchantSettings);
@@ -599,42 +556,19 @@ namespace Cybersource.Services
         /// <param name="authenticationTransactionId"></param>
         /// <param name="consumerAuthenticationInformation"></param>
         /// <returns></returns>
-        public async Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId = null, ConsumerAuthenticationInformation consumerAuthenticationInformation = null)
+        public async Task<(CreatePaymentResponse, PaymentsResponse)> CreatePayment(CreatePaymentRequest createPaymentRequest, string authenticationTransactionId = null, ConsumerAuthenticationInformation consumerAuthenticationInformation = null, MerchantSettings merchantSettings = null)
         {
             CreatePaymentResponse createPaymentResponse = null;
             PaymentsResponse paymentsResponse = null;
             try
             {
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-                if (createPaymentRequest.MerchantSettings != null)
+                if (merchantSettings == null)
                 {
-                    foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
-                    {
-                        switch (merchantSetting.Name)
-                        {
-                            case CybersourceConstants.ManifestCustomField.MerchantId:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
-                                {
-                                    merchantSettings.MerchantId = merchantSetting.Value;
-                                }
-
-                                break;
-                            case CybersourceConstants.ManifestCustomField.MerchantKey:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
-                                {
-                                    merchantSettings.MerchantKey = merchantSetting.Value;
-                                }
-
-                                break;
-                            case CybersourceConstants.ManifestCustomField.SharedSecretKey:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
-                                {
-                                    merchantSettings.SharedSecretKey = merchantSetting.Value;
-                                }
-
-                                break;
-                        }
-                    }
+                    merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                    string merchantName = createPaymentRequest.MerchantName;
+                    string merchantTaxId = string.Empty;
+                    bool doCapture = false;
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
                 }
 
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
@@ -667,7 +601,7 @@ namespace Cybersource.Services
                                     orderSuffix = merchantSettings.OrderSuffix.Trim();
                                 }
 
-                                SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}");
+                                SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
                                 if (searchResponse != null)
                                 {
                                     createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
@@ -755,6 +689,7 @@ namespace Cybersource.Services
                 }
 
                 paymentsResponse = await _cybersourceApi.ProcessPayment(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl, merchantSettings);
+
                 if (paymentsResponse != null)
                 {
                     createPaymentResponse = new CreatePaymentResponse();
@@ -897,6 +832,10 @@ namespace Cybersource.Services
                 string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                string merchantTaxId = string.Empty;
+                bool doCapture = false;
+                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                 {
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
@@ -1000,6 +939,10 @@ namespace Cybersource.Services
 
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                string merchantTaxId = string.Empty;
+                bool doCapture = false;
+                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                 {
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
@@ -1164,7 +1107,7 @@ namespace Cybersource.Services
                     else
                     {
                         // Try to get transaction from Cybersource
-                        SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}");
+                        SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
                         if (searchResponse != null)
                         {
                             foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
@@ -1241,6 +1184,10 @@ namespace Cybersource.Services
                 string referenceNumber = await _vtexApiService.GetOrderId(refundPaymentRequest.PaymentId);
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                string merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                string merchantTaxId = string.Empty;
+                bool doCapture = false;
+                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                 {
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
@@ -1396,46 +1343,12 @@ namespace Cybersource.Services
                         payment.orderInformation.lineItems.Add(lineItem);
                     }
 
-                    MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                     PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(sendAntifraudDataRequest);
+                    MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                     string merchantName = string.Empty;
                     string merchantTaxId = string.Empty;
-                    if (sendAntifraudDataRequest.MerchantSettings != null)
-                    {
-                        foreach (MerchantSetting merchantSetting in sendAntifraudDataRequest.MerchantSettings)
-                        {
-                            switch (merchantSetting.Name)
-                            {
-                                case CybersourceConstants.ManifestCustomField.CompanyName:
-                                    merchantName = merchantSetting.Value;
-                                    break;
-                                case CybersourceConstants.ManifestCustomField.CompanyTaxId:
-                                    merchantTaxId = merchantSetting.Value;
-                                    break;
-                                case CybersourceConstants.ManifestCustomField.MerchantId:
-                                    if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
-                                    {
-                                        merchantSettings.MerchantId = merchantSetting.Value;
-                                    }
-
-                                    break;
-                                case CybersourceConstants.ManifestCustomField.MerchantKey:
-                                    if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
-                                    {
-                                        merchantSettings.MerchantKey = merchantSetting.Value;
-                                    }
-
-                                    break;
-                                case CybersourceConstants.ManifestCustomField.SharedSecretKey:
-                                    if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
-                                    {
-                                        merchantSettings.SharedSecretKey = merchantSetting.Value;
-                                    }
-
-                                    break;
-                            }
-                        }
-                    }
+                    bool doCapture = false;
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, sendAntifraudDataRequest.MerchantSettings, merchantName);
 
                     requestWrapper.MerchantId = merchantSettings.MerchantId;
                     requestWrapper.CompanyName = merchantName;
@@ -1553,36 +1466,10 @@ namespace Cybersource.Services
             }
 
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-            if (createPaymentRequest.MerchantSettings != null)
-            {
-                foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
-                {
-                    switch (merchantSetting.Name)
-                    {
-                        case CybersourceConstants.ManifestCustomField.MerchantId:
-                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
-                            {
-                                merchantSettings.MerchantId = merchantSetting.Value;
-                            }
-
-                            break;
-                        case CybersourceConstants.ManifestCustomField.MerchantKey:
-                            if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
-                            {
-                                merchantSettings.MerchantKey = merchantSetting.Value;
-                            }
-
-                            break;
-                        case CybersourceConstants.ManifestCustomField.SharedSecretKey:
-                            if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
-                            {
-                                merchantSettings.SharedSecretKey = merchantSetting.Value;
-                            }
-
-                            break;
-                    }
-                }
-            }
+            string merchantName = createPaymentRequest.MerchantName;
+            string merchantTaxId = string.Empty;
+            bool doCapture = false;
+            (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
 
             Payments payment = await this.BuildPayment(createPaymentRequest, merchantSettings);
 
@@ -1634,36 +1521,10 @@ namespace Cybersource.Services
                 try
                 {
                     MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-                    if (paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.MerchantSettings != null)
-                    {
-                        foreach (MerchantSetting merchantSetting in paymentData.CreatePaymentRequest.MerchantSettings)
-                        {
-                            switch (merchantSetting.Name)
-                            {
-                                case CybersourceConstants.ManifestCustomField.MerchantId:
-                                    if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
-                                    {
-                                        merchantSettings.MerchantId = merchantSetting.Value;
-                                    }
-
-                                    break;
-                                case CybersourceConstants.ManifestCustomField.MerchantKey:
-                                    if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
-                                    {
-                                        merchantSettings.MerchantKey = merchantSetting.Value;
-                                    }
-
-                                    break;
-                                case CybersourceConstants.ManifestCustomField.SharedSecretKey:
-                                    if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
-                                    {
-                                        merchantSettings.SharedSecretKey = merchantSetting.Value;
-                                    }
-
-                                    break;
-                            }
-                        }
-                    }
+                    string merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                    string merchantTaxId = string.Empty;
+                    bool doCapture = false;
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
 
                     Payments payment = await this.BuildPayment(paymentData.CreatePaymentRequest, merchantSettings);
                     payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
@@ -1707,36 +1568,10 @@ namespace Cybersource.Services
             try
             {
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-                if (createPaymentRequest.MerchantSettings != null)
-                {
-                    foreach (MerchantSetting merchantSetting in createPaymentRequest.MerchantSettings)
-                    {
-                        switch (merchantSetting.Name)
-                        {
-                            case CybersourceConstants.ManifestCustomField.MerchantId:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantId))
-                                {
-                                    merchantSettings.MerchantId = merchantSetting.Value;
-                                }
-
-                                break;
-                            case CybersourceConstants.ManifestCustomField.MerchantKey:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.MerchantKey))
-                                {
-                                    merchantSettings.MerchantKey = merchantSetting.Value;
-                                }
-
-                                break;
-                            case CybersourceConstants.ManifestCustomField.SharedSecretKey:
-                                if (!string.IsNullOrWhiteSpace(merchantSettings.SharedSecretKey))
-                                {
-                                    merchantSettings.SharedSecretKey = merchantSetting.Value;
-                                }
-
-                                break;
-                        }
-                    }
-                }
+                string merchantName = createPaymentRequest.MerchantName;
+                string merchantTaxId = string.Empty;
+                bool doCapture = false;
+                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
 
                 Payments payment = await this.BuildPayment(createPaymentRequest, merchantSettings);
                 payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
@@ -2810,9 +2645,8 @@ namespace Cybersource.Services
             return retrieveTransaction;
         }
 
-        public async Task<SearchResponse> SearchTransaction(string referenceNumber)
+        public async Task<SearchResponse> SearchTransaction(string referenceNumber, MerchantSettings merchantSettings)
         {
-            MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             SearchResponse searchResponse = null;
             CreateSearchRequest searchRequest = new CreateSearchRequest
             {
@@ -2978,12 +2812,16 @@ namespace Cybersource.Services
                             await Task.Delay(6000); // wait for transaction to be available
                             string orderSuffix = string.Empty;
                             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                            string merchantName = createPaymentRequest.MerchantName;
+                            string merchantTaxId = string.Empty;
+                            bool doCapture = false;
+                            (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
                             if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                             {
                                 orderSuffix = merchantSettings.OrderSuffix.Trim();
                             }
 
-                            SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}");
+                            SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
                             if (searchResponse != null)
                             {
                                 _context.Vtex.Logger.Warn("GetPaymentStatus", null, "Loaded Transactions from Cybersource", new[] { ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });
@@ -3227,6 +3065,71 @@ namespace Cybersource.Services
             {
                 _context.Vtex.Logger.Error("GetItemTaxAmounts", "Tax Total Verification", "Error", ex);
             }
+        }
+
+        /// <summary>
+        /// Parse settings from the Gateway
+        /// </summary>
+        /// <param name="merchantSettings">Merchant Settings from Admin page</param>
+        /// <param name="gatewaySettings">Merchant Settings from Gateway Settings</param>
+        /// <param name="merchantName">Default Merchant Name</param>
+        /// <returns>
+        /// <param name="merchantSettings">Merchant Settings with Gateway override</param>
+        /// <param name="merchantName">merchantName</param>
+        /// <param name="merchantTaxId">merchantTaxId</param>
+        /// <param name="doCapture">doCapture</param>
+        /// </returns>
+        public async Task<(MerchantSettings, string, string, bool)> ParseGatewaySettings(MerchantSettings merchantSettings, List<MerchantSetting> gatewaySettings, string merchantName)
+        {
+            string merchantTaxId = string.Empty;
+            bool doCapture = false;
+
+            if (gatewaySettings != null)
+            {
+                foreach (MerchantSetting merchantSetting in gatewaySettings)
+                {
+                    switch (merchantSetting.Name)
+                    {
+                        case CybersourceConstants.ManifestCustomField.CompanyName:
+                            merchantName = merchantSetting.Value;
+                            break;
+                        case CybersourceConstants.ManifestCustomField.CompanyTaxId:
+                            merchantTaxId = merchantSetting.Value;
+                            break;
+                        case CybersourceConstants.ManifestCustomField.CaptureSetting:
+                            if (merchantSetting.Value != null)
+                            {
+                                doCapture = merchantSetting.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture);
+                            }
+
+                            break;
+
+                        case CybersourceConstants.ManifestCustomField.MerchantId:
+                            if (!string.IsNullOrWhiteSpace(merchantSetting.Value))
+                            {
+                                merchantSettings.MerchantId = merchantSetting.Value;
+                            }
+
+                            break;
+                        case CybersourceConstants.ManifestCustomField.MerchantKey:
+                            if (!string.IsNullOrWhiteSpace(merchantSetting.Value))
+                            {
+                                merchantSettings.MerchantKey = merchantSetting.Value;
+                            }
+
+                            break;
+                        case CybersourceConstants.ManifestCustomField.SharedSecretKey:
+                            if (!string.IsNullOrWhiteSpace(merchantSetting.Value))
+                            {
+                                merchantSettings.SharedSecretKey = merchantSetting.Value;
+                            }
+
+                            break;
+                    }
+                }
+            }
+
+            return (merchantSettings, merchantName, merchantTaxId, doCapture);
         }
 
         private static T DeepCopy<T>(object objToCopy)
