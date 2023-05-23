@@ -1412,7 +1412,7 @@ namespace Cybersource.Services
                         sendAntifraudDataResponse.Message = paymentsResponse.ErrorInformation.Message;
                     }
 
-                    if (sendAntifraudDataRequest != null)
+                    if (sendAntifraudDataResponse != null)
                     {
                         await _cybersourceRepository.SaveAntifraudData(sendAntifraudDataRequest.Id, sendAntifraudDataResponse);
                     }
