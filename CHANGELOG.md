@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.18.1] - 2023-05-24
+
 ### Fixed
 - Fix for account override settings not being used
 
