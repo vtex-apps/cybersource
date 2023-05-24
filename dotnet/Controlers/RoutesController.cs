@@ -40,7 +40,6 @@
         public async Task<IActionResult> CreatePayment()
         {
             CreatePaymentResponse createPaymentResponse = null;
-            PaymentsResponse paymentsResponse = null;
             if ("post".Equals(HttpContext.Request.Method, StringComparison.OrdinalIgnoreCase))
             {
                 string bodyAsText = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();

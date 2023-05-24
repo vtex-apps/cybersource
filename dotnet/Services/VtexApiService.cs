@@ -705,7 +705,7 @@ namespace Cybersource.Services
 
                     cyberTaxRequest.orderInformation.lineItems.Add(lineItemShipping);
 
-                    PaymentsResponse taxResponse = await _cybersourceApi.CalculateTaxes(cyberTaxRequest);
+                    PaymentsResponse taxResponse = await _cybersourceApi.CalculateTaxes(cyberTaxRequest, merchantSettings);
                     if (taxResponse != null)
                     {
                         if (taxResponse.Status.Equals("COMPLETED"))
@@ -1014,7 +1014,7 @@ namespace Cybersource.Services
 
                         cyberTaxRequest.orderInformation.lineItems.Add(lineItemShipping);
 
-                        PaymentsResponse taxResponse = await _cybersourceApi.CalculateTaxes(cyberTaxRequest);
+                        PaymentsResponse taxResponse = await _cybersourceApi.CalculateTaxes(cyberTaxRequest, merchantSettings);
                         if (taxResponse != null)
                         {
                             if (taxResponse.Status.Equals("COMPLETED"))

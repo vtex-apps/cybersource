@@ -42,13 +42,12 @@ namespace Cybersource.Services
                 $"{this._environmentVariableProvider.ApplicationVendor}.{this._environmentVariableProvider.ApplicationName}";
         }
 
-        public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData)
+        public async Task<SendResponse> SendRequest(HttpMethod method, string endpoint, string jsonSerializedData, MerchantSettings merchantSettings)
         {
             SendResponse sendResponse = null;
 
             try
             {
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string urlBase = CybersourceConstants.ProductionApiEndpoint;
                 if (!merchantSettings.IsLive)
                 {
@@ -117,13 +116,12 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
-        public async Task<SendResponse> SendReportRequest(HttpMethod method, string endpoint, string jsonSerializedData)
+        public async Task<SendResponse> SendReportRequest(HttpMethod method, string endpoint, string jsonSerializedData, MerchantSettings merchantSettings)
         {
             SendResponse sendResponse = null;
 
             try
             {
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string urlBase = CybersourceConstants.ProductionApiEndpoint;
                 if (!merchantSettings.IsLive)
                 {
@@ -179,13 +177,12 @@ namespace Cybersource.Services
             return sendResponse;
         }
 
-        public async Task<SendResponse> SendProxyRequest(HttpMethod method, string endpoint, string jsonSerializedData, string proxyUrl, string proxyTokenUrl)
+        public async Task<SendResponse> SendProxyRequest(HttpMethod method, string endpoint, string jsonSerializedData, string proxyUrl, string proxyTokenUrl, MerchantSettings merchantSettings)
         {
             SendResponse sendResponse = null;
 
             try
             {
-                MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string urlBase = CybersourceConstants.ProductionApiEndpoint;
                 if (!merchantSettings.IsLive)
                 {
@@ -464,7 +461,7 @@ namespace Cybersource.Services
         }
 
         #region Payments
-        public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl)
+        public async Task<PaymentsResponse> ProcessPayment(Payments payments, string proxyUrl, string proxyTokensUrl, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
             try
@@ -474,11 +471,11 @@ namespace Cybersource.Services
                 SendResponse response = null;
                 if (string.IsNullOrEmpty(proxyUrl))
                 {
-                    response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                    response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 }
                 else
                 {
-                    response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+                    response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl, merchantSettings);
                 }
                 
                 if (response != null)
@@ -517,7 +514,7 @@ namespace Cybersource.Services
             return paymentsResponse;
         }
 
-        public async Task<PaymentsResponse> ProcessReversal(Payments payments, string paymentId)
+        public async Task<PaymentsResponse> ProcessReversal(Payments payments, string paymentId, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
 
@@ -525,7 +522,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/reversals";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -545,7 +542,7 @@ namespace Cybersource.Services
             return paymentsResponse;
         }
 
-        public async Task<PaymentsResponse> ProcessCapture(Payments payments, string paymentId)
+        public async Task<PaymentsResponse> ProcessCapture(Payments payments, string paymentId, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
 
@@ -553,7 +550,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/captures";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -574,7 +571,7 @@ namespace Cybersource.Services
         }
 
         /// Refund a Payment API is only used, if you have requested Authorization and Capture together
-        public async Task<PaymentsResponse> RefundPayment(Payments payments, string paymentId)
+        public async Task<PaymentsResponse> RefundPayment(Payments payments, string paymentId, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
 
@@ -582,7 +579,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.PAYMENTS}payments/{paymentId}/refunds";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -603,7 +600,7 @@ namespace Cybersource.Services
         }
 
         /// Refund a capture API is only used, if you have requested Capture independenlty
-        public async Task<PaymentsResponse> RefundCapture(Payments payments, string captureId)
+        public async Task<PaymentsResponse> RefundCapture(Payments payments, string captureId, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
 
@@ -611,7 +608,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.PAYMENTS}captures/{captureId}/refunds";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -631,7 +628,7 @@ namespace Cybersource.Services
             return paymentsResponse;
         }
 
-        public async Task<PaymentsResponse> ProcessCredit(Payments payments)
+        public async Task<PaymentsResponse> ProcessCredit(Payments payments, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
 
@@ -639,7 +636,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.PAYMENTS}credits";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -660,7 +657,7 @@ namespace Cybersource.Services
         #endregion
 
         #region Risk Management
-        public async Task<PaymentsResponse> CreateDecisionManager(Payments payments)
+        public async Task<PaymentsResponse> CreateDecisionManager(Payments payments, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
 
@@ -668,7 +665,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.RISK}decisions";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -689,12 +686,12 @@ namespace Cybersource.Services
         #endregion
 
         #region Payer Authentication
-        public async Task<PaymentsResponse> SetupPayerAuth(Payments payments, string proxyUrl, string proxyTokensUrl)
+        public async Task<PaymentsResponse> SetupPayerAuth(Payments payments, string proxyUrl, string proxyTokensUrl, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.RISK}authentication-setups";
-            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl, merchantSettings);
             if (response.Success)
             {
                 paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -703,12 +700,12 @@ namespace Cybersource.Services
             return paymentsResponse;
         }
 
-        public async Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments, string proxyUrl, string proxyTokensUrl)
+        public async Task<PaymentsResponse> CheckPayerAuthEnrollment(Payments payments, string proxyUrl, string proxyTokensUrl, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.RISK}authentications";
-            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl, merchantSettings);
             if (response.Success)
             {
                 paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -717,12 +714,12 @@ namespace Cybersource.Services
             return paymentsResponse;
         }
 
-        public async Task<PaymentsResponse> ValidateAuthenticationResults(Payments payments, string proxyUrl, string proxyTokensUrl)
+        public async Task<PaymentsResponse> ValidateAuthenticationResults(Payments payments, string proxyUrl, string proxyTokensUrl, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
             string json = JsonConvert.SerializeObject(payments);
             string endpoint = $"{CybersourceConstants.RISK}authentication-results";
-            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl);
+            SendResponse response = await this.SendProxyRequest(HttpMethod.Post, endpoint, json, proxyUrl, proxyTokensUrl, merchantSettings);
             if (response.Success)
             {
                 paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -733,7 +730,7 @@ namespace Cybersource.Services
         #endregion
 
         #region Tax
-        public async Task<PaymentsResponse> CalculateTaxes(Payments payments)
+        public async Task<PaymentsResponse> CalculateTaxes(Payments payments, MerchantSettings merchantSettings)
         {
             PaymentsResponse paymentsResponse = null;
 
@@ -741,7 +738,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(payments);
                 string endpoint = $"{CybersourceConstants.TAX}tax";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     paymentsResponse = JsonConvert.DeserializeObject<PaymentsResponse>(response.Message);
@@ -782,7 +779,7 @@ namespace Cybersource.Services
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string organizationId = merchantSettings.MerchantId;
                 string endpoint = $"{CybersourceConstants.REPORTING}conversion-details?startTime={startTime}&endTime={endTime}&organizationId={organizationId}&";
-                SendResponse response = await this.SendReportRequest(HttpMethod.Get, endpoint, null);
+                SendResponse response = await this.SendReportRequest(HttpMethod.Get, endpoint, null, merchantSettings);
                 if (response != null)
                 {
                     if (response.Success)
@@ -816,7 +813,7 @@ namespace Cybersource.Services
         /// <param name="dtStartTime"></param>
         /// <param name="dtEndTime"></param>
         /// <returns></returns>
-        public async Task<string> NotificationOfChangesReport(DateTime dtStartTime, DateTime dtEndTime)
+        public async Task<string> NotificationOfChangesReport(DateTime dtStartTime, DateTime dtEndTime, MerchantSettings merchantSettings)
         {
             string retval = string.Empty;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
@@ -825,7 +822,7 @@ namespace Cybersource.Services
 
             try
             {
-                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null, merchantSettings);
                 if (response != null)
                 {
                     retval = $"[{response.StatusCode}] {response.Message}";
@@ -861,7 +858,7 @@ namespace Cybersource.Services
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string organizationId = merchantSettings.MerchantId;
                 string endpoint = $"{CybersourceConstants.REPORTING}report-downloads?reportDate={reportDate}&organizationId={organizationId}&reportName={reportName}";
-                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null, merchantSettings);
                 if (response != null)
                 {
                     retval = $"[{response.StatusCode}] {response.Message}";
@@ -888,7 +885,7 @@ namespace Cybersource.Services
         /// <param name="dtStartTime"></param>
         /// <param name="dtEndTime"></param>
         /// <returns></returns>
-        public async Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime)
+        public async Task<string> RetrieveAvailableReports(DateTime dtStartTime, DateTime dtEndTime, MerchantSettings merchantSettings)
         {
             string retval = string.Empty;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
@@ -897,7 +894,7 @@ namespace Cybersource.Services
             try
             {
                 string endpoint = $"{CybersourceConstants.REPORTING}reports?startTime={startTime}&endTime={endTime}&timeQueryType=executedTime";
-                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null, merchantSettings);
                 if (response != null)
                 {
                     retval = $"[{response.StatusCode}] {response.Message}";
@@ -917,7 +914,7 @@ namespace Cybersource.Services
             return retval;
         }
 
-        public async Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime)
+        public async Task<string> GetPurchaseAndRefundDetails(DateTime dtStartTime, DateTime dtEndTime, MerchantSettings merchantSettings)
         {
             string retval = string.Empty;
             string startTime = dtStartTime.ToString("yyyy-MM-ddTHH:mm:ss.sssZ");
@@ -926,7 +923,7 @@ namespace Cybersource.Services
             try
             {
                 string endpoint = $"{CybersourceConstants.REPORTING}purchase-refund-details?startTime={startTime}&endTime={endTime}";
-                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null, merchantSettings);
                 if (response != null)
                 {
                     retval = $"[{response.StatusCode}] {response.Message}";
@@ -947,14 +944,14 @@ namespace Cybersource.Services
             return retval;
         }
 
-        public async Task<RetrieveTransaction> RetrieveTransaction(string transactionId)
+        public async Task<RetrieveTransaction> RetrieveTransaction(string transactionId, MerchantSettings merchantSettings)
         {
             RetrieveTransaction retrieveTransaction = null;
 
             try
             {
                 string endpoint = $"{CybersourceConstants.TRANSACTIONS}transactions/{transactionId}";
-                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null);
+                SendResponse response = await this.SendRequest(HttpMethod.Get, endpoint, null, merchantSettings);
                 if (response != null)
                 {
                     _context.Vtex.Logger.Debug("RetrieveTransaction", null, response.Message);
@@ -974,7 +971,7 @@ namespace Cybersource.Services
             return retrieveTransaction;
         }
 
-        public async Task<SearchResponse> CreateSearchRequest(CreateSearchRequest createSearchRequest)
+        public async Task<SearchResponse> CreateSearchRequest(CreateSearchRequest createSearchRequest, MerchantSettings merchantSettings)
         {
             SearchResponse searchResponse = null;
 
@@ -982,7 +979,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(createSearchRequest);
                 string endpoint = $"{CybersourceConstants.TRANSACTIONS}searches";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 if (response != null)
                 {
                     searchResponse = JsonConvert.DeserializeObject<SearchResponse>(response.Message);
@@ -1002,7 +999,7 @@ namespace Cybersource.Services
         }
         #endregion Reporting
 
-        public async Task<CybersourceBinLookupResponse> BinLookup(string cardNumber)
+        public async Task<CybersourceBinLookupResponse> BinLookup(string cardNumber, MerchantSettings merchantSettings)
         {
             CybersourceBinLookupResponse cybersourceBinLookupResponse = null;
             CybersourceBinLookupRequest cybersourceBinLookupRequest = new CybersourceBinLookupRequest
@@ -1020,7 +1017,7 @@ namespace Cybersource.Services
             {
                 string json = JsonConvert.SerializeObject(cybersourceBinLookupRequest);
                 string endpoint = $"{CybersourceConstants.BIN}binlookup";
-                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json);
+                SendResponse response = await this.SendRequest(HttpMethod.Post, endpoint, json, merchantSettings);
                 _context.Vtex.Logger.Debug("BinLookup", null, null, new[] { ("Bin", cardNumber), ("request", json), ("response", JsonConvert.SerializeObject(response)) });
                 if (response != null)
                 {
