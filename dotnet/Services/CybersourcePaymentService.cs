@@ -2927,12 +2927,13 @@ namespace Cybersource.Services
             bool useRate = false;
             double shippingTaxAmount = 0D;
             decimal taxDetailAmount = 0M;
-            long totalItemTax = 0L;
+            double totalItemTax = 0D;
             foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
                 string taxAmount = "0.00";
                 string commodityCode = string.Empty;
                 long itemTax = 0L;
+                double lineItemTax = 0D;
                 VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => (i.Id.Equals(vtexItem.Id)) && (i.Quantity.Equals(vtexItem.Quantity)));
                 if (vtexOrderItem != null)
                 {
@@ -2958,10 +2959,12 @@ namespace Cybersource.Services
                                 if (priceTag.IsPercentual ?? false)
                                 {
                                     itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                                    lineItemTax += vtexOrderItem.SellingPrice * vtexItem.Quantity * priceTag.RawValue;
                                 }
                                 else
                                 {
                                     itemTax += priceTag.Value / vtexOrderItem.Quantity;
+                                    lineItemTax += priceTag.Value;
                                 }
                             }
                         }
@@ -2993,7 +2996,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = Math.Round(itemTax * vtexItem.Quantity / 100m, 2, MidpointRounding.AwayFromZero).ToString("0.00")
+                                    amount = Math.Round(lineItemTax / 100d, 2, MidpointRounding.AwayFromZero).ToString("0.00")
                                 }
                         };
                     }
@@ -3005,7 +3008,7 @@ namespace Cybersource.Services
                     _context.Vtex.Logger.Error("GetItemTaxAmounts", "LineItems", "Error", ex);
                 }
 
-                totalItemTax += itemTax * vtexItem.Quantity;
+                totalItemTax += lineItemTax;
             }
 
             try
