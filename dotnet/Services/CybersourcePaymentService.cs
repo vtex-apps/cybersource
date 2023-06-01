@@ -2417,7 +2417,7 @@ namespace Cybersource.Services
                                                                 {
                                                                     if (propValue.Length < totalLength)
                                                                     {
-                                                                        char padChar = paddArr[1].ToCharArray()[0];
+                                                                        char padChar = paddArr[1][0];
                                                                         propValue = propValue.PadLeft(totalLength, padChar);
                                                                     }
                                                                     else if (propValue.Length > totalLength)
