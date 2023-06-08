@@ -160,10 +160,12 @@ namespace Cybersource.Services
                 };
 
                 // Make a copy of the payment request and add fields that are not available in the payment request / skip fields that should not be exposed
-                PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
-                requestWrapper.MerchantId = merchantSettings.MerchantId;
-                requestWrapper.CompanyName = merchantName;
-                requestWrapper.CompanyTaxId = merchantTaxId;
+                PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest)
+                {
+                    MerchantId = merchantSettings.MerchantId,
+                    CompanyName = merchantName,
+                    CompanyTaxId = merchantTaxId
+                };
 
                 payment.processingInformation = new ProcessingInformation();
                 if (doCapture)
@@ -325,7 +327,7 @@ namespace Cybersource.Services
                     foreach (VtexOrder vtexOrder in vtexOrders)
                     {
                         // ContextData is not returned in the order group list
-                        if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("ContextData")) || merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("PersonalData")))
+                        if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("ContextData")) || merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("PersonalData")))
                         {
                             VtexOrder vtexCheckoutOrder = await _vtexApiService.GetOrderInformation(vtexOrder.OrderId);
                             requestWrapper.ContextData = new ContextData
@@ -408,7 +410,7 @@ namespace Cybersource.Services
                             }
                         }
 
-                        if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("ClientProfileData")))
+                        if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("ClientProfileData")))
                         {
                             requestWrapper.ClientProfileData = new ClientProfileData
                             {
@@ -428,10 +430,10 @@ namespace Cybersource.Services
                             };
                         }
 
-                        if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("Shipping")))
+                        if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("Shipping")))
                         {
                             LogisticsInfo logisticsInfo = vtexOrder.ShippingData.LogisticsInfo.FirstOrDefault();
-                            Sla selectedSla = logisticsInfo.Slas.FirstOrDefault(s => s.Id.Equals(logisticsInfo.SelectedSla, StringComparison.InvariantCultureIgnoreCase));
+                            Sla selectedSla = logisticsInfo.Slas.Find(s => s.Id.Equals(logisticsInfo.SelectedSla, StringComparison.InvariantCultureIgnoreCase));
                             requestWrapper.Shipping = new SlaWrapper
                             {
                                 AvailableDeliveryWindows = selectedSla.AvailableDeliveryWindows,
@@ -514,7 +516,7 @@ namespace Cybersource.Services
 
                 this.GetItemTaxAmounts(merchantSettings, vtexOrderItems, payment, createPaymentRequest);
 
-                if (merchantSettings.MerchantDefinedValueSettings.Any(ms => ms.UserInput.Contains("AdditionalData")))
+                if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("AdditionalData")))
                 {
                     // Get last order date and number of orders
                     VtexOrderList vtexOrderList = await _vtexApiService.ListOrders($"orderBy=creationDate,desc&q={createPaymentRequest.MiniCart.Buyer.Email}");
@@ -590,7 +592,7 @@ namespace Cybersource.Services
                     {
                         if (createPaymentRequest.MerchantSettings != null)
                         {
-                            MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureSetting));
+                            MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.Find(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureSetting));
                             if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture, StringComparison.OrdinalIgnoreCase))
                             {
                                 // Need to check if there has already been a successful capture
@@ -606,11 +608,10 @@ namespace Cybersource.Services
                                 {
                                     createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
                                     createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
-                                    foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
+                                    foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Exists(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
                                     {
                                         string captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
-                                        decimal captureValue = 0m;
-                                        if (decimal.TryParse(captureValueString, out captureValue) && captureValue == createPaymentRequest.Value)
+                                        if (decimal.TryParse(captureValueString, out decimal captureValue) && captureValue == createPaymentRequest.Value)
                                         {
                                             createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
                                             createPaymentResponse.Code = "100";
@@ -650,7 +651,7 @@ namespace Cybersource.Services
                 Payments payment = await this.BuildPayment(createPaymentRequest, merchantSettings);
                 try
                 {
-                    ConsumerAuthenticationInformation consumerAuthenticationInformationToCopy = consumerAuthenticationInformation != null ? consumerAuthenticationInformation : paymentData.ConsumerAuthenticationInformation;
+                    ConsumerAuthenticationInformation consumerAuthenticationInformationToCopy = consumerAuthenticationInformation ?? paymentData.ConsumerAuthenticationInformation;
                     if (consumerAuthenticationInformationToCopy != null)
                     {
                         payment.consumerAuthenticationInformation = new ConsumerAuthenticationInformation
@@ -819,12 +820,14 @@ namespace Cybersource.Services
                     };
 
                     RefundPaymentResponse refundPaymentResponse = await this.RefundPayment(refundPaymentRequest);
-                    cancelPaymentResponse = new CancelPaymentResponse();
-                    cancelPaymentResponse.PaymentId = refundPaymentResponse.PaymentId;
-                    cancelPaymentResponse.RequestId = refundPaymentResponse.RequestId;
-                    cancelPaymentResponse.CancellationId = refundPaymentResponse.RefundId;
-                    cancelPaymentResponse.Message = refundPaymentResponse.Message;
-                    cancelPaymentResponse.Code = refundPaymentResponse.Code;
+                    cancelPaymentResponse = new CancelPaymentResponse
+                    {
+                        PaymentId = refundPaymentResponse.PaymentId,
+                        RequestId = refundPaymentResponse.RequestId,
+                        CancellationId = refundPaymentResponse.RefundId,
+                        Message = refundPaymentResponse.Message,
+                        Code = refundPaymentResponse.Code
+                    };
 
                     return cancelPaymentResponse;
                 }
@@ -867,12 +870,14 @@ namespace Cybersource.Services
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessReversal(payment, paymentData.AuthorizationId, merchantSettings);
                 if (paymentsResponse != null)
                 {
-                    cancelPaymentResponse = new CancelPaymentResponse();
-                    cancelPaymentResponse.PaymentId = cancelPaymentRequest.PaymentId;
-                    cancelPaymentResponse.RequestId = cancelPaymentRequest.RequestId;
-                    cancelPaymentResponse.CancellationId = paymentsResponse.Id;
-                    cancelPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
-                    cancelPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
+                    cancelPaymentResponse = new CancelPaymentResponse
+                    {
+                        PaymentId = cancelPaymentRequest.PaymentId,
+                        RequestId = cancelPaymentRequest.RequestId,
+                        CancellationId = paymentsResponse.Id,
+                        Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message,
+                        Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status
+                    };
                 }
             }
             catch (Exception ex)
@@ -913,13 +918,15 @@ namespace Cybersource.Services
 
                 if (paymentData != null && paymentData.CreatePaymentResponse != null && paymentData.ImmediateCapture)
                 {
-                    capturePaymentResponse = new CapturePaymentResponse();
-                    capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
-                    capturePaymentResponse.RequestId = capturePaymentRequest.RequestId;
-                    capturePaymentResponse.Code = paymentData.CreatePaymentResponse.Code;
-                    capturePaymentResponse.Message = paymentData.CreatePaymentResponse.Message;
-                    capturePaymentResponse.SettleId = paymentData.CreatePaymentResponse.AuthorizationId;
-                    capturePaymentResponse.Value = paymentData.Value;
+                    capturePaymentResponse = new CapturePaymentResponse
+                    {
+                        PaymentId = capturePaymentRequest.PaymentId,
+                        RequestId = capturePaymentRequest.RequestId,
+                        Code = paymentData.CreatePaymentResponse.Code,
+                        Message = paymentData.CreatePaymentResponse.Message,
+                        SettleId = paymentData.CreatePaymentResponse.AuthorizationId,
+                        Value = paymentData.Value
+                    };
 
                     return capturePaymentResponse;
                 }
@@ -1049,7 +1056,7 @@ namespace Cybersource.Services
                                 {
                                     if (lastShipment.Select(s => s.SkuName).Contains(lineItem.productSKU))
                                     {
-                                        VtexOrderItem shippedItem = lastShipment.FirstOrDefault(si => si.SkuName.Equals(lineItem.productSKU));
+                                        VtexOrderItem shippedItem = lastShipment.Find(si => si.SkuName.Equals(lineItem.productSKU));
                                         long originalQuantity = long.Parse(lineItem.quantity);
                                         decimal percentOfTotal = (decimal)shippedItem.Quantity / originalQuantity;
                                         lineItem.quantity = shippedItem.Quantity.ToString();
@@ -1101,12 +1108,14 @@ namespace Cybersource.Services
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, authId, merchantSettings);
                 if (paymentsResponse != null)
                 {
-                    capturePaymentResponse = new CapturePaymentResponse();
-                    capturePaymentResponse.PaymentId = capturePaymentRequest.PaymentId;
-                    capturePaymentResponse.RequestId = capturePaymentRequest.RequestId;
-                    capturePaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
-                    capturePaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
-                    capturePaymentResponse.SettleId = paymentsResponse.Status.Equals("PENDING") ? paymentsResponse.Id : string.Empty;
+                    capturePaymentResponse = new CapturePaymentResponse
+                    {
+                        PaymentId = capturePaymentRequest.PaymentId,
+                        RequestId = capturePaymentRequest.RequestId,
+                        Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status,
+                        Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message,
+                        SettleId = paymentsResponse.Status.Equals("PENDING") ? paymentsResponse.Id : string.Empty
+                    };
 
                     decimal captureAmount = 0m;
                     if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
@@ -1119,11 +1128,10 @@ namespace Cybersource.Services
                         SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
                         if (searchResponse != null)
                         {
-                            foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Any(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
+                            foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Exists(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
                             {
                                 string captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
-                                decimal captureValue = 0m;
-                                if (decimal.TryParse(captureValueString, out captureValue) && captureValue == capturePaymentRequest.Value)
+                                if (decimal.TryParse(captureValueString, out decimal captureValue) && captureValue == capturePaymentRequest.Value)
                                 {
                                     capturePaymentResponse.Code = "100";
                                     capturePaymentResponse.Message = "Transaction retrieved from Cybersource.";
@@ -1235,12 +1243,14 @@ namespace Cybersource.Services
                 PaymentsResponse paymentsResponse = await _cybersourceApi.RefundCapture(payment, paymentData.CaptureId, merchantSettings);
                 if (paymentsResponse != null)
                 {
-                    refundPaymentResponse = new RefundPaymentResponse();
-                    refundPaymentResponse.PaymentId = refundPaymentRequest.PaymentId;
-                    refundPaymentResponse.RequestId = refundPaymentRequest.RequestId;
-                    refundPaymentResponse.Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message;
-                    refundPaymentResponse.RefundId = paymentsResponse.Status.Equals("PENDING") ? paymentsResponse.Id : string.Empty;
-                    refundPaymentResponse.Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status;
+                    refundPaymentResponse = new RefundPaymentResponse
+                    {
+                        PaymentId = refundPaymentRequest.PaymentId,
+                        RequestId = refundPaymentRequest.RequestId,
+                        Message = paymentsResponse.ErrorInformation != null ? paymentsResponse.ErrorInformation.Message : paymentsResponse.Message,
+                        RefundId = paymentsResponse.Status.Equals("PENDING") ? paymentsResponse.Id : string.Empty,
+                        Code = paymentsResponse.ProcessorInformation != null ? paymentsResponse.ProcessorInformation.ResponseCode : paymentsResponse.Status
+                    };
 
                     if (paymentsResponse.RefundAmountDetails != null && paymentsResponse.RefundAmountDetails.RefundAmount != null)
                     {
@@ -1457,36 +1467,25 @@ namespace Cybersource.Services
             PaymentsResponse paymentsResponse = null;
             PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
 
-            if (paymentData == null)
-            {
-                paymentData = new PaymentData
-                {
-                    CreatePaymentRequest = createPaymentRequest,
-                    CreatePaymentResponse = new CreatePaymentResponse
-                    {
-                        PaymentId = createPaymentRequest.PaymentId,
-                        Status = CybersourceConstants.VtexAuthStatus.Undefined
-                    }
-                };
-            }
-            else if(paymentData.CreatePaymentResponse != null)
+            if(paymentData != null && paymentData.CreatePaymentResponse != null)
             {
                 return paymentData.CreatePaymentResponse;
             }
 
             MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
             string merchantName = createPaymentRequest.MerchantName;
-            string merchantTaxId = string.Empty;
-            bool doCapture = false;
-            (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
+            (merchantSettings, _, _, _) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
 
             Payments payment = await this.BuildPayment(createPaymentRequest, merchantSettings);
 
             try
             {
                 paymentsResponse = await _cybersourceApi.SetupPayerAuth(payment, createPaymentRequest.SecureProxyUrl, createPaymentRequest.SecureProxyTokensUrl, merchantSettings);
-                ConsumerAuthenticationInformationWrapper consumerAuthenticationInformationWrapper = new ConsumerAuthenticationInformationWrapper(paymentsResponse.ConsumerAuthenticationInformation);
-                consumerAuthenticationInformationWrapper.CreatePaymentRequestReference = createPaymentRequest.PaymentId;
+                ConsumerAuthenticationInformationWrapper consumerAuthenticationInformationWrapper = new ConsumerAuthenticationInformationWrapper(paymentsResponse.ConsumerAuthenticationInformation)
+                {
+                    CreatePaymentRequestReference = createPaymentRequest.PaymentId
+                };
+
                 createPaymentResponse = new CreatePaymentResponse
                 {
                     PaymentAppData = new PaymentAppData
@@ -1713,8 +1712,7 @@ namespace Cybersource.Services
             {
 
             };
-
-            (CreatePaymentResponse createPaymentResponse, PaymentsResponse paymentsResponse) = await CreatePayment(createPaymentRequest);
+            (CreatePaymentResponse createPaymentResponse, _) = await CreatePayment(createPaymentRequest);
 
             return createPaymentResponse != null;
         }
@@ -1851,8 +1849,8 @@ namespace Cybersource.Services
 
         public string GetAdministrativeAreaColombia(string region)
         {
-            string regionCode = string.Empty;
-            switch(region.ToLowerInvariant())
+            string regionCode;
+            switch (region.ToLowerInvariant())
             {
                 case "distrito capital de bogotá":
                 case "distrito capital":
@@ -1890,7 +1888,7 @@ namespace Cybersource.Services
 
         public string GetAdministrativeAreaPeru(string region)
         {
-            string regionCode = string.Empty;
+            string regionCode;
             switch (region.ToLowerInvariant())
             {
                 case "ankashu":
@@ -1977,7 +1975,7 @@ namespace Cybersource.Services
 
         public string GetAdministrativeAreaMexico(string region)
         {
-            string regionCode = string.Empty;
+            string regionCode;
             switch (region.ToLowerInvariant())
             {
                 case "baja california":
@@ -2023,7 +2021,7 @@ namespace Cybersource.Services
 
         public string GetAdministrativeAreaEcuador(string region)
         {
-            string regionCode = string.Empty;
+            string regionCode;
             switch (region.ToLowerInvariant())
             {
                 case "cañar":
@@ -2078,21 +2076,20 @@ namespace Cybersource.Services
 
         public string GetAdministrativeAreaPanama(string region)
         {
-            string regionCode = string.Empty;
-            if(region.Contains('-'))
+            if (region.Contains('-'))
             {
-                string regionCodeTemp = region.Split('-').Last();
-                if(!string.IsNullOrEmpty(regionCodeTemp))
+                string regionCodeTemp = GetLast(region.Split('-'));
+                if (!string.IsNullOrEmpty(regionCodeTemp))
                 {
-                    int regionCodeParsed = 0;
-                    bool isNumeric = int.TryParse(regionCodeTemp, out regionCodeParsed);
-                    if(isNumeric && regionCodeParsed > 0 && regionCodeParsed < 13)
+                    bool isNumeric = int.TryParse(regionCodeTemp, out int regionCodeParsed);
+                    if (isNumeric && regionCodeParsed > 0 && regionCodeParsed < 13)
                     {
                         return regionCodeTemp;
                     }
                 }
             }
 
+            string regionCode;
             switch (region.ToLowerInvariant())
             {
                 case "bocas del toro":
@@ -2332,7 +2329,7 @@ namespace Cybersource.Services
                         var customDataWrapper = JsonConvert.DeserializeObject<CustomDataWrapper>(json);
                         JObject dictObj = customDataWrapper.CustomApps;
                         Dictionary<string, string> dictionary = dictObj.ToObject<Dictionary<string, string>>();
-                        string customFieldKey = propertyName.Split('.').Last();
+                        string customFieldKey = GetLast(propertyName.Split('.')); //propertyName.Split('.').Last();
                         if (dictionary.Keys.Contains(customFieldKey))
                         {
                             obj = dictionary[customFieldKey];
@@ -2394,7 +2391,7 @@ namespace Cybersource.Services
                                         do
                                         {
                                             int start = merchantDefinedValue.IndexOf(startCharacter) + startCharacter.Length;
-                                            string valueSubStr = merchantDefinedValue.Substring(start, merchantDefinedValue.IndexOf(endCharacter) - start);
+                                            string valueSubStr = merchantDefinedValue[start..merchantDefinedValue.IndexOf(endCharacter)];
                                             string originalValueSubStr = valueSubStr;
                                             string propValue = string.Empty;
                                             if (!string.IsNullOrEmpty(valueSubStr))
@@ -2420,7 +2417,7 @@ namespace Cybersource.Services
                                                                 {
                                                                     if (propValue.Length < totalLength)
                                                                     {
-                                                                        char padChar = paddArr[1].ToCharArray().First();
+                                                                        char padChar = paddArr[1][0];
                                                                         propValue = propValue.PadLeft(totalLength, padChar);
                                                                     }
                                                                     else if (propValue.Length > totalLength)
@@ -2436,7 +2433,7 @@ namespace Cybersource.Services
                                                                 {
                                                                     int currentLength = propValue.Length;
                                                                     int offset = Math.Max(0, currentLength - trimLength);
-                                                                    propValue = propValue.Substring(offset);
+                                                                    propValue = propValue[offset..];
                                                                 }
 
                                                                 break;
@@ -2456,9 +2453,8 @@ namespace Cybersource.Services
                                                             case "AGE":
                                                                 try
                                                                 {
-                                                                    DateTime propAsDate;
                                                                     string timespanFormat = valueSubStrArr[2];
-                                                                    if (DateTime.TryParse(propValue, out propAsDate))
+                                                                    if (DateTime.TryParse(propValue, out DateTime propAsDate))
                                                                     {
                                                                         TimeSpan dateDiff = DateTime.Now - propAsDate;
                                                                         propValue = dateDiff.ToString(timespanFormat);
@@ -2492,7 +2488,7 @@ namespace Cybersource.Services
                                             }
 
                                             merchantDefinedValue = merchantDefinedValue.Replace($"{startCharacter}{originalValueSubStr}{endCharacter}", propValue);
-                                            sanityCheck = sanityCheck + 1;
+                                            sanityCheck++;
                                         }
                                         while (merchantDefinedValue.Contains(startCharacter) && merchantDefinedValue.Contains(endCharacter) && sanityCheck < 100);
                                     }
@@ -2626,7 +2622,7 @@ namespace Cybersource.Services
 
                     PaymentRequestWrapper requestWrapper = new PaymentRequestWrapper(createPaymentRequest);
                     List<MerchantDefinedInformation> merchantDefinedNsu = await this.GetMerchantDefinedInformation(nsuSettings, requestWrapper);
-                    string customNsu = merchantDefinedNsu.First().value;
+                    string customNsu = merchantDefinedNsu[0].value;
                     if (!string.IsNullOrWhiteSpace(customNsu))
                     {
                         reconciliationId = customNsu;
@@ -2656,7 +2652,6 @@ namespace Cybersource.Services
 
         public async Task<SearchResponse> SearchTransaction(string referenceNumber, MerchantSettings merchantSettings)
         {
-            SearchResponse searchResponse = null;
             CreateSearchRequest searchRequest = new CreateSearchRequest
             {
                 Query = $"clientReferenceInformation.code:{referenceNumber}",
@@ -2664,7 +2659,7 @@ namespace Cybersource.Services
                 Limit = 2000
             };
 
-            searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest, merchantSettings);
+            SearchResponse searchResponse = await _cybersourceApi.CreateSearchRequest(searchRequest, merchantSettings);
             return searchResponse;
         }
 
@@ -2756,7 +2751,7 @@ namespace Cybersource.Services
                             bool isDecisionManagerInUse = true;
                             try
                             {
-                                MerchantSetting merchantSettingDecisionManagerInUse = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.DecisionManagerInUse));
+                                MerchantSetting merchantSettingDecisionManagerInUse = createPaymentRequest.MerchantSettings.Find(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.DecisionManagerInUse));
                                 if (merchantSettingDecisionManagerInUse != null && merchantSettingDecisionManagerInUse.Value != null && merchantSettingDecisionManagerInUse.Value.Equals(CybersourceConstants.ManifestCustomField.Disabled, StringComparison.OrdinalIgnoreCase))
                                 {
                                     isDecisionManagerInUse = false;
@@ -2798,7 +2793,7 @@ namespace Cybersource.Services
                                 MerchantSetting merchantSettingRiskDeclined = null;
                                 if (createPaymentRequest.MerchantSettings != null)
                                 {
-                                    merchantSettingRiskDeclined = createPaymentRequest.MerchantSettings.FirstOrDefault(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.AuthorizedRiskDeclined));
+                                    merchantSettingRiskDeclined = createPaymentRequest.MerchantSettings.Find(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.AuthorizedRiskDeclined));
                                     if (merchantSettingRiskDeclined != null && merchantSettingRiskDeclined.Value != null)
                                     {
                                         paymentStatus = merchantSettingRiskDeclined.Value.ToLower();
@@ -2836,7 +2831,7 @@ namespace Cybersource.Services
                             {
                                 _context.Vtex.Logger.Warn("GetPaymentStatus", null, "Loaded Transactions from Cybersource", new[] { ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });
                                 // First transaction should be the most recent
-                                TransactionSummary transactionSummary = searchResponse.Embedded.TransactionSummaries.First();
+                                TransactionSummary transactionSummary = searchResponse.Embedded.TransactionSummaries[0];
                                 string authValueString = string.Empty;
                                 string captureValueString = string.Empty;
                                 foreach (Application application in transactionSummary.ApplicationInformation.Applications)
@@ -2857,7 +2852,7 @@ namespace Cybersource.Services
                                     ConsumerAuthenticationInformation = DeepCopy<ConsumerAuthenticationInformation>(transactionSummary.ConsumerAuthenticationInformation),
                                     ClientReferenceInformation = DeepCopy<ClientReferenceInformation>(transactionSummary.ClientReferenceInformation),
                                     Id = transactionSummary.Id,
-                                    ReconciliationId = transactionSummary.ApplicationInformation.Applications.First().ReconciliationId,
+                                    ReconciliationId = transactionSummary.ApplicationInformation.Applications[0].ReconciliationId,
                                     OrderInformation = DeepCopy<OrderInformation>(transactionSummary.OrderInformation),
                                     ProcessorInformation = DeepCopy<ProcessorInformation>(transactionSummary.ProcessorInformation),
                                     Status = transactionSummary.ApplicationInformation.RFlag,
@@ -2927,13 +2922,14 @@ namespace Cybersource.Services
             bool useRate = false;
             double shippingTaxAmount = 0D;
             decimal taxDetailAmount = 0M;
-            long totalItemTax = 0L;
+            double totalItemTax = 0D;
             foreach (VtexItem vtexItem in createPaymentRequest.MiniCart.Items)
             {
                 string taxAmount = "0.00";
                 string commodityCode = string.Empty;
                 long itemTax = 0L;
-                VtexOrderItem vtexOrderItem = vtexOrderItems.FirstOrDefault(i => (i.Id.Equals(vtexItem.Id)) && (i.Quantity.Equals(vtexItem.Quantity)));
+                double lineItemTax = 0D;
+                VtexOrderItem vtexOrderItem = vtexOrderItems.Find(i => (i.Id.Equals(vtexItem.Id)) && (i.Quantity.Equals(vtexItem.Quantity)));
                 if (vtexOrderItem != null)
                 {
                     foreach (PriceTag priceTag in vtexOrderItem.PriceTags)
@@ -2958,10 +2954,12 @@ namespace Cybersource.Services
                                 if (priceTag.IsPercentual ?? false)
                                 {
                                     itemTax += (long)Math.Round(vtexOrderItem.SellingPrice * priceTag.RawValue, MidpointRounding.AwayFromZero);
+                                    lineItemTax += vtexOrderItem.SellingPrice * vtexItem.Quantity * priceTag.RawValue;
                                 }
                                 else
                                 {
                                     itemTax += priceTag.Value / vtexOrderItem.Quantity;
+                                    lineItemTax += priceTag.Value;
                                 }
                             }
                         }
@@ -2993,7 +2991,7 @@ namespace Cybersource.Services
                                 new TaxDetail
                                 {
                                     type = "national",
-                                    amount = Math.Round(itemTax * vtexItem.Quantity / 100m, 2, MidpointRounding.AwayFromZero).ToString("0.00")
+                                    amount = Math.Round(lineItemTax / 100d, 2, MidpointRounding.AwayFromZero).ToString("0.00")
                                 }
                         };
                     }
@@ -3005,7 +3003,7 @@ namespace Cybersource.Services
                     _context.Vtex.Logger.Error("GetItemTaxAmounts", "LineItems", "Error", ex);
                 }
 
-                totalItemTax += itemTax * vtexItem.Quantity;
+                totalItemTax += lineItemTax;
             }
 
             try
@@ -3060,14 +3058,14 @@ namespace Cybersource.Services
                 decimal taxDiff = totalOrderTax - totalItemTaxAsDecimal - taxDetailAmount;
                 if (taxDiff > 0M)
                 {
-                    _context.Vtex.Logger.Warn("GetItemTaxAmounts", "Tax Total Verification", $"Modfying tax amount of item '{payment.orderInformation.lineItems.First().productName}' by '{taxDiff}' ");
+                    _context.Vtex.Logger.Warn("GetItemTaxAmounts", "Tax Total Verification", $"Modfying tax amount of item '{payment.orderInformation.lineItems[0].productName}' by '{taxDiff}' ");
                     if (merchantSettings.Region != null && merchantSettings.Region.Equals(CybersourceConstants.Regions.Ecuador))
                     {
-                        payment.orderInformation.lineItems.First().taxDetails.First().amount = (decimal.Parse(payment.orderInformation.lineItems.First().taxDetails.First().amount) + taxDiff).ToString("0.00");
+                        payment.orderInformation.lineItems[0].taxDetails[0].amount = (decimal.Parse(payment.orderInformation.lineItems[0].taxDetails[0].amount) + taxDiff).ToString("0.00");
                     }
                     else
                     {
-                        payment.orderInformation.lineItems.First().taxAmount = (decimal.Parse(payment.orderInformation.lineItems.First().taxAmount) + taxDiff).ToString("0.00");
+                        payment.orderInformation.lineItems[0].taxAmount = (decimal.Parse(payment.orderInformation.lineItems[0].taxAmount) + taxDiff).ToString("0.00");
                     }
                 }
             }
@@ -3154,5 +3152,7 @@ namespace Cybersource.Services
                 return default;
             }
         }
+
+        private string GetLast(IList<string> data) => data[data.Count - 1];
     }
 }
