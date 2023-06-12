@@ -606,6 +606,7 @@ namespace Cybersource.Services
                                 SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
                                 if (searchResponse != null)
                                 {
+                                    createPaymentResponse = new CreatePaymentResponse();
                                     createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
                                     createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
                                     foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Exists(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
