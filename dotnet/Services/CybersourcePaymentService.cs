@@ -564,12 +564,12 @@ namespace Cybersource.Services
             PaymentsResponse paymentsResponse = null;
             try
             {
+                bool doCapture = false;
                 if (merchantSettings == null)
                 {
                     merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                     string merchantName = createPaymentRequest.MerchantName;
                     string merchantTaxId = string.Empty;
-                    bool doCapture = false;
                     (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
                 }
 
@@ -592,8 +592,8 @@ namespace Cybersource.Services
                     {
                         if (createPaymentRequest.MerchantSettings != null)
                         {
-                            MerchantSetting merchantSettingPayerAuth = createPaymentRequest.MerchantSettings.Find(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureSetting));
-                            if (merchantSettingPayerAuth != null && merchantSettingPayerAuth.Value != null && merchantSettingPayerAuth.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture, StringComparison.OrdinalIgnoreCase))
+                            MerchantSetting merchantSettingAuthAndBill = createPaymentRequest.MerchantSettings.Find(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureSetting));
+                            if (merchantSettingAuthAndBill != null && merchantSettingAuthAndBill.Value != null && merchantSettingAuthAndBill.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture, StringComparison.OrdinalIgnoreCase))
                             {
                                 // Need to check if there has already been a successful capture
                                 string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
@@ -645,6 +645,13 @@ namespace Cybersource.Services
                             ( "PaymentId", createPaymentRequest.PaymentId )
                         });
                     }
+                }
+
+                if(doCapture)
+                {
+                    // Setting the TimedOut flag to true so that any follow up requests will check for previous captures
+                    paymentData.TimedOut = true;
+                    await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
                 }
                 
                 bool isPayerAuth = false;
