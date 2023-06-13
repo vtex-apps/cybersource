@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- If Auth & Bill is enabled, set Timeout flag by default to force a check for previous captures.
+
 ## [1.18.2] - 2023-06-08
 
 ### Fixed
