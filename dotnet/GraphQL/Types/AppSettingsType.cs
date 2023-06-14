@@ -25,6 +25,7 @@ namespace Cybersource.GraphQL.Types
             Field(b => b.ShippingProductCode, nullable: true).Description("Shipping Product Code");
             Field(b => b.NexusRegions, nullable: true).Description("Tax Nexus Regions");
             Field(b => b.MerchantDefinedValueSettings, type: typeof(ListGraphType<MerchantDefinedValueSettingType>)).Description("Merchant Defined Fields").Name("merchantDictionary");
+            Field(b => b.UseOrderIdForFingerprint).Description("Use Order Id for Device Fingerprint Session Id");
         }
     }
 }

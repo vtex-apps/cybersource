@@ -53,6 +53,9 @@ namespace Cybersource.Models
         // Merchant Defined Fields
         [JsonProperty("merchantDictionary")]
         public List<MerchantDefinedValueSetting> MerchantDefinedValueSettings { get; set; }
+
+        [JsonProperty("useOrderIdForFingerprint")]
+        public bool UseOrderIdForFingerprint { get; set; }
     }
 
     public class MerchantDefinedValueSetting
