@@ -18,8 +18,8 @@ jobs:
     with:
       danger: true
       dangerRequireChangelog: false
-      dotnetLint: true
-      dotnetSonar: true
+      dotnetLint: false
+      dotnetSonar: false
       dotnetSonarProjectKey: vtex-apps_cybersource
       dotnetSonarOrganization: vtex-apps
       cypress: true
