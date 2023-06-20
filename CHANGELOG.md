@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Toggled off lint and sonar options
+
 ## [1.18.3] - 2023-06-13
 
 ### Fixed
