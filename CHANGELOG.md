@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.19.0] - 2023-07-07
+
 ### Added
 - Added option to use order id for Device Fingerprint in place of session id
 
