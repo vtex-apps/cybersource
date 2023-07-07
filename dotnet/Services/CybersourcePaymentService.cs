@@ -144,7 +144,7 @@ namespace Cybersource.Services
                     deviceInformation = new DeviceInformation
                     {
                         ipAddress = createPaymentRequest.IpAddress,
-                        fingerprintSessionId = createPaymentRequest.DeviceFingerprint
+                        fingerprintSessionId = merchantSettings.UseOrderIdForFingerprint ? createPaymentRequest.OrderId : createPaymentRequest.DeviceFingerprint
                     },
                     buyerInformation = new BuyerInformation
                     {
