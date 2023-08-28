@@ -144,7 +144,7 @@ namespace Cybersource.Services
                     deviceInformation = new DeviceInformation
                     {
                         ipAddress = createPaymentRequest.IpAddress,
-                        fingerprintSessionId = merchantSettings.UseOrderIdForFingerprint ? createPaymentRequest.OrderId : createPaymentRequest.DeviceFingerprint
+                        fingerprintSessionId = createPaymentRequest.DeviceFingerprint
                     },
                     buyerInformation = new BuyerInformation
                     {
@@ -510,6 +510,12 @@ namespace Cybersource.Services
                                     requestWrapper.Totals.Tax += (decimal)vtexTotal.Value / 100;
                                     break;
                             }
+                        }
+
+                        // Optinally use orderfromid as fingerprint
+                        if (merchantSettings.UseOrderIdForFingerprint)
+                        {
+                            payment.deviceInformation.fingerprintSessionId = vtexOrder.OrderFormId;
                         }
                     }
                 }
