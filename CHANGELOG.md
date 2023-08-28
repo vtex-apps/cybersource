@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.19.1] - 2023-08-28
+
 ### Changed
 - Use orderformId as fingerprint instead of order id
 
