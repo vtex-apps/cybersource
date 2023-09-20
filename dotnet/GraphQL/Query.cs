@@ -46,12 +46,11 @@ namespace Cybersource.GraphQL
                 }
             );
 
-            FieldAsync<AppSettingsType>(
+            Field<AppSettingsType>(
                 "getAppSettings",
-                resolve: async context =>
+                resolve: context =>
                 {
-                    return await context.TryAsyncResolve(
-                        async c => await cybersourceRepository.GetMerchantSettings());
+                    return null;
                 }
             );
         }

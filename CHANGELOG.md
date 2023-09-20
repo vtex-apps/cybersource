@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Use the appSettings query from apps-graphql instead, which requires auth
+
 ## [1.19.1] - 2023-08-28
 
 ### Changed
