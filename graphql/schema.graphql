@@ -1,8 +1,7 @@
 type Query {
   conversionReport(startDate: String, endDate: String): ConversionReport
   merchantDefinedFields: [String]
-  getAppSettings: AppSettings
-  @deprecated(reason: "Use appSettings from apps-graphql instead")
+  getAppSettings: AppSettings @deprecated(reason: "Use appSettings from apps-graphql instead")
 }
 
 type Mutation {
