@@ -326,45 +326,53 @@ namespace Cybersource.Services
                 {
                     foreach (VtexOrder vtexOrder in vtexOrders)
                     {
-                        // ContextData is not returned in the order group list
-                        if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("ContextData")) || merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("PersonalData")))
+                        try
                         {
-                            VtexOrder vtexCheckoutOrder = await _vtexApiService.GetOrderInformation(vtexOrder.OrderId);
-                            requestWrapper.ContextData = new ContextData
+                            // ContextData is not returned in the order group list
+                            if (merchantSettings != null && merchantSettings.MerchantDefinedValueSettings != null  &&
+                                (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("ContextData")) || merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("PersonalData"))))
                             {
-                                LoggedIn = vtexCheckoutOrder?.ContextData?.LoggedIn ?? false,
-                                HasAccessToOrderFormEnabledByLicenseManager = vtexCheckoutOrder?.ContextData?.HasAccessToOrderFormEnabledByLicenseManager,
-                                UserAgent = vtexCheckoutOrder?.ContextData?.UserAgent,
-                                UserId = vtexCheckoutOrder?.ContextData?.UserId
-                            };
-
-                            PersonalData personalData = await _vtexApiService.GetPersonalData(vtexCheckoutOrder.UserProfileId);
-                            if (personalData != null)
-                            {
-                                requestWrapper.PersonalData = new PersonalData
+                                VtexOrder vtexCheckoutOrder = await _vtexApiService.GetOrderInformation(vtexOrder.OrderId);
+                                requestWrapper.ContextData = new ContextData
                                 {
-                                    BirthDate = personalData.BirthDate,
-                                    BusinessDocument = personalData.BusinessDocument,
-                                    BusinessPhone = personalData.BusinessPhone,
-                                    CellPhone = personalData.CellPhone,
-                                    CorporateName = personalData.CorporateName,
-                                    CreatedIn = personalData.CreatedIn,
-                                    CustomerClass = personalData.CustomerClass,
-                                    Document = personalData.Document,
-                                    DocumentType = personalData.DocumentType,
-                                    Email = personalData.Email,
-                                    FancyName = personalData.FancyName,
-                                    FirstName = personalData.FirstName,
-                                    Gender = personalData.Gender,
-                                    HomePhone = personalData.HomePhone,
-                                    IsFreeStateRegistration = personalData.IsFreeStateRegistration,
-                                    IsPj = personalData.IsPj,
-                                    LastName = personalData.LastName,
-                                    NickName = personalData.NickName,
-                                    StateRegistration = personalData.StateRegistration,
-                                    UserId = personalData.UserId
+                                    LoggedIn = vtexCheckoutOrder?.ContextData?.LoggedIn ?? false,
+                                    HasAccessToOrderFormEnabledByLicenseManager = vtexCheckoutOrder?.ContextData?.HasAccessToOrderFormEnabledByLicenseManager,
+                                    UserAgent = vtexCheckoutOrder?.ContextData?.UserAgent,
+                                    UserId = vtexCheckoutOrder?.ContextData?.UserId
                                 };
+
+                                PersonalData personalData = await _vtexApiService.GetPersonalData(vtexCheckoutOrder.UserProfileId);
+                                if (personalData != null)
+                                {
+                                    requestWrapper.PersonalData = new PersonalData
+                                    {
+                                        BirthDate = personalData.BirthDate,
+                                        BusinessDocument = personalData.BusinessDocument,
+                                        BusinessPhone = personalData.BusinessPhone,
+                                        CellPhone = personalData.CellPhone,
+                                        CorporateName = personalData.CorporateName,
+                                        CreatedIn = personalData.CreatedIn,
+                                        CustomerClass = personalData.CustomerClass,
+                                        Document = personalData.Document,
+                                        DocumentType = personalData.DocumentType,
+                                        Email = personalData.Email,
+                                        FancyName = personalData.FancyName,
+                                        FirstName = personalData.FirstName,
+                                        Gender = personalData.Gender,
+                                        HomePhone = personalData.HomePhone,
+                                        IsFreeStateRegistration = personalData.IsFreeStateRegistration,
+                                        IsPj = personalData.IsPj,
+                                        LastName = personalData.LastName,
+                                        NickName = personalData.NickName,
+                                        StateRegistration = personalData.StateRegistration,
+                                        UserId = personalData.UserId
+                                    };
+                                }
                             }
+                        }
+                        catch(Exception ex)
+                        {
+                            _context.Vtex.Logger.Error("BuildPayment", "ContextData", "Error reading ContextData", ex);
                         }
 
                         foreach (VtexOrderItem vtexItem in vtexOrder.Items)
@@ -961,9 +969,21 @@ namespace Cybersource.Services
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string merchantName = string.Empty;
-                if (paymentData != null && paymentData.CreatePaymentResponse != null && !string.IsNullOrEmpty(paymentData.CreatePaymentRequest.MerchantName))
+                try
                 {
-                    merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                    if (paymentData != null && paymentData.CreatePaymentRequest != null && !string.IsNullOrEmpty(paymentData.CreatePaymentRequest.MerchantName))
+                    {
+                        merchantName = paymentData.CreatePaymentRequest.MerchantName;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _context.Vtex.Logger.Error("CapturePayment", "merchantName",
+                    "Error ", ex,
+                    new[]
+                    {
+                        ( "PaymentId", capturePaymentRequest.PaymentId )
+                    });
                 }
 
                 string merchantTaxId = string.Empty;
