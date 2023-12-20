@@ -418,7 +418,7 @@ namespace Cybersource.Services
                             }
                         }
 
-                        if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("ClientProfileData")))
+                        if (merchantSettings.MerchantDefinedValueSettings != null && merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("ClientProfileData")))
                         {
                             requestWrapper.ClientProfileData = new ClientProfileData
                             {
@@ -438,7 +438,7 @@ namespace Cybersource.Services
                             };
                         }
 
-                        if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("Shipping")))
+                        if (merchantSettings.MerchantDefinedValueSettings != null && merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("Shipping")))
                         {
                             LogisticsInfo logisticsInfo = vtexOrder.ShippingData.LogisticsInfo.FirstOrDefault();
                             Sla selectedSla = logisticsInfo.Slas.Find(s => s.Id.Equals(logisticsInfo.SelectedSla, StringComparison.InvariantCultureIgnoreCase));
@@ -2381,8 +2381,8 @@ namespace Cybersource.Services
             }
             catch (Exception ex)
             {
-                _context.Vtex.Logger.Error("GetPropertyValue", null,
-                "Error: ", ex,
+                _context.Vtex.Logger.Warn("GetPropertyValue", null,
+                "Error: ",
                 new[]
                 {
                     ( "Could not get value of ", propertyName ),
@@ -2939,13 +2939,14 @@ namespace Cybersource.Services
                                 ("paymentsResponse", JsonConvert.SerializeObject(paymentsResponse))
                             });
                 }
-
-                createPaymentResponse.Status = paymentStatus;
             }
             else
             {
                 _context.Vtex.Logger.Error("CreatePayment", null, $"Null Payments Response.");
+                paymentStatus = CybersourceConstants.VtexAuthStatus.Denied;
             }
+
+            createPaymentResponse.Status = paymentStatus;
 
             return (createPaymentResponse, paymentsResponse, paymentStatus, doCancel);
         }
