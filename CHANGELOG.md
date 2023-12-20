@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
-- Bug fixes
+- Set auth response to Denied on error response.
+- Changed log for Get Property failure from error to warn.
+- Minor bug fixes.
 
 ## [1.19.2] - 2023-12-11
 
