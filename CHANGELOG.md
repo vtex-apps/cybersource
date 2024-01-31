@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Remove parenthesis from signature header to comply with Cybersource security change 
+
 ## [1.19.3] - 2023-12-20
 
 ### Fixed

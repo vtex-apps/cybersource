@@ -1056,8 +1056,8 @@ namespace Cybersource.Services
             var signatureString = new StringBuilder();
             var signatureHeaderValue = new StringBuilder();
             string headersString = string.Empty;
-            const string getOrDeleteHeaders = "host date (request-target) v-c-merchant-id";
-            const string postOrPutHeaders = "host date (request-target) digest v-c-merchant-id";
+            const string getOrDeleteHeaders = "host date request-target v-c-merchant-id";
+            const string postOrPutHeaders = "host date request-target digest v-c-merchant-id";
             if (string.IsNullOrEmpty(digest))
             {
                 headersString = getOrDeleteHeaders;
@@ -1076,7 +1076,7 @@ namespace Cybersource.Services
             signatureString.Append(": ");
             signatureString.Append(gmtDateTime);
             signatureString.Append('\n');
-            signatureString.Append("(request-target)");
+            signatureString.Append("request-target");
             signatureString.Append(": ");
             signatureString.Append(requestTarget);
             signatureString.Append('\n');
@@ -1112,8 +1112,8 @@ namespace Cybersource.Services
             var signatureString = new StringBuilder();
             var signatureHeaderValue = new StringBuilder();
             string headersString = string.Empty;
-            const string getOrDeleteHeaders = "host date (request-target) v-c-merchant-id";
-            const string postOrPutHeaders = "host date (request-target) digest v-c-merchant-id";
+            const string getOrDeleteHeaders = "host date request-target v-c-merchant-id";
+            const string postOrPutHeaders = "host date request-target digest v-c-merchant-id";
             if (string.IsNullOrEmpty(digest))
             {
                 headersString = getOrDeleteHeaders;
@@ -1132,7 +1132,7 @@ namespace Cybersource.Services
             signatureString.Append(": ");
             signatureString.Append(gmtDateTime);
             signatureString.Append('\n');
-            signatureString.Append("(request-target)");
+            signatureString.Append("request-target");
             signatureString.Append(": ");
             signatureString.Append(requestTarget);
             signatureString.Append('\n');
@@ -1190,7 +1190,7 @@ namespace Cybersource.Services
         {
             var signatureString = new StringBuilder();
             var signatureHeaderValue = new StringBuilder();
-            string headersString = "host v-c-date (request-target) v-c-merchant-id";
+            string headersString = "host v-c-date request-target v-c-merchant-id";
 
             signatureString.Append('\n');
             signatureString.Append("host");
@@ -1201,7 +1201,7 @@ namespace Cybersource.Services
             signatureString.Append(": ");
             signatureString.Append(gmtDateTime);
             signatureString.Append('\n');
-            signatureString.Append("(request-target)");
+            signatureString.Append("request-target");
             signatureString.Append(": ");
             signatureString.Append(requestTarget);
             signatureString.Append('\n');
