@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Cybersource.Models
 {   
@@ -12,5 +13,8 @@ namespace Cybersource.Models
 
         [JsonProperty("authorizationId")]
         public string AuthorizationId { get; set; }
+
+        [JsonProperty("merchantSettings")]
+        public List<MerchantSetting> MerchantSettings { get; set; }
     }
 }

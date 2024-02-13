@@ -860,7 +860,15 @@ namespace Cybersource.Services
                 string merchantName = paymentData.CreatePaymentRequest.MerchantName;
                 string merchantTaxId = string.Empty;
                 bool doCapture = false;
-                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                if (paymentData != null && paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.MerchantSettings != null)
+                {
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                }
+                else if (cancelPaymentRequest.MerchantSettings != null)
+                {
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, cancelPaymentRequest.MerchantSettings, merchantName);
+                }
+
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                 {
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
@@ -991,6 +999,10 @@ namespace Cybersource.Services
                 if (paymentData != null && paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.MerchantSettings != null)
                 {
                     (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                }
+                else if(capturePaymentRequest.MerchantSettings != null)
+                {
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, capturePaymentRequest.MerchantSettings, merchantName);
                 }
 
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
@@ -1238,7 +1250,15 @@ namespace Cybersource.Services
                 string merchantName = paymentData.CreatePaymentRequest.MerchantName;
                 string merchantTaxId = string.Empty;
                 bool doCapture = false;
-                (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                if (paymentData != null && paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.MerchantSettings != null)
+                {
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                }
+                else if (refundPaymentRequest.MerchantSettings != null)
+                {
+                    (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, refundPaymentRequest.MerchantSettings, merchantName);
+                }
+
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                 {
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
