@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.20.1] - 2024-02-14
+
 ### Fixed
 - If merchant settings are not loaded from storage, get from request
 
