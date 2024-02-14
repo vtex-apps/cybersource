@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Cybersource.Models
 {
@@ -18,5 +19,8 @@ namespace Cybersource.Models
 
         [JsonProperty("requestId")]
         public string RequestId { get; set; }
+
+        [JsonProperty("merchantSettings")]
+        public List<MerchantSetting> MerchantSettings { get; set; }
     }
 }
