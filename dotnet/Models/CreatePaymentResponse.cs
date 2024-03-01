@@ -110,6 +110,21 @@ namespace Cybersource.Models
         /// </summary>
         [JsonProperty("paymentAppData")]
         public PaymentAppData PaymentAppData { get; set; }
+
+        /// <summary>
+        /// Array containing metadata fields sent from the provider to the payment gateway.
+        /// </summary>
+        [JsonProperty("connectorMetadata")]
+        public ConnectorMetadata[] ConnectorMetadata { get; set; }
+    }
+
+    public class ConnectorMetadata
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("value")]
+        public string Value { get; set; }
     }
 
     public class PaymentAppData

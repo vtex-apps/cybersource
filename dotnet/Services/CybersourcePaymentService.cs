@@ -73,6 +73,11 @@ namespace Cybersource.Services
 
                 string referenceNumber = await _vtexApiService.GetOrderId(createPaymentRequest.Reference, createPaymentRequest.OrderId);
                 this.BinLookup(createPaymentRequest.Card.Bin, createPaymentRequest.PaymentMethod, out bool isDebit, out string cardType, out CybersourceConstants.CardType cardBrandName, merchantSettings);
+                if(!string.IsNullOrWhiteSpace(createPaymentRequest.PaymentMethod))
+                {
+                    cardType = GetCardType(createPaymentRequest.PaymentMethod);
+                }
+
                 payment = new Payments
                 {
                     merchantInformation = new MerchantInformation
@@ -530,7 +535,7 @@ namespace Cybersource.Services
 
                 this.GetItemTaxAmounts(merchantSettings, vtexOrderItems, payment, createPaymentRequest);
 
-                if (merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("AdditionalData")))
+                if (merchantSettings.MerchantDefinedValueSettings != null && merchantSettings.MerchantDefinedValueSettings.Exists(ms => ms.UserInput.Contains("AdditionalData")))
                 {
                     // Get last order date and number of orders
                     VtexOrderList vtexOrderList = await _vtexApiService.ListOrders($"orderBy=creationDate,desc&q={createPaymentRequest.MiniCart.Buyer.Email}");

@@ -147,14 +147,17 @@ namespace Cybersource.Services
             try
             {
                 VtexOrderList vtexOrderList = await this.SearchOrders(orderId);
-                string lookupOrderId = vtexOrderList.List.First().OrderId;
-                int charLocation = lookupOrderId.IndexOf("-", StringComparison.Ordinal);
-                if (charLocation > 0)
+                if (vtexOrderList != null && vtexOrderList.Paging != null && vtexOrderList.Paging.Total > 0)
                 {
-                    lookupOrderId = lookupOrderId.Substring(0, charLocation);
-                }
+                    string lookupOrderId = vtexOrderList.List.First().OrderId;
+                    int charLocation = lookupOrderId.IndexOf("-", StringComparison.Ordinal);
+                    if (charLocation > 0)
+                    {
+                        lookupOrderId = lookupOrderId.Substring(0, charLocation);
+                    }
 
-                vtexOrders = await this.GetOrderGroup(lookupOrderId);
+                    vtexOrders = await this.GetOrderGroup(lookupOrderId);
+                }
             }
             catch (Exception ex)
             {
@@ -919,7 +922,7 @@ namespace Cybersource.Services
             try
             {
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
-                if (merchantSettings.EnableTransactionPosting)
+                if (merchantSettings != null && merchantSettings.EnableTransactionPosting)
                 {
                     VtexOrder vtexOrder = await this.GetOrderInformation(orderId);
                     if (vtexOrder != null)
