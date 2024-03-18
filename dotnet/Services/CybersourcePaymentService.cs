@@ -859,7 +859,13 @@ namespace Cybersource.Services
                     return cancelPaymentResponse;
                 }
 
-                string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
+                string orderId = cancelPaymentRequest.PaymentId; // Default in case we can't get the order id
+                if(paymentData != null && paymentData.CreatePaymentRequest != null && !string.IsNullOrEmpty(paymentData.CreatePaymentRequest.OrderId))
+                {
+                    orderId = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
+                }
+
+                string referenceNumber = orderId;
                 string orderSuffix = string.Empty;
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
                 string merchantName = paymentData.CreatePaymentRequest.MerchantName;
@@ -879,6 +885,12 @@ namespace Cybersource.Services
                     orderSuffix = merchantSettings.OrderSuffix.Trim();
                 }
 
+                decimal value = 0M;
+                if(paymentData != null)
+                {
+                    value = paymentData.Value;
+                }
+
                 Payments payment = new Payments
                 {
                     clientReferenceInformation = new ClientReferenceInformation
@@ -896,13 +908,20 @@ namespace Cybersource.Services
                     {
                         amountDetails = new AmountDetails
                         {
-                            totalAmount = paymentData.Value.ToString()
+                            totalAmount = value.ToString()
                         },
                         //reason = "34" // 34: suspected fraud
                     }
                 };
 
-                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessReversal(payment, paymentData.AuthorizationId, merchantSettings);
+
+                string authId = cancelPaymentRequest.AuthorizationId;
+                if(paymentData != null && !string.IsNullOrEmpty(paymentData.AuthorizationId))
+                {
+                    authId = paymentData.AuthorizationId;
+                }
+
+                PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessReversal(payment, authId, merchantSettings);
                 if (paymentsResponse != null)
                 {
                     cancelPaymentResponse = new CancelPaymentResponse

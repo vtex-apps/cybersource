@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Handle case where payment data is not loaded for reversal
+
 ## [1.21.0] - 2024-03-01
 
 ### Fixed
