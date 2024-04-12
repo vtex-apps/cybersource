@@ -2252,7 +2252,13 @@ namespace Cybersource.Services
 
         public string GetCountryCode(string country)
         {
-            return CybersourceConstants.CountryCodesMapping[country];
+            string retval = string.Empty;
+            if (!string.IsNullOrEmpty(country))
+            {
+                retval = CybersourceConstants.CountryCodesMapping[country];
+            }
+
+            return retval;
         }
 
         private string GetCardType(string cardTypeText)
@@ -2905,7 +2911,10 @@ namespace Cybersource.Services
                             }
 
                             SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
-                            if (searchResponse != null)
+                            if (searchResponse != null &&
+                                searchResponse.Embedded != null &&
+                                searchResponse.Embedded.TransactionSummaries != null &&
+                                searchResponse.Embedded.TransactionSummaries.Count > 0)
                             {
                                 _context.Vtex.Logger.Warn("GetPaymentStatus", null, "Loaded Transactions from Cybersource", new[] { ("searchResponse", JsonConvert.SerializeObject(searchResponse)) });
                                 // First transaction should be the most recent
