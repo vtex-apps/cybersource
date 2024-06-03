@@ -770,22 +770,26 @@ namespace Cybersource.Services
                         decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.totalAmount, out capturedAmount);
                     }
 
-                    paymentData.AuthorizationId = createPaymentResponse.AuthorizationId;
-                    paymentData.TransactionId = createPaymentResponse.Tid;
-                    paymentData.PaymentId = createPaymentResponse.PaymentId;
-                    paymentData.Value = authAmount;
-                    paymentData.RequestId = null;
-                    paymentData.CaptureId = null;
-                    paymentData.CreatePaymentResponse = createPaymentResponse;
-
-                    if (capturedAmount > 0)
+                    if (!paymentsResponse.Status.Equals("ERROR"))
                     {
-                        paymentData.ImmediateCapture = true;
-                        paymentData.CaptureId = paymentsResponse.Id;
-                        paymentData.Value = capturedAmount;
+                        paymentData.AuthorizationId = createPaymentResponse.AuthorizationId;
+                        paymentData.TransactionId = createPaymentResponse.Tid;
+                        paymentData.PaymentId = createPaymentResponse.PaymentId;
+                        paymentData.Value = authAmount;
+                        paymentData.RequestId = null;
+                        paymentData.CaptureId = null;
+                        paymentData.CreatePaymentResponse = createPaymentResponse;
+
+                        if (capturedAmount > 0)
+                        {
+                            paymentData.ImmediateCapture = true;
+                            paymentData.CaptureId = paymentsResponse.Id;
+                            paymentData.Value = capturedAmount;
+                        }
+
+                        await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
                     }
 
-                    await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
                     if (doCancel)
                     {
                         // Reverse Authorization due to failed 3DS condition
