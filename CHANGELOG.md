@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.22.0] - 2024-06-03
+
 ### Fixed
 - Do not save error responses to payment data
 
