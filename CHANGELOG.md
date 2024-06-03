@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Do not save error responses to payment data
+
 ### Changed
 - Updated to apps-graphql 3.x
 
