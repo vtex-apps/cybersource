@@ -2259,7 +2259,14 @@ namespace Cybersource.Services
             string retval = string.Empty;
             if (!string.IsNullOrEmpty(country))
             {
-                retval = CybersourceConstants.CountryCodesMapping[country];
+                if (country.Length == 2)
+                {
+                    retval = country;
+                }
+                else if (country.Length == 3)
+                {
+                    retval = CybersourceConstants.CountryCodesMapping[country];
+                }
             }
 
             return retval;
