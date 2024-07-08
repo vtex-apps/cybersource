@@ -36,6 +36,7 @@ namespace Cybersource.Data
         public const string CACHE_BUCKET = "tax-cache";
         public const string SIGNATURE_ENCODING = "base64";
         public const string SIGNATURE_KEY_FORMAT = "base64";
+        public const string TOO_MANY_REQUESTS = "TooManyRequests";
 
         public const string PAYMENTS = "/pts/v2/";
         public const string RISK = "/risk/v1/";
