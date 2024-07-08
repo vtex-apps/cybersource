@@ -93,7 +93,12 @@
                 null, true);
             if (sendResponse.StatusCode == HttpStatusCode.NotFound.ToString())
             {
-                _context.Vtex.Logger.Warn("GetPaymentData", null, $"Payment Id '{paymentIdentifier}' Not Found.");
+                _context.Vtex.Logger.Debug("GetPaymentData", null, $"Payment Id '{paymentIdentifier}' Not Found.");
+                return null;
+            }
+            else if (!sendResponse.Success)
+            {
+                _context.Vtex.Logger.Error("GetPaymentData", null, $"Could not retrieve Payment Id '{paymentIdentifier}' [{sendResponse.StatusCode}] ");
                 return null;
             }
 
@@ -114,7 +119,7 @@
             return paymentData;
         }
 
-        public async Task SavePaymentData(string paymentIdentifier, PaymentData paymentData)
+        public async Task SavePaymentData(string paymentIdentifier, PaymentData paymentData, int retryNumber = 0)
         {
             if (paymentData == null)
             {
@@ -128,7 +133,7 @@
                 jsonSerializedCreatePaymentRequest);
             if (!sendResponse.Success)
             {
-                _context.Vtex.Logger.Error("SavePaymentData", null, $"Failed",
+                _context.Vtex.Logger.Error("SavePaymentData", null, $"({retryNumber}) Failed",
                     null,
                     new[]
                 {
@@ -137,6 +142,12 @@
                         ( "paymentIdentifier", paymentIdentifier ),
                         ( "paymentData", JsonConvert.SerializeObject(paymentData) )
                 });
+
+                if (sendResponse.StatusCode.Equals(CybersourceConstants.TOO_MANY_REQUESTS) && retryNumber < 5)
+                {
+                    await Task.Delay(retryNumber * 100);
+                    await this.SavePaymentData(paymentIdentifier, paymentData, ++retryNumber);
+                }
             }
         }
 

@@ -9,7 +9,7 @@ namespace Cybersource.Data
         Task<bool> SetMerchantSettings(MerchantSettings merchantSettings);
 
         Task<PaymentData> GetPaymentData(string paymentIdentifier);
-        Task SavePaymentData(string paymentIdentifier, PaymentData paymentData);
+        Task SavePaymentData(string paymentIdentifier, PaymentData paymentData, int retryNumber = 0);
 
         Task<CreatePaymentRequest> GetCreatePaymentRequest(string id);
         Task SaveCreatePaymentRequest(string id, CreatePaymentRequest createPaymentRequest);

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Reduce calls to VBase
+- Improve logging of VBase calls
+- Retry GetPaymentData VBase calls
+
 ## [1.22.1] - 2024-06-25
 
 ### Fixed

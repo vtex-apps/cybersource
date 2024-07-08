@@ -671,7 +671,7 @@ namespace Cybersource.Services
                 {
                     // Setting the TimedOut flag to true so that any follow up requests will check for previous captures
                     paymentData.TimedOut = true;
-                    await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
+                    // await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
                 }
                 
                 bool isPayerAuth = false;
@@ -787,7 +787,10 @@ namespace Cybersource.Services
                             paymentData.Value = capturedAmount;
                         }
 
-                        await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
+                        if (!createPaymentResponse.Equals(CybersourceConstants.VtexAuthStatus.Denied))
+                        {
+                            await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
+                        }
                     }
 
                     if (doCancel)

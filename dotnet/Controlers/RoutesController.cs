@@ -93,7 +93,7 @@
                     {
                         //(createPaymentResponse, paymentsResponse) = await this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
                         var createPaymentTask = this._cybersourcePaymentService.CreatePayment(createPaymentRequest);
-                        var winner = await Task.WhenAny(createPaymentTask, DelayedDummyResultTask<(CreatePaymentResponse, PaymentsResponse)>(TimeSpan.FromSeconds(25)));
+                        var winner = await Task.WhenAny(createPaymentTask, DelayedDummyResultTask<(CreatePaymentResponse, PaymentsResponse)>(TimeSpan.FromSeconds(20)));
                         if (winner == createPaymentTask)
                         {
                             //_context.Vtex.Logger.Debug("CreatePayment", "Timeout", $"Processed {createPaymentRequest.PaymentId} in time!");
