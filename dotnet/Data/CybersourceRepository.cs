@@ -133,7 +133,7 @@
                 jsonSerializedCreatePaymentRequest);
             if (!sendResponse.Success)
             {
-                _context.Vtex.Logger.Error("SavePaymentData", null, $"Failed",
+                _context.Vtex.Logger.Error("SavePaymentData", null, $"({retryNumber}) Failed",
                     null,
                     new[]
                 {
@@ -145,7 +145,7 @@
 
                 if (sendResponse.StatusCode.Equals(CybersourceConstants.TOO_MANY_REQUESTS) && retryNumber < 5)
                 {
-                    await Task.Delay(retryNumber * 1000);
+                    await Task.Delay(retryNumber * 100);
                     await this.SavePaymentData(paymentIdentifier, paymentData, ++retryNumber);
                 }
             }
