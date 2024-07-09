@@ -591,7 +591,7 @@ namespace Cybersource.Services
                     string merchantTaxId = string.Empty;
                     (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, createPaymentRequest.MerchantSettings, merchantName);
                 }
-
+                
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(createPaymentRequest.PaymentId);
                 if (paymentData == null)
                 {
@@ -612,22 +612,22 @@ namespace Cybersource.Services
                         if (createPaymentRequest.MerchantSettings != null)
                         {
                             MerchantSetting merchantSettingAuthAndBill = createPaymentRequest.MerchantSettings.Find(s => s.Name.Equals(CybersourceConstants.ManifestCustomField.CaptureSetting));
-                            if (merchantSettingAuthAndBill != null && merchantSettingAuthAndBill.Value != null && merchantSettingAuthAndBill.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture, StringComparison.OrdinalIgnoreCase))
+                            // Need to check if there has already been a successful transaction
+                            string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
+                            string orderSuffix = string.Empty;
+                            if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
                             {
-                                // Need to check if there has already been a successful capture
-                                string referenceNumber = await _vtexApiService.GetOrderId(paymentData.CreatePaymentRequest.OrderId);
-                                string orderSuffix = string.Empty;
-                                if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
-                                {
-                                    orderSuffix = merchantSettings.OrderSuffix.Trim();
-                                }
+                                orderSuffix = merchantSettings.OrderSuffix.Trim();
+                            }
 
-                                SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
-                                if (searchResponse != null)
+                            SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
+                            if (searchResponse != null)
+                            {
+                                createPaymentResponse = new CreatePaymentResponse();
+                                createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
+                                createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
+                                if (merchantSettingAuthAndBill != null && merchantSettingAuthAndBill.Value != null && merchantSettingAuthAndBill.Value.Equals(CybersourceConstants.CaptureSetting.ImmediateCapture, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    createPaymentResponse = new CreatePaymentResponse();
-                                    createPaymentResponse.PaymentId = createPaymentRequest.PaymentId;
-                                    createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Denied;
                                     foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Exists(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
                                     {
                                         string captureValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
@@ -642,17 +642,37 @@ namespace Cybersource.Services
                                             paymentData.PaymentId = createPaymentResponse.PaymentId;
                                             paymentData.Value = captureValue;
                                             paymentData.RequestId = null;
-                                            paymentData.CaptureId = null;
                                             paymentData.CreatePaymentResponse = createPaymentResponse;
                                             paymentData.ImmediateCapture = true;
                                             paymentData.CaptureId = paymentsResponse.Id;
-                                            paymentData.Value = captureValue;
                                         }
                                     }
-
-                                    await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
-                                    return (createPaymentResponse, paymentsResponse);
                                 }
+                                else
+                                {
+                                    foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Exists(ai => ai.Name.Equals(CybersourceConstants.Applications.Authorize) && ai.ReasonCode.Equals("100"))))
+                                    {
+                                        string authValueString = transactionSummary.OrderInformation.amountDetails.totalAmount;
+                                        if (decimal.TryParse(authValueString, out decimal authValue) && authValue == createPaymentRequest.Value)
+                                        {
+                                            createPaymentResponse.Status = CybersourceConstants.VtexAuthStatus.Approved;
+                                            createPaymentResponse.Code = "100";
+                                            createPaymentResponse.Message = "Transaction retrieved from Cybersource.";
+                                            createPaymentResponse.AuthorizationId = transactionSummary.Id;
+                                            paymentData.AuthorizationId = createPaymentResponse.AuthorizationId;
+                                            paymentData.TransactionId = createPaymentResponse.Tid;
+                                            paymentData.PaymentId = createPaymentResponse.PaymentId;
+                                            paymentData.Value = authValue;
+                                            paymentData.RequestId = null;
+                                            paymentData.CaptureId = null;
+                                            paymentData.CreatePaymentResponse = createPaymentResponse;
+                                            paymentData.ImmediateCapture = false;
+                                        }
+                                    }
+                                }
+
+                                await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
+                                return (createPaymentResponse, paymentsResponse);
                             }
                         }
                     }
