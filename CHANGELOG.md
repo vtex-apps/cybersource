@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Improved Timeout logic
+
 ## [1.22.2] - 2024-07-08
 
 ### Changed

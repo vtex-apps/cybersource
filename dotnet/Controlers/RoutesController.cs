@@ -101,22 +101,45 @@
                         }
                         else
                         {
-                            PaymentData paymentData = new PaymentData
+                            createPaymentResponse = createPaymentTask.Result.Item1;
+                            PaymentsResponse paymentsResponse = createPaymentTask.Result.Item2;
+                            PaymentData paymentData = new PaymentData();
+                            decimal authAmount = 0m;
+                            decimal capturedAmount = 0m;
+                            if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
                             {
-                                PaymentId = createPaymentRequest.PaymentId,
-                                TimedOut = true
-                            };
+                                decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.authorizedAmount, out authAmount);
+                            }
+
+                            if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
+                            {
+                                decimal.TryParse(paymentsResponse.OrderInformation.amountDetails.totalAmount, out capturedAmount);
+                            }
+
+                            if (!paymentsResponse.Status.Equals("ERROR"))
+                            {
+                                paymentData.AuthorizationId = createPaymentResponse.AuthorizationId;
+                                paymentData.TransactionId = createPaymentResponse.Tid;
+                                paymentData.PaymentId = createPaymentResponse.PaymentId;
+                                paymentData.Value = authAmount;
+                                paymentData.RequestId = null;
+                                paymentData.CaptureId = null;
+                                paymentData.CreatePaymentResponse = createPaymentResponse;
+
+                                if (capturedAmount > 0)
+                                {
+                                    paymentData.ImmediateCapture = true;
+                                    paymentData.CaptureId = paymentsResponse.Id;
+                                    paymentData.Value = capturedAmount;
+                                }
+
+                                paymentData.TimedOut = true;
+                            }
 
                             await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
                             _context.Vtex.Logger.Warn("CreatePayment", "Timeout", $"PaymentId {createPaymentRequest.PaymentId} Timed out.");
-                            createPaymentResponse = new CreatePaymentResponse
-                            {
-                                PaymentId = createPaymentRequest.PaymentId,
-                                //Status = CybersourceConstants.VtexAuthStatus.Undefined,
-                                Message = "Awaiting response from Cybersource"
-                            };
 
-                            return BadRequest(createPaymentResponse);
+                            return StatusCode(504, createPaymentResponse);
                         }
                     }
 
