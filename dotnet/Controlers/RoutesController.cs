@@ -103,7 +103,11 @@
                         {
                             createPaymentResponse = createPaymentTask.Result.Item1;
                             PaymentsResponse paymentsResponse = createPaymentTask.Result.Item2;
-                            PaymentData paymentData = new PaymentData();
+                            PaymentData paymentData = new PaymentData
+                            {
+                                CreatePaymentRequest = createPaymentRequest
+                            };
+
                             decimal authAmount = 0m;
                             decimal capturedAmount = 0m;
                             if (paymentsResponse.OrderInformation != null && paymentsResponse.OrderInformation.amountDetails != null)
