@@ -1120,7 +1120,7 @@ namespace Cybersource.Services
                                     if (updateStatus)
                                     {
                                         await _cybersourceRepository.SavePaymentData(paymentData.PaymentId, paymentData);
-                                        if (paymentData.CreatePaymentRequest.CallbackUrl != null)
+                                        if (paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.CallbackUrl != null)
                                         {
                                             SendResponse sendResponse = await this.PostCallbackResponse(paymentData.CreatePaymentRequest.CallbackUrl, paymentData.CreatePaymentResponse);
                                             if (sendResponse != null)
@@ -1131,6 +1131,10 @@ namespace Cybersource.Services
                                             {
                                                 results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} Null response.");
                                             }
+                                        }
+                                        else
+                                        {
+                                            results.AppendLine($"{merchantReferenceNumber} {vtexOrder.OrderId} {newDecision} Could not find Callback Url.");
                                         }
                                     }
                                     else
