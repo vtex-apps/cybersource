@@ -602,7 +602,7 @@ namespace Cybersource.Services
                 }
                 else if (paymentData.CreatePaymentResponse != null && string.IsNullOrEmpty(authenticationTransactionId) && paymentData.CreatePaymentResponse.Status != null)
                 {
-                    await _vtexApiService.ProcessConversions();
+                    //await _vtexApiService.ProcessConversions();
                     return (paymentData.CreatePaymentResponse, null);
                 }
                 else if (paymentData.TimedOut)
