@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.24.1] - 2024-07-23
+
 ### Fixed
 - Process Conversions multiple days
 
