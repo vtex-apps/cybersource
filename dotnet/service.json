@@ -101,7 +101,7 @@
       "public": true
     },
     "processConversions": {
-      "path": "/cybersource/payment-provider/process-conversions",
+      "path": "/cybersource/payment-provider/process-conversions/:days",
       "public": true
     },
     "decisionManagerNotify": {

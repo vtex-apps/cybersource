@@ -19,7 +19,7 @@ namespace Cybersource.Services
         Task<VtexTaxResponse> GetFallbackTaxes(VtexTaxRequest taxRequest);
 
         Task<SendResponse> PostCallbackResponse(string callbackUrl, CreatePaymentResponse createPaymentResponse);
-        Task<string> ProcessConversions();
+        Task<string> ProcessConversions(int days);
         Task<string> UpdateOrderStatus(string merchantReferenceNumber, string newDecision, string comments);
         Task<VtexOrder> GetOrderInformation(string orderId, bool fromOMS = false);
         Task<VtexOrder[]> GetOrderGroup(string orderId);

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Added check for Decison Manager order updates
+
 ## [1.23.0] - 2024-07-12
 
 ### Fixed

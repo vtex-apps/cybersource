@@ -925,10 +925,10 @@
             return Json(await _cybersourcePaymentService.GetPurchaseAndRefundDetails(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(0)));
         }
 
-        public async Task<IActionResult> ProcessConversions()
+        public async Task<IActionResult> ProcessConversions(int days)
         {
             Response.Headers.Add("Cache-Control", "no-cache");
-            return Json(await _vtexApiService.ProcessConversions());
+            return Json(await _vtexApiService.ProcessConversions(days));
         }
 
         public async Task<IActionResult> DecisionManagerNotify()
