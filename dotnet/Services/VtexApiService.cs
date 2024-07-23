@@ -899,7 +899,7 @@ namespace Cybersource.Services
                                 success = await this.ProcessInvoice(allStatesNotification.OrderId);
                                 break;
                             case CybersourceConstants.VtexOrderStatus.ApprovePayment:
-                                _ = await this.ProcessConversions();
+                                _ = await this.ProcessConversions(2);
                                 break;
                         }
 
@@ -1049,14 +1049,14 @@ namespace Cybersource.Services
             return success;
         }
 
-        public async Task<string> ProcessConversions()
+        public async Task<string> ProcessConversions(int days)
         {
             string results = string.Empty;
 
             try
             {
                 StringBuilder sb = new StringBuilder();
-                DateTime dtStartTime = DateTime.Now.AddDays(-1);
+                DateTime dtStartTime = DateTime.Now.AddDays(-days);
                 DateTime dtEndTime = DateTime.Now;
                 ConversionReportResponse conversionReport = await _cybersourceApi.ConversionDetailReport(dtStartTime, dtEndTime);
                 if (conversionReport != null)
