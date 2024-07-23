@@ -1056,16 +1056,26 @@ namespace Cybersource.Services
             try
             {
                 StringBuilder sb = new StringBuilder();
-                DateTime dtStartTime = DateTime.Now.AddDays(-days);
-                DateTime dtEndTime = DateTime.Now;
-                ConversionReportResponse conversionReport = await _cybersourceApi.ConversionDetailReport(dtStartTime, dtEndTime);
-                if (conversionReport != null)
+                if(days <= 0)
                 {
-                    foreach (ConversionDetail conversionDetail in conversionReport.ConversionDetails)
+                    days = 1;
+                }
+
+                while (days > 0)
+                {
+                    DateTime dtStartTime = DateTime.Now.AddDays(-days);
+                    DateTime dtEndTime = DateTime.Now.AddDays(-(days-1));
+                    ConversionReportResponse conversionReport = await _cybersourceApi.ConversionDetailReport(dtStartTime, dtEndTime);
+                    if (conversionReport != null)
                     {
-                        //sb.AppendLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} - {conversionDetail.NewDecision} ");
-                        sb.AppendLine(await this.UpdateOrderStatus(conversionDetail.MerchantReferenceNumber, conversionDetail.NewDecision, conversionDetail.ReviewerComments));
+                        foreach (ConversionDetail conversionDetail in conversionReport.ConversionDetails)
+                        {
+                            //sb.AppendLine($"{conversionDetail.MerchantReferenceNumber} {conversionDetail.OriginalDecision} - {conversionDetail.NewDecision} ");
+                            sb.AppendLine(await this.UpdateOrderStatus(conversionDetail.MerchantReferenceNumber, conversionDetail.NewDecision, conversionDetail.ReviewerComments));
+                        }
                     }
+
+                    days--;
                 }
 
                 results = sb.ToString();
