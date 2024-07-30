@@ -898,8 +898,9 @@ namespace Cybersource.Services
                             case CybersourceConstants.VtexOrderStatus.Invoiced:
                                 success = await this.ProcessInvoice(allStatesNotification.OrderId);
                                 break;
-                            case CybersourceConstants.VtexOrderStatus.ApprovePayment:
-                                _ = await this.ProcessConversions(2);
+                            case CybersourceConstants.VtexOrderStatus.PaymentPending:
+                                string result = await this.ProcessConversions(2);
+                                _context.Vtex.Logger.Info("ProcessConversions", null, result);
                                 break;
                         }
 
