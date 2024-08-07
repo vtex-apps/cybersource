@@ -1609,6 +1609,11 @@ namespace Cybersource.Services
                     CreatePaymentResponse = createPaymentResponse
                 };
 
+                if (!string.IsNullOrWhiteSpace(merchantSettings.CustomNsu))
+                {
+                    createPaymentResponse.Nsu = await this.GetReconciliationId(merchantSettings, createPaymentRequest);
+                }
+
                 await _cybersourceRepository.SavePaymentData(createPaymentRequest.PaymentId, paymentData);
             }
             catch (Exception ex)
