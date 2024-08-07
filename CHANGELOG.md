@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.26.0] - 2024-08-07
+
 ### Added
 - (FSEUS-368) Add Custom NSU to Payer Auth Response
 
