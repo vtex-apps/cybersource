@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
@@ -982,10 +983,18 @@ namespace Cybersource.Services
         public async Task<CapturePaymentResponse> CapturePayment(CapturePaymentRequest capturePaymentRequest)
         {
             CapturePaymentResponse capturePaymentResponse = null;
+            Stopwatch totalTimeStopWatcher = new Stopwatch();
+            totalTimeStopWatcher.Start();
+            StringBuilder stringBuilderLog = new StringBuilder();
 
             try
             {
+                Stopwatch stopwatch = new Stopwatch();
+
+                stopwatch.Start();
                 PaymentData paymentData = await _cybersourceRepository.GetPaymentData(capturePaymentRequest.PaymentId);
+                stringBuilderLog.Append($"Elapsed time for GetPaymentData: {stopwatch.ElapsedMilliseconds} ms; ");
+                stopwatch.Reset();
 
                 if (paymentData == null)
                 {
@@ -1009,6 +1018,13 @@ namespace Cybersource.Services
                         Value = paymentData.Value
                     };
 
+                    totalTimeStopWatcher.Stop();
+                    stringBuilderLog.Insert(0, $"Total elapsed time inside immediate capture payment process: {totalTimeStopWatcher.ElapsedMilliseconds} ms; Details:");
+
+                    _context.Vtex.Logger.Info("CapturePayment", null, stringBuilderLog.ToString(), new[]
+                    {
+                        ("paymentId", capturePaymentRequest.PaymentId)
+                    });
                     return capturePaymentResponse;
                 }
 
@@ -1026,7 +1042,12 @@ namespace Cybersource.Services
                 }
 
                 string orderSuffix = string.Empty;
+
+                stopwatch.Start();
                 MerchantSettings merchantSettings = await _cybersourceRepository.GetMerchantSettings();
+                stringBuilderLog.Append($"Elapsed time for GetMerchantSettings: {stopwatch.ElapsedMilliseconds} ms; ");
+                stopwatch.Reset();
+
                 string merchantName = string.Empty;
                 try
                 {
@@ -1049,11 +1070,17 @@ namespace Cybersource.Services
                 bool doCapture = false;
                 if (paymentData != null && paymentData.CreatePaymentRequest != null && paymentData.CreatePaymentRequest.MerchantSettings != null)
                 {
+                    stopwatch.Start();
                     (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, paymentData.CreatePaymentRequest.MerchantSettings, merchantName);
+                    stringBuilderLog.Append($"Elapsed time for ParseGatewaySettings: {stopwatch.ElapsedMilliseconds} ms; ");
+                    stopwatch.Reset();
                 }
                 else if(capturePaymentRequest.MerchantSettings != null)
                 {
+                    stopwatch.Start();
                     (merchantSettings, merchantName, merchantTaxId, doCapture) = await this.ParseGatewaySettings(merchantSettings, capturePaymentRequest.MerchantSettings, merchantName);
+                    stringBuilderLog.Append($"Elapsed time for ParseGatewaySettings: {stopwatch.ElapsedMilliseconds} ms; ");
+                    stopwatch.Reset();
                 }
 
                 if (!string.IsNullOrEmpty(merchantSettings.OrderSuffix))
@@ -1102,7 +1129,12 @@ namespace Cybersource.Services
 
                         payment.orderInformation.amountDetails.nationalTaxIncluded = "1";
                         payment.orderInformation.lineItems = new List<LineItem>();
+                        
+                        stopwatch.Start();
                         VtexOrder[] vtexOrders = await _vtexApiService.GetOrderGroup(paymentData.CreatePaymentRequest.OrderId);
+                        stringBuilderLog.Append($"Elapsed time for GetOrderGroup: {stopwatch.ElapsedMilliseconds} ms; ");
+                        stopwatch.Reset();
+                        
                         if (vtexOrders != null)
                         {
                             List<VtexOrderItem> vtexOrderItems = new List<VtexOrderItem>();
@@ -1119,8 +1151,12 @@ namespace Cybersource.Services
 
                                 if (!captureFullAmount)
                                 {
+                                    stopwatch.Start();
                                     // If not capturing the full amount we need to find the shipment info
                                     VtexOrder vtexOrder = await _vtexApiService.GetOrderInformation(vtexGroupOrder.OrderId, true);
+                                    stringBuilderLog.Append($"Elapsed time for GetOrderInformation: {stopwatch.ElapsedMilliseconds} ms; ");
+                                    stopwatch.Reset();
+
                                     if (vtexOrder != null && vtexOrder.PackageAttachment != null && vtexOrder.PackageAttachment.Packages != null)
                                     {
                                         foreach (Package package in vtexOrder.PackageAttachment.Packages.Reverse<Package>())
@@ -1202,7 +1238,11 @@ namespace Cybersource.Services
                 }
                 #endregion Custom Payload
 
+                stopwatch.Start();
                 PaymentsResponse paymentsResponse = await _cybersourceApi.ProcessCapture(payment, authId, merchantSettings);
+                stringBuilderLog.Append($"Elapsed time for ProcessCapture: {stopwatch.ElapsedMilliseconds} ms; ");
+                stopwatch.Reset();
+
                 if (paymentsResponse != null)
                 {
                     capturePaymentResponse = new CapturePaymentResponse
@@ -1221,8 +1261,12 @@ namespace Cybersource.Services
                     }
                     else
                     {
+                        stopwatch.Start();
                         // Try to get transaction from Cybersource
                         SearchResponse searchResponse = await this.SearchTransaction($"{referenceNumber}{orderSuffix}", merchantSettings);
+                        stringBuilderLog.Append($"Elapsed time for SearchTransaction: {stopwatch.ElapsedMilliseconds} ms; ");
+                        stopwatch.Reset();
+
                         if (searchResponse != null)
                         {
                             foreach (var transactionSummary in searchResponse.Embedded.TransactionSummaries.Where(transactionSummary => transactionSummary.ApplicationInformation.Applications.Exists(ai => ai.Name.Equals(CybersourceConstants.Applications.Capture) && ai.ReasonCode.Equals("100"))))
@@ -1279,6 +1323,15 @@ namespace Cybersource.Services
                     ( "PaymentId", capturePaymentRequest.PaymentId )
                 });
             }
+
+            totalTimeStopWatcher.Stop();
+
+            stringBuilderLog.Insert(0, $"Total elapsed time inside capture payment process: {totalTimeStopWatcher.ElapsedMilliseconds} ms; Details:");
+
+            _context.Vtex.Logger.Info("CapturePayment", null, stringBuilderLog.ToString(), new[]
+            {
+                ("paymentId", capturePaymentRequest.PaymentId)
+            });
 
             return capturePaymentResponse;
         }
