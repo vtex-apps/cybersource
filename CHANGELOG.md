@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Added payment capture method elapsed time logs
+
 ## [1.26.0] - 2024-08-07
 
 ### Added
